@@ -48,7 +48,7 @@ jobs:
         run: |
           ./generate.bat
           cd build
-          msbuild umamusume-localify.sln -m -p:Configuration=Release
+          msbuild ImasSCSP-localify.sln -m -p:Configuration=Release
       - name: prepare-package
         run: |
           mkdir package
