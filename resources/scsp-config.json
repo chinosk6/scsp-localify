@@ -1,0 +1,14 @@
+{
+    "enableConsole": true,
+    "enableVSync": false,
+    "maxFps": 60,
+    "localifyBasePath": "scsp_localify",
+    "hotKey": "u",
+    "dumpUntransLyrics": false,
+    "dumpUntransLocal2": false,
+    "autoDumpAllJson": false,
+    "extraAssetBundlePaths": [
+        "scsp_localify/scsp-bundle"
+    ],
+    "customFontPath": "assets/font/sbtphumminge-regular.ttf"
+}

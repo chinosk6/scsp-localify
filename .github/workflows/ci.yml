@@ -1,0 +1,64 @@
+name: ci
+on: 
+  push: 
+    paths:
+      - '**.lua'
+      - '**.cpp'
+      - '**.c'
+      - '**.hpp'
+      - '**.h'
+      - '.gitmodules'
+      - '.gitignore'
+      - '.gitattributes'
+      - 'conanfile.txt'
+      - 'deps/**'
+      - 'src/**'
+      - 'utils/**'
+  pull_request:
+      paths:
+      - '**.lua'
+      - '**.cpp'
+      - '**.c'
+      - '**.hpp'
+      - '**.h'
+      - '.gitmodules'
+      - '.gitignore'
+      - '.gitattributes'
+      - 'conanfile.txt'
+      - 'deps/**'
+      - 'src/**'
+      - 'utils/**'
+jobs:
+  build:
+    runs-on: windows-2019
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: install-dependencies
+        run: |
+          pip3 install --upgrade conan==1.59.0 requests
+          conan profile new default --detect
+          conan config init
+      - name: configure-msbuild-env
+        uses: microsoft/setup-msbuild@v1.0.2
+      - name: build
+        run: |
+          ./generate.bat
+          cd build
+          msbuild umamusume-localify.sln -m -p:Configuration=Release
+      - name: prepare-package
+        run: |
+          mkdir package
+          cp build/bin/x64/Release/version.dll package/version.dll
+          cp resources/scsp-config.json package/scsp-config.json
+      - uses: actions/upload-artifact@v2
+        with:
+          name: scsp-localify
+          path: package
+      - uses: actions/upload-artifact@v2
+        with:
+          name: scsp-localify-g-dll
+          path: package/version.dll
