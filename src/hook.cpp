@@ -26,14 +26,12 @@ void convertPtrType(T* cvtTarget, TF func_ptr) {
 	printf(_fmt_##" (%s, %s)\n", _name_##_offset, MH_StatusToString(_name_##stat1), MH_StatusToString(_name_##stat2)); 
 #pragma endregion
 
-int advapi32LoadCount = 0;
 bool exd = false;
 bool assemblyLoaded = false;
 
 namespace
 {
 	void path_game_assembly(HMODULE module);
-	void exDll();
 	bool mh_inited = false;
 	void* load_library_w_orig = nullptr;
 	Il2CppString* (*environment_get_stacktrace)();
@@ -64,32 +62,7 @@ namespace
 	{
 		using namespace std;
 		// printf("load library: %ls\n", path);
-		if (path == L"advapi32"sv)
-		{
-			advapi32LoadCount++;
-			
-			if (advapi32LoadCount >= 4) {
-				// printf("Command: %s\n", GetCommandLineA());
-				// if (CloseNPGameMon) {
-				// 	wprintf(L"尝试关闭 NPGameMon...\n");
-					//printf("Result: %d\n", CloseNPGameMon());
-				// }
-				/*
-				path_game_assembly();
-				if (g_on_hook_ready)
-				{
-					g_on_hook_ready();
-				}
-
-				MH_DisableHook(LoadLibraryW);
-				MH_RemoveHook(LoadLibraryW);
-
-				// use original function beacuse we have unhooked that
-				return LoadLibraryW(path);
-				*/
-			}
-		}
-		else if (!exd && (wstring_view(path).find(L"NPGameDLL.dll") != wstring_view::npos)) {
+		if (!exd && (wstring_view(path).find(L"NPGameDLL.dll") != wstring_view::npos)) {
 			// printf("fing NP\n");
 			// Sleep(10000000000000);
 			// printf("end sleep\n");
@@ -106,7 +79,6 @@ namespace
 			//path_game_assembly(ret);
 			return ret;
 		}
-
 
 		return reinterpret_cast<decltype(LoadLibraryW)*>(load_library_w_orig)(path);
 	}
@@ -380,17 +352,8 @@ namespace
 			//updateDicText(_this, category, id, resultText);
 			return il2cpp_string_new(resultText.c_str());
 		}
-
-		auto ret = reinterpret_cast<decltype(LocalizationManager_GetTextOrNull_hook)*>(LocalizationManager_GetTextOrNull_orig)(_this, category, id);
-		/*
-		if (ret) {
-			const auto getStr = std::wstring(ret->start_char);
-			if (getStr.starts_with(L"セキュリティーポリシーエラー")) {
-				// category: mlPublicText_GameGuard, id: 1
-			}
-		}
-		*/
-		return ret;
+		// GG category: mlPublicText_GameGuard, id: 1
+		return reinterpret_cast<decltype(LocalizationManager_GetTextOrNull_hook)*>(LocalizationManager_GetTextOrNull_orig)(_this, category, id);
 	}
 
 	void* get_NeedsLocalization_orig;
@@ -656,9 +619,6 @@ namespace
 		}
 		if (pathed) return;
 		pathed = true;
-		// return;
-
-		// exDll();
 
 		printf("Trying to patch GameAssembly.dll...\n");
 		// il2cpp_symbols::init(module);
