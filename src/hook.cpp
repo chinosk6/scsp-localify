@@ -349,11 +349,6 @@ namespace
 		printf("Dump finished. Total %d files\n", dumpCount);
 
 		return;
-
-		il2cpp_symbols::iterate_IEnumerable(dic, [&](void* pair) {
-
-			});
-
 	}
 
 	void updateDicText(void* _this, Il2CppString* category, int id, std::string& newStr) {
@@ -476,19 +471,6 @@ namespace
 			set_sourceFontFile(origFont, replaceFont);
 		}
 		reinterpret_cast<decltype(UITextMeshProUGUI_Awake_hook)*>(UITextMeshProUGUI_Awake_orig)(_this);
-	}
-
-	void* get_ShaderRef_MobileBitmap_orig;
-	void* get_ShaderRef_MobileBitmap_hook() {
-		auto ret = reinterpret_cast<decltype(get_ShaderRef_MobileBitmap_hook)*>(get_ShaderRef_MobileBitmap_orig)();
-		printf("get_ShaderRef_MobileBitmap at: %p\n", ret);
-		return ret;
-	}
-	void* get_ShaderRef_MobileSDF_orig;
-	void* get_ShaderRef_MobileSDF_hook() {
-		auto ret = reinterpret_cast<decltype(get_ShaderRef_MobileSDF_hook)*>(get_ShaderRef_MobileSDF_orig)();
-		printf("get_ShaderRef_MobileSDF at: %p\n", ret);
-		return ret;
 	}
 
 	void* ScenarioManager_Init_orig;
@@ -758,14 +740,6 @@ namespace
 			"ENTERPRISE.UI.dll", "ENTERPRISE.UI",
 			"UITextMeshProUGUI", "Awake", 0
 		);
-		const auto get_ShaderRef_MobileSDF_addr = il2cpp_symbols::get_method_pointer(
-			"Unity.TextMeshPro.dll", "TMPro",
-			"ShaderUtilities", "get_ShaderRef_MobileSDF", 0
-		);
-		const auto get_ShaderRef_MobileBitmap_addr = il2cpp_symbols::get_method_pointer(
-			"Unity.TextMeshPro.dll", "TMPro",
-			"ShaderUtilities", "get_ShaderRef_MobileBitmap", 0
-		);
 
 		auto ScenarioManager_Init_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Scenario",
@@ -832,8 +806,6 @@ namespace
 		ADD_HOOK(LiveMVView_UpdateLyrics, "LiveMVView_UpdateLyrics at %p");
 		ADD_HOOK(TMP_Text_set_text, "TMP_Text_set_text at %p");
 		ADD_HOOK(UITextMeshProUGUI_Awake, "UITextMeshProUGUI_Awake at %p");
-		ADD_HOOK(get_ShaderRef_MobileSDF, "get_ShaderRef_MobileSDF at %p");
-		ADD_HOOK(get_ShaderRef_MobileBitmap, "get_ShaderRef_MobileBitmap at %p");
 		ADD_HOOK(ScenarioManager_Init, "ScenarioManager_Init at %p");
 		ADD_HOOK(DataFile_GetBytes, "DataFile_GetBytes at %p");
 		ADD_HOOK(UnsafeLoadBytesFromKey, "UnsafeLoadBytesFromKey at %p");
