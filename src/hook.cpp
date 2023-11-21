@@ -27,11 +27,11 @@ void convertPtrType(T* cvtTarget, TF func_ptr) {
 #pragma endregion
 
 bool exd = false;
-bool assemblyLoaded = false;
 
 namespace
 {
-	void path_game_assembly(HMODULE module);
+	void path_game_assembly();
+	void patchNP(HMODULE module);
 	bool mh_inited = false;
 	void* load_library_w_orig = nullptr;
 	Il2CppString* (*environment_get_stacktrace)();
@@ -61,23 +61,24 @@ namespace
 	HMODULE __stdcall load_library_w_hook(const wchar_t* path)
 	{
 		using namespace std;
-		// printf("load library: %ls\n", path);
+		printf("load library: %ls\n", path);
 		if (!exd && (wstring_view(path).find(L"NPGameDLL.dll") != wstring_view::npos)) {
 			// printf("fing NP\n");
 			// Sleep(10000000000000);
 			// printf("end sleep\n");
 			auto ret = reinterpret_cast<decltype(LoadLibraryW)*>(load_library_w_orig)(path);
-			path_game_assembly(ret);
+			patchNP(ret);
 			if (environment_get_stacktrace) {
 				// printf("NP: %ls\n", environment_get_stacktrace()->start_char);
 			}
 			return ret;
 		}
 		else if (path == L"GameAssembly.dll"sv) {
-			assemblyLoaded = true;
 			auto ret = reinterpret_cast<decltype(LoadLibraryW)*>(load_library_w_orig)(path);
-			//path_game_assembly(ret);
 			return ret;
+		}
+		else if (path == L"cri_ware_unity.dll"sv) {
+			path_game_assembly();
 		}
 
 		return reinterpret_cast<decltype(LoadLibraryW)*>(load_library_w_orig)(path);
@@ -608,33 +609,11 @@ namespace
 	}
 
 	bool pathed = false;
-	void path_game_assembly(HMODULE module)
-	{
-		if (!mh_inited)
-			return;
-		if (!assemblyLoaded) {
-			printf("GameAssembly not loaded.\n");
-			reopen_self();
-			return;
-		}
-		if (pathed) return;
-		pathed = true;
-
-		printf("Trying to patch GameAssembly.dll...\n");
-		// il2cpp_symbols::init(module);
-
-		auto il2cpp_module = GetModuleHandle("GameAssembly.dll");
-
-		// load il2cpp exported functions
-		il2cpp_symbols::init(il2cpp_module);
-
-#pragma region HOOK_ADDRESSES
-		
-		environment_get_stacktrace = reinterpret_cast<decltype(environment_get_stacktrace)>(
-			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System", 
-				"Environment", "get_StackTrace", 0)
-			);
-		
+	bool npPatched = false;
+	
+	void patchNP(HMODULE module) {
+		if (npPatched) return;
+		npPatched = true;
 		// auto np_module = GetModuleHandle("NPGameDLL");
 		if (module) {
 			auto SetCallbackToGameMon_addr = GetProcAddress(module, "SetCallbackToGameMon");
@@ -642,7 +621,6 @@ namespace
 			auto PreInitNPGameMonA_addr = GetProcAddress(module, "PreInitNPGameMonA");
 			auto InitNPGameMon_addr = GetProcAddress(module, "InitNPGameMon");
 			auto SetHwndToGameMon_addr = GetProcAddress(module, "SetHwndToGameMon");
-
 
 			ADD_HOOK(SetCallbackToGameMon, "SetCallbackToGameMon ap %p");
 			ADD_HOOK(PreInitNPGameMonW, "PreInitNPGameMonW ap %p");
@@ -653,6 +631,39 @@ namespace
 		else {
 			printf("NPGameDLL Get failed.\n");
 		}
+	}
+
+	int retryCount = 0;
+	void path_game_assembly()
+	{
+		if (!mh_inited)
+			return;
+
+		auto il2cpp_module = GetModuleHandle("GameAssembly.dll");
+		if (!il2cpp_module) {
+			printf("GameAssembly.dll not loaded.\n");
+			retryCount++;
+			if (retryCount == 15) {
+				reopen_self();
+				return;
+			}
+		}
+
+		if (pathed) return;
+		pathed = true;
+
+		printf("Trying to patch GameAssembly.dll...\n");
+		// il2cpp_symbols::init(module);
+
+		// load il2cpp exported functions
+		il2cpp_symbols::init(il2cpp_module);
+
+#pragma region HOOK_ADDRESSES
+		
+		environment_get_stacktrace = reinterpret_cast<decltype(environment_get_stacktrace)>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System", 
+				"Environment", "get_StackTrace", 0)
+			);
 
 		DMMGameGuard_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM", "DMMGameGuard");
 		isCheck_field = il2cpp_class_get_field_from_name(DMMGameGuard_klass, "_isCheck");
