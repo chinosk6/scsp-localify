@@ -61,7 +61,7 @@ namespace
 	HMODULE __stdcall load_library_w_hook(const wchar_t* path)
 	{
 		using namespace std;
-		printf("load library: %ls\n", path);
+		// printf("load library: %ls\n", path);
 		if (!exd && (wstring_view(path).find(L"NPGameDLL.dll") != wstring_view::npos)) {
 			// printf("fing NP\n");
 			// Sleep(10000000000000);
