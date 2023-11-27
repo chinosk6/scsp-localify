@@ -1,0 +1,5 @@
+
+
+namespace SCGUILoop {
+	void mainLoop();
+}

@@ -42,7 +42,7 @@
 
 
 ### 故事和部分 UI 文本 dump
-登录游戏后，进入故事阅读界面，然后切换到控制台，按下 ctrl + u，看到 `hotKey pressed.` 输出，然后点击任意故事标题，之后会自动 dump 故事文本和 `localify.json`
+登录游戏后，进入故事阅读界面，然后切换到控制台，按下 `ctrl` + `u`，会弹出控制窗口，勾选 `Waiting Extract Text`，然后点击任意故事标题，之后会自动 dump 故事文本和 `localify.json`
 
 
 

@@ -4,12 +4,13 @@
 #include <set>
 #include <Psapi.h>
 #include <intsafe.h>
+#include "scgui/scGUIData.hpp"
+#include <scgui/scGUIMain.hpp>
 
 //using namespace std;
 
 std::function<void()> g_on_hook_ready;
 std::function<void()> on_hotKey_0;
-bool needExtractText = false;
 bool needPrintStack = false;
 
 template<typename T, typename TF>
@@ -27,6 +28,7 @@ void convertPtrType(T* cvtTarget, TF func_ptr) {
 #pragma endregion
 
 bool exd = false;
+void* SetResolution_orig;
 
 namespace
 {
@@ -291,9 +293,21 @@ namespace
 		return totalCount;
 	}
 
+	bool guiStarting = false;
+	void startSCGUI() {
+		if (guiStarting) return;
+		guiStarting = true;
+		std::thread([]() {
+			printf("GUI START\n");
+			guimain();
+			guiStarting = false;
+			printf("GUI END\n");
+			}).detach();
+	}
+
 	void itLocalizationManagerDic(void* _this) {
-		if (!needExtractText) return;
-		needExtractText = false;
+		if (!SCGUIData::needExtractText) return;
+		SCGUIData::needExtractText = false;
 
 		static auto LocalizationManager_klass = il2cpp_symbols::get_class_from_instance(_this);
 		static auto dic_field = il2cpp_class_get_field_from_name(LocalizationManager_klass, "dic");
@@ -486,6 +500,22 @@ namespace
 			}
 		}
 		return ret;
+	}
+
+	void SetResolution_hook(int width, int height, bool fullscreen) {
+		return;
+		/*
+		width = SCGUIData::screenW;
+		height = SCGUIData::screenH;
+		fullscreen = SCGUIData::screenFull;
+		return reinterpret_cast<decltype(SetResolution_hook)*>(SetResolution_orig)(width, height, fullscreen);
+		*/
+	}
+
+	void* UpdateModelResolutionSize_orig;
+	void UpdateModelResolutionSize_hook(void* _this, int w, int h, int msaaSamples) {
+		printf("UpdateModelResolutionSize: %d, %d, %d\n", w, h, msaaSamples);
+		return reinterpret_cast<decltype(UpdateModelResolutionSize_hook)*>(UpdateModelResolutionSize_orig)(_this, w, h, msaaSamples);
 	}
 
 	void* UnsafeLoadBytesFromKey_orig;
@@ -727,6 +757,16 @@ namespace
 			)
 			);
 
+		auto SetResolution_addr = il2cpp_symbols::get_method_pointer(
+			"UnityEngine.CoreModule.dll", "UnityEngine",
+			"Screen", "SetResolution", 3
+		);
+
+		auto UpdateModelResolutionSize_addr = il2cpp_symbols::get_method_pointer(
+			"Prism.Rendering.Runtime.dll", "PRISM.Rendering",
+			"RenderManager", "UpdateModelResolutionSize", 3
+		);
+
 		auto UnsafeLoadBytesFromKey_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.ResourceManagement.dll", "PRISM.ResourceManagement",
 			"ResourceLoader", "UnsafeLoadBytesFromKey", 2
@@ -780,6 +820,8 @@ namespace
 		ADD_HOOK(ScenarioManager_Init, "ScenarioManager_Init at %p");
 		ADD_HOOK(DataFile_GetBytes, "DataFile_GetBytes at %p");
 		ADD_HOOK(UnsafeLoadBytesFromKey, "UnsafeLoadBytesFromKey at %p");
+		ADD_HOOK(SetResolution, "SetResolution at %p");
+		ADD_HOOK(UpdateModelResolutionSize, "UpdateModelResolutionSize at %p");
 		ADD_HOOK(GGIregualDetector_ShowPopup, "GGIregualDetector_ShowPopup at %p");
 		ADD_HOOK(DMMGameGuard_NPGameMonCallback, "DMMGameGuard_NPGameMonCallback at %p");
 		// ADD_HOOK(DMMGameGuard_Setup, "DMMGameGuard_Setup at %p");
@@ -790,7 +832,7 @@ namespace
 
 		LoadExtraAssetBundle();
 		on_hotKey_0 = []() {
-			needExtractText = true;
+			startSCGUI();
 			// needPrintStack = !needPrintStack;
 		};
 		g_on_hook_ready();
