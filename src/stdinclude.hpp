@@ -42,6 +42,7 @@
 #include <string>
 
 #include "local/local.hpp"
+#include "camera/camera.hpp"
 
 
 extern bool g_enable_plugin;
@@ -54,3 +55,7 @@ extern bool g_dump_untrans_unlocal;
 extern std::string g_custom_font_path;
 extern std::filesystem::path g_localify_base;
 extern std::list<std::string> g_extra_assetbundle_paths;
+extern char hotKey;
+extern bool g_enable_free_camera;
+extern bool g_block_out_of_focus;
+extern float g_free_camera_mouse_speed;

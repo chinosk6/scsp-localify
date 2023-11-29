@@ -4,7 +4,18 @@
 
 extern void* SetResolution_orig;
 
+
+#define INPUT_AND_SLIDER_FLOAT(label, data, min, max) \
+    ImGui::SetNextItemWidth(inputFloatWidth);\
+    ImGui::InputFloat("##"##label, data);\
+    ImGui::SameLine();\
+    ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - inputFloatWidth - 1.0f);\
+    ImGui::SliderFloat(label, data, min, max)
+
+
 namespace SCGUILoop {
+    static float inputFloatWidth = 50.0f;
+
 	void mainLoop() {
         if (ImGui::Begin("SC Plugin Config")) {
             ImGui::Checkbox("Waiting Extract Text", &SCGUIData::needExtractText);
@@ -43,6 +54,22 @@ namespace SCGUILoop {
                         reinterpret_cast<void (*)(int, int, bool)>(SetResolution_orig)(SCGUIData::screenW, SCGUIData::screenH, SCGUIData::screenFull);
                     }
 
+                }
+            }
+
+            if (ImGui::CollapsingHeader("Camera Info", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::InputFloat("Game Camera FOV", &SCGUIData::sysCamFov);
+                ImGui::InputFloat3("Game Camera Pos (x, y, z)", &SCGUIData::sysCamPos.x);
+                ImGui::InputFloat3("Game Camera LookAt (x, y, z)", &SCGUIData::sysCamLookAt.x);
+                ImGui::InputFloat4("Game Camera Rotation (w, x, y, z)", &SCGUIData::sysCamRot.w);
+
+                if(ImGui::CollapsingHeader("Free Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    ImGui::Checkbox("Enable Free Camera", &g_enable_free_camera);
+                    INPUT_AND_SLIDER_FLOAT("Move Speed", &BaseCamera::moveStep, 0.0f, 0.5f);
+                    INPUT_AND_SLIDER_FLOAT("Mouse Speed", &g_free_camera_mouse_speed, 0.0f, 100.0f);
+                    INPUT_AND_SLIDER_FLOAT("Camera FOV", &SCCamera::baseCamera.fov, 0.0f, 360.0f);
+                    ImGui::InputFloat3("Camera Pos (x, y, z)", &SCCamera::baseCamera.pos.x);
+                    ImGui::InputFloat3("Camera LookAt (x, y, z)", &SCCamera::baseCamera.lookAt.x);
                 }
             }
 

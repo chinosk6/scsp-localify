@@ -12,6 +12,58 @@
 
 
 
+# 配置说明
+
+- 配置项位于 `scsp-config.json` 文件中
+
+| 配置项                | 类型                                     | 默认值                                 | 说明                                                 |
+| --------------------- | ---------------------------------------- | -------------------------------------- | ---------------------------------------------------- |
+| enableConsole         | Bool                                     | `true`                                 | 是否开启控制台                                       |
+| enableVSync           | Bool                                     | `false`                                | 是否启用垂直同步                                     |
+| maxFps                | Int                                      | `60`                                   | 最大帧数<br>当启用 `enableVSync` 时，此项配置失效    |
+| localifyBasePath      | String                                   | `scsp_localify`                        | 本地化文件目录                                       |
+| hotKey                | String (Char)                            | `u`                                    | 按下 `Ctrl` + 此项配置的热键，打开插件 GUI           |
+| dumpUntransLyrics     | Bool                                     | `false`                                | dump 未翻译的歌词                                    |
+| dumpUntransLocal2     | Bool                                     | `false`                                | dump 未翻译的文本                                    |
+| autoDumpAllJson       | Bool                                     | `false`                                | dump 所有游戏加载的 JSON                             |
+| extraAssetBundlePaths | String[]                                 | `["scsp_localify/scsp-bundle"]`        | 自定义数据包路径                                     |
+| customFontPath        | String                                   | `assets/font/sbtphumminge-regular.ttf` | 自定义数据包中字体路径<br>用于替换游戏内置字体       |
+| blockOutOfFocus       | Bool                                     | `true`                                 | 拦截窗口失焦事件<br>切换到其它窗口后不会触发游戏暂停 |
+| baseFreeCamera        | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera)      | 自由视角配置                                         |
+
+
+
+### BaseFreeCamera
+
+| 配置项     | 类型  | 默认值  | 说明               |
+| ---------- | ----- | ------- | ------------------ |
+| enable     | Bool  | `false` | 启用自由视角       |
+| moveStep   | Float | `50`    | 摄像机移动速度     |
+| mouseSpeed | Float | `35`    | 鼠标移动视角灵敏度 |
+
+
+
+# 自由视角说明 (Free Camera)
+
+- 将 `scsp-config.json` 中 `baseFreeCamera` - `enable` 设置为 `true` 即可。
+- 生效范围：所有 3D 场景。包括但不限于主页、故事、Live
+
+## 自由视角操作方法
+
+- 移动: `W`, `S`, `A`, `D`
+- 上移: `Space`，下移: `Ctrl`
+- 视角转动: 
+  - 键盘: `↑`, `↓`, `←`, `→`
+  - 鼠标: 
+    - 按 ` 键（数字键最左边，TAB 键上方）切换
+    - 或者**按住**鼠标右键
+
+- 调整视场角 (FOV)
+  - 键盘: `Q`, `E`
+  - 或者鼠标滚轮
+
+
+
 # 如何汉化：
 
 - 将 dumps 目录内的 Json 文件汉化后，放进 scsp_localify 目录即可。
@@ -35,14 +87,12 @@
 
 - 除此之外的文件都对应第三类
 
-
-
 - （UI 文本一部分走 Localify，一部分不走，很奇怪。）
 
 
 
 ### 故事和部分 UI 文本 dump
-登录游戏后，进入故事阅读界面，然后切换到控制台，按下 `ctrl` + `u`，会弹出控制窗口，勾选 `Waiting Extract Text`，然后点击任意故事标题，之后会自动 dump 故事文本和 `localify.json`
+登录游戏后，进入故事阅读界面，按下 `ctrl` + `u`，会弹出控制窗口，勾选 `Waiting Extract Text`，然后点击任意故事标题，之后会自动 dump 故事文本和 `localify.json`
 
 
 

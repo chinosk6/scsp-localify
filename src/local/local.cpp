@@ -146,27 +146,33 @@ namespace SCLocal {
 	}
 
 	void dumpGenericText(const std::string& dumpStr, const char* fileName) {
-		const std::filesystem::path dumpBasePath("dumps");
-		const auto dumpFilePath = dumpBasePath / fileName;
+		try {
+			const std::filesystem::path dumpBasePath("dumps");
+			const auto dumpFilePath = dumpBasePath / fileName;
 
-		if (!std::filesystem::is_directory(dumpBasePath)) {
-			std::filesystem::create_directories(dumpBasePath);
-		}
-		if (!std::filesystem::exists(dumpFilePath)) {
+			if (!std::filesystem::is_directory(dumpBasePath)) {
+				std::filesystem::create_directories(dumpBasePath);
+			}
+			if (!std::filesystem::exists(dumpFilePath)) {
+				std::ofstream dumpWriteLrcFile(dumpFilePath, std::ofstream::out);
+				dumpWriteLrcFile << "{}";
+				dumpWriteLrcFile.close();
+			}
+
+			std::ifstream dumpLrcFile(dumpFilePath);
+			std::string fileContent((std::istreambuf_iterator<char>(dumpLrcFile)), std::istreambuf_iterator<char>());
+			dumpLrcFile.close();
+			auto fileData = nlohmann::json::parse(fileContent);
+			fileData[dumpStr] = "";
+			const auto newStr = fileData.dump(4, 32, false);
 			std::ofstream dumpWriteLrcFile(dumpFilePath, std::ofstream::out);
-			dumpWriteLrcFile << "{}";
+			dumpWriteLrcFile << newStr.c_str();
 			dumpWriteLrcFile.close();
 		}
+		catch (std::exception& e) {
+			printf("Dump text to %s error: %s\n", fileName, e.what());
+		}
 
-		std::ifstream dumpLrcFile(dumpFilePath);
-		std::string fileContent((std::istreambuf_iterator<char>(dumpLrcFile)), std::istreambuf_iterator<char>());
-		dumpLrcFile.close();
-		auto fileData = nlohmann::json::parse(fileContent);
-		fileData[dumpStr] = "";
-		const auto newStr = fileData.dump(4, 32, false);
-		std::ofstream dumpWriteLrcFile(dumpFilePath, std::ofstream::out);
-		dumpWriteLrcFile << newStr.c_str();
-		dumpWriteLrcFile.close();
 	}
 
 	std::string replaceAll(const std::string& str, const std::string& oldStr, const std::string& newStr) {

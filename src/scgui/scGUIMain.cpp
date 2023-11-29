@@ -26,7 +26,7 @@ bool guiDone = true;
 bool attachToGame = false;
 
 HWND hwnd;
-RECT cacheRect{ 100, 100, 600, 500 };
+RECT cacheRect{ 100, 100, 730, 730 };
 
 void SetGuiDone(bool isDone) {
     guiDone = isDone;
@@ -76,9 +76,9 @@ void guimain()
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();
     if (!attachToGame) {
-        WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"IM@S SCSP Localify", NULL };
+        WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"iM@S SCSP Localify", NULL };
         ::RegisterClassExW(&wc);
-        hwnd = ::CreateWindowW(wc.lpszClassName, L"IM@S SCSP GUI", WS_OVERLAPPEDWINDOW, cacheRect.left, cacheRect.top,
+        hwnd = ::CreateWindowW(wc.lpszClassName, L"iM@S SCSP GUI", WS_OVERLAPPEDWINDOW, cacheRect.left, cacheRect.top,
             cacheRect.right - cacheRect.left, cacheRect.bottom - cacheRect.top, NULL, NULL, wc.hInstance, NULL);
         if (nowTopStat) SetWindowTop();
     }

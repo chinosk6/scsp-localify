@@ -31,11 +31,16 @@ int g_max_fps = 60;
 int g_vsync_count = 0;
 std::string g_custom_font_path = "";
 std::list<std::string> g_extra_assetbundle_paths{};
+char hotKey = 'u';
+
+bool g_enable_free_camera = false;
+bool g_block_out_of_focus = false;
+float g_free_camera_mouse_speed = 35;
 
 std::filesystem::path g_localify_base("scsp_localify");
 constexpr const char ConfigJson[] = "scsp-config.json";
 
-const auto CONSOLE_TITLE = L"IM@S SCSP Tools By chinosk";
+const auto CONSOLE_TITLE = L"iM@S SCSP Tools By chinosk";
 
 namespace
 {
@@ -54,7 +59,7 @@ namespace
 		SetConsoleOutputCP(65001);
 		std::locale::global(std::locale(""));
 
-		wprintf(L"THEIDOLM@STER ShinyColors Song for Prism tools loaded! - By chinosk\n");
+		wprintf(L"THEiDOLM@STER ShinyColors Song for Prism tools loaded! - By chinosk\n");
 	}
 }
 
@@ -99,7 +104,7 @@ namespace
 				g_localify_base = document["localifyBasePath"].GetString();
 			}
 			if (document.HasMember("hotKey")) {
-				MHotkey::start_hotkey(document["hotKey"].GetString()[0]);
+				hotKey = document["hotKey"].GetString()[0];
 			}
 			if (document.HasMember("autoDumpAllJson")) {
 				g_auto_dump_all_json = document["autoDumpAllJson"].GetBool();
@@ -129,6 +134,25 @@ namespace
 			}
 			if (document.HasMember("customFontPath")) {
 				g_custom_font_path = document["customFontPath"].GetString();
+			}
+
+			if (document.HasMember("blockOutOfFocus")) {
+				g_block_out_of_focus = document["blockOutOfFocus"].GetBool();
+			}
+
+			if (document.HasMember("baseFreeCamera")) {
+				const auto& freeCamConfig = document["baseFreeCamera"];
+				if (freeCamConfig.IsObject()) {
+					if (freeCamConfig.HasMember("enable")) {
+						g_enable_free_camera = freeCamConfig["enable"].GetBool();
+					}
+					if (freeCamConfig.HasMember("moveStep")) {
+						BaseCamera::moveStep = freeCamConfig["moveStep"].GetFloat() / 1000;
+					}
+					if (freeCamConfig.HasMember("mouseSpeed")) {
+						g_free_camera_mouse_speed = freeCamConfig["mouseSpeed"].GetFloat();
+					}
+				}
 			}
 			
 		}

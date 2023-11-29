@@ -6,10 +6,12 @@
 #include <intsafe.h>
 #include "scgui/scGUIData.hpp"
 #include <scgui/scGUIMain.hpp>
+#include <mhotkey.hpp>
 
 //using namespace std;
 
 std::function<void()> g_on_hook_ready;
+std::function<void()> g_on_close;
 std::function<void()> on_hotKey_0;
 bool needPrintStack = false;
 
@@ -29,6 +31,7 @@ void convertPtrType(T* cvtTarget, TF func_ptr) {
 
 bool exd = false;
 void* SetResolution_orig;
+Il2CppString* (*environment_get_stacktrace)();
 
 namespace
 {
@@ -36,7 +39,6 @@ namespace
 	void patchNP(HMODULE module);
 	bool mh_inited = false;
 	void* load_library_w_orig = nullptr;
-	Il2CppString* (*environment_get_stacktrace)();
 	bool (*CloseNPGameMon)();
 
 	void reopen_self() {
@@ -75,10 +77,10 @@ namespace
 			}
 			return ret;
 		}
-		else if (path == L"GameAssembly.dll"sv) {
-			auto ret = reinterpret_cast<decltype(LoadLibraryW)*>(load_library_w_orig)(path);
-			return ret;
-		}
+		// else if (path == L"GameAssembly.dll"sv) {
+		//	auto ret = reinterpret_cast<decltype(LoadLibraryW)*>(load_library_w_orig)(path);
+		//	return ret;
+		// }
 		else if (path == L"cri_ware_unity.dll"sv) {
 			path_game_assembly();
 		}
@@ -403,7 +405,6 @@ namespace
 
 	void* UITextMeshProUGUI_Awake_orig;
 	void UITextMeshProUGUI_Awake_hook(void* _this) {
-
 		static auto get_Text = reinterpret_cast<Il2CppString * (*)(void*)>(
 			il2cpp_symbols::get_method_pointer(
 				"ENTERPRISE.UI.dll", "ENTERPRISE.UI",
@@ -512,16 +513,196 @@ namespace
 		*/
 	}
 
-	void* UpdateModelResolutionSize_orig;
-	void UpdateModelResolutionSize_hook(void* _this, int w, int h, int msaaSamples) {
-		printf("UpdateModelResolutionSize: %d, %d, %d\n", w, h, msaaSamples);
-		return reinterpret_cast<decltype(UpdateModelResolutionSize_hook)*>(UpdateModelResolutionSize_orig)(_this, w, h, msaaSamples);
+	void* InvokeMoveNext_orig;
+	void InvokeMoveNext_hook(void* enumerator, void* returnValueAddress) {
+		MHotkey::start_hotkey(hotKey);
+		return reinterpret_cast<decltype(InvokeMoveNext_hook)*>(InvokeMoveNext_orig)(enumerator, returnValueAddress);
+	}
+
+	void* Live_SetEnableDepthOfField_orig;
+	void Live_SetEnableDepthOfField_hook(void* _this, bool isEnable) {
+		if (g_enable_free_camera) {
+			isEnable = false;
+		}
+		return reinterpret_cast<decltype(Live_SetEnableDepthOfField_hook)*>(Live_SetEnableDepthOfField_orig)(_this, isEnable);
+	}
+
+	void* Live_Update_orig;
+	void Live_Update_hook(void* _this) {
+		reinterpret_cast<decltype(Live_Update_hook)*>(Live_Update_orig)(_this);
+		if (g_enable_free_camera) {
+			Live_SetEnableDepthOfField_hook(_this, false);
+		}
+	}
+
+	void* CriWareErrorHandler_HandleMessage_orig;
+	void CriWareErrorHandler_HandleMessage_hook(void* _this, Il2CppString* msg) {
+		// wprintf(L"CriWareErrorHandler_HandleMessage: %ls\n%ls\n\n", msg->start_char, environment_get_stacktrace()->start_char);
+		environment_get_stacktrace();
+		return reinterpret_cast<decltype(CriWareErrorHandler_HandleMessage_hook)*>(CriWareErrorHandler_HandleMessage_orig)(_this, msg);
 	}
 
 	void* UnsafeLoadBytesFromKey_orig;
 	void* UnsafeLoadBytesFromKey_hook(void* _this, Il2CppString* tagName, Il2CppString* assetKey) {
 		//wprintf(L"UnsafeLoadBytesFromKey: tag: %ls, assetKey: %ls\n", tagName->start_char, assetKey->start_char);
 		return reinterpret_cast<decltype(UnsafeLoadBytesFromKey_hook)*>(UnsafeLoadBytesFromKey_orig)(_this, tagName, assetKey);
+	}
+
+	void* baseCameraTransform = nullptr;
+	void* baseCamera = nullptr;
+
+	void* Unity_set_pos_injected_orig;
+	void Unity_set_pos_injected_hook(void* _this, Vector3_t* ret) {
+		return reinterpret_cast<decltype(Unity_set_pos_injected_hook)*>(Unity_set_pos_injected_orig)(_this, ret);
+	}
+
+	void* Unity_get_pos_injected_orig;
+	void Unity_get_pos_injected_hook(void* _this, Vector3_t* data) {
+		reinterpret_cast<decltype(Unity_get_pos_injected_hook)*>(Unity_get_pos_injected_orig)(_this, data);
+
+		if (_this == baseCameraTransform) {
+			if (guiStarting) {
+				SCGUIData::sysCamPos.x = data->x;
+				SCGUIData::sysCamPos.y = data->y;
+				SCGUIData::sysCamPos.z = data->z;
+			}
+			if (g_enable_free_camera) {
+				SCCamera::baseCamera.updateOtherPos(data);
+				Unity_set_pos_injected_hook(_this, data);
+			}
+		}
+	}
+
+	void* Unity_set_fieldOfView_orig;
+	void Unity_set_fieldOfView_hook(void* _this, float single) {
+		return reinterpret_cast<decltype(Unity_set_fieldOfView_hook)*>(Unity_set_fieldOfView_orig)(_this, single);
+	}
+	void* Unity_get_fieldOfView_orig;
+	float Unity_get_fieldOfView_hook(void* _this) {
+		const auto origFov = reinterpret_cast<decltype(Unity_get_fieldOfView_hook)*>(Unity_get_fieldOfView_orig)(_this);
+		if (_this == baseCamera) {
+			if (guiStarting) {
+				SCGUIData::sysCamFov = origFov;
+			}
+			if (g_enable_free_camera) {
+				const auto fov = SCCamera::baseCamera.fov;
+				Unity_set_fieldOfView_hook(_this, fov);
+				return fov;
+			}
+		}
+		// printf("get_fov: %f\n", ret);
+		return origFov;
+	}
+
+	void* Unity_LookAt_Injected_orig;
+	void Unity_LookAt_Injected_hook(void* _this, Vector3_t* worldPosition, Vector3_t* worldUp) {
+		if (_this == baseCameraTransform) {
+			if (g_enable_free_camera) {
+				auto pos = SCCamera::baseCamera.getLookAt();
+				worldPosition->x = pos.x;
+				worldPosition->y = pos.y;
+				worldPosition->z = pos.z;
+			}
+		}
+		return reinterpret_cast<decltype(Unity_LookAt_Injected_hook)*>(Unity_LookAt_Injected_orig)(_this, worldPosition, worldUp);
+	}
+	void* Unity_set_nearClipPlane_orig;
+	void Unity_set_nearClipPlane_hook(void* _this, float single) {
+		if (_this == baseCamera) {
+			if (g_enable_free_camera) {
+				single = 0.001f;
+			}
+		}
+		return reinterpret_cast<decltype(Unity_set_nearClipPlane_hook)*>(Unity_set_nearClipPlane_orig)(_this, single);
+	}
+
+	void* Unity_get_nearClipPlane_orig;
+	float Unity_get_nearClipPlane_hook(void* _this) {
+		auto ret = reinterpret_cast<decltype(Unity_get_nearClipPlane_hook)*>(Unity_get_nearClipPlane_orig)(_this);
+		if (_this == baseCamera) {
+			if (g_enable_free_camera) {
+				ret = 0.001f;
+			}
+		}
+		return ret;
+	}
+	void* Unity_get_farClipPlane_orig;
+	float Unity_get_farClipPlane_hook(void* _this) {
+		auto ret = reinterpret_cast<decltype(Unity_get_farClipPlane_hook)*>(Unity_get_farClipPlane_orig)(_this);
+		if (_this == baseCamera) {
+			if (g_enable_free_camera) {
+				ret = 2500.0f;
+			}
+		}
+		return ret;
+	}
+
+	void* Unity_set_farClipPlane_orig;
+	void Unity_set_farClipPlane_hook(void* _this, float value) {
+		if(_this == baseCamera) {
+			if (g_enable_free_camera) {
+				value = 2500.0f;
+			}
+		}
+		reinterpret_cast<decltype(Unity_set_farClipPlane_hook)*>(Unity_set_farClipPlane_orig)(_this, value);
+	}
+
+	void* Unity_set_rotation_Injected_orig;
+	void Unity_set_rotation_Injected_hook(void* _this, Quaternion_t* value) {
+		return reinterpret_cast<decltype(Unity_set_rotation_Injected_hook)*>(Unity_set_rotation_Injected_orig)(_this, value);
+	}
+	void* Unity_get_rotation_Injected_orig;
+	void Unity_get_rotation_Injected_hook(void* _this, Quaternion_t* ret) {
+		reinterpret_cast<decltype(Unity_get_rotation_Injected_hook)*>(Unity_get_rotation_Injected_orig)(_this, ret);
+
+		if (_this == baseCameraTransform) {
+			if (guiStarting) {
+				SCGUIData::sysCamRot.w = ret->w;
+				SCGUIData::sysCamRot.x = ret->x;
+				SCGUIData::sysCamRot.y = ret->y;
+				SCGUIData::sysCamRot.z = ret->z;
+				SCGUIData::updateSysCamLookAt();
+			}
+			if (g_enable_free_camera) {
+				ret->w = 0;
+				ret->x = 0;
+				ret->y = 0;
+				ret->z = 0;
+				Unity_set_rotation_Injected_hook(_this, ret);
+
+				static auto Vector3_klass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Vector3");
+				Vector3_t* pos = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
+				Vector3_t* up = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
+				up->x = 0;
+				up->y = 1;
+				up->z = 0;
+				Unity_LookAt_Injected_hook(_this, pos, up);
+			}
+		}
+	}
+
+
+	void* get_baseCamera_orig;
+	void* get_baseCamera_hook(void* _this) {
+		// printf("get_baseCamera\n");
+		auto ret = reinterpret_cast<decltype(get_baseCamera_hook)*>(get_baseCamera_orig)(_this);  // UnityEngine.Camera
+
+		if (g_enable_free_camera || guiStarting) {
+			static auto GetComponent = reinterpret_cast<void* (*)(void*, Il2CppReflectionType*)>(
+				il2cpp_symbols::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine",
+					"Component", "GetComponent", 1));
+
+			static auto transClass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Transform");
+			static auto transType = il2cpp_type_get_object(il2cpp_class_get_type(transClass));
+
+			auto transform = GetComponent(ret, transType);  // UnityEngine.Transform
+			if (transform) {
+				baseCameraTransform = transform;
+				baseCamera = ret;
+			}
+		}
+
+		return ret;
 	}
 
 	void readDMMGameGuardData();
@@ -762,11 +943,6 @@ namespace
 			"Screen", "SetResolution", 3
 		);
 
-		auto UpdateModelResolutionSize_addr = il2cpp_symbols::get_method_pointer(
-			"Prism.Rendering.Runtime.dll", "PRISM.Rendering",
-			"RenderManager", "UpdateModelResolutionSize", 3
-		);
-
 		auto UnsafeLoadBytesFromKey_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.ResourceManagement.dll", "PRISM.ResourceManagement",
 			"ResourceLoader", "UnsafeLoadBytesFromKey", 2
@@ -783,6 +959,41 @@ namespace
 		auto LiveMVView_UpdateLyrics_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Live",
 			"LiveMVView", "UpdateLyrics", 1
+		);
+
+		auto get_baseCamera_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM",
+			"CameraController", "get_baseCamera", 0
+		);
+
+		auto Unity_get_pos_injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::get_position_Injected(UnityEngine.Vector3&)");
+		auto Unity_set_pos_injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::set_position_Injected(UnityEngine.Vector3&)");
+
+		auto Unity_get_fieldOfView_addr = il2cpp_resolve_icall("UnityEngine.Camera::get_fieldOfView()");
+		auto Unity_set_fieldOfView_addr = il2cpp_resolve_icall("UnityEngine.Camera::set_fieldOfView(System.Single)");
+		auto Unity_LookAt_Injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::Internal_LookAt_Injected(UnityEngine.Vector3&,UnityEngine.Vector3&)");
+		auto Unity_set_nearClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::set_nearClipPlane(System.Single)");
+		auto Unity_get_nearClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::get_nearClipPlane()");
+		auto Unity_get_farClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::get_farClipPlane()");
+		auto Unity_set_farClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::set_farClipPlane(System.Single)");
+		auto Unity_get_rotation_Injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::get_rotation_Injected(UnityEngine.Quaternion&)");
+		auto Unity_set_rotation_Injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::set_rotation_Injected(UnityEngine.Quaternion&)");
+
+		auto InvokeMoveNext_addr = il2cpp_symbols::get_method_pointer(
+			"UnityEngine.CoreModule.dll", "UnityEngine",
+			"SetupCoroutine", "InvokeMoveNext", 2
+		);
+		auto Live_SetEnableDepthOfField_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM",
+			"LiveScene", "SetEnableDepthOfField", 1
+		);
+		auto Live_Update_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM",
+			"LiveScene", "Update", 0
+		);
+		auto CriWareErrorHandler_HandleMessage_addr = il2cpp_symbols::get_method_pointer(
+			"CriMw.CriWare.Runtime.dll", "CriWare",
+			"CriWareErrorHandler", "HandleMessage", 1
 		);
 
 		auto GGIregualDetector_ShowPopup_addr = il2cpp_symbols::get_method_pointer(
@@ -815,13 +1026,29 @@ namespace
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(get_NeedsLocalization, "get_NeedsLocalization at %p");
 		ADD_HOOK(LiveMVView_UpdateLyrics, "LiveMVView_UpdateLyrics at %p");
+		ADD_HOOK(get_baseCamera, "get_baseCamera at %p");
+		ADD_HOOK(Unity_set_pos_injected, "Unity_set_pos_injected at %p");
+		ADD_HOOK(Unity_get_pos_injected, "Unity_get_pos_injected at %p");
+		ADD_HOOK(Unity_get_fieldOfView, "Unity_get_fieldOfView at %p");
+		ADD_HOOK(Unity_set_fieldOfView, "Unity_set_fieldOfView at %p");
+		ADD_HOOK(Unity_LookAt_Injected, "Unity_LookAt_Injected at %p");
+		ADD_HOOK(Unity_set_nearClipPlane, "Unity_set_nearClipPlane at %p");
+		ADD_HOOK(Unity_get_nearClipPlane, "Unity_get_nearClipPlane at %p");
+		ADD_HOOK(Unity_get_farClipPlane, "Unity_get_farClipPlane at %p");
+		ADD_HOOK(Unity_set_farClipPlane, "Unity_set_farClipPlane at %p");
+		ADD_HOOK(Unity_get_rotation_Injected, "Unity_get_rotation_Injected at %p");
+		ADD_HOOK(Unity_set_rotation_Injected, "Unity_set_rotation_Injected at %p");
+
 		ADD_HOOK(TMP_Text_set_text, "TMP_Text_set_text at %p");
 		ADD_HOOK(UITextMeshProUGUI_Awake, "UITextMeshProUGUI_Awake at %p");
 		ADD_HOOK(ScenarioManager_Init, "ScenarioManager_Init at %p");
 		ADD_HOOK(DataFile_GetBytes, "DataFile_GetBytes at %p");
 		ADD_HOOK(UnsafeLoadBytesFromKey, "UnsafeLoadBytesFromKey at %p");
 		ADD_HOOK(SetResolution, "SetResolution at %p");
-		ADD_HOOK(UpdateModelResolutionSize, "UpdateModelResolutionSize at %p");
+		ADD_HOOK(InvokeMoveNext, "InvokeMoveNext at %p");
+		ADD_HOOK(Live_SetEnableDepthOfField, "Live_SetEnableDepthOfField at %p");
+		ADD_HOOK(Live_Update, "Live_Update at %p");
+		ADD_HOOK(CriWareErrorHandler_HandleMessage, "CriWareErrorHandler_HandleMessage at %p");
 		ADD_HOOK(GGIregualDetector_ShowPopup, "GGIregualDetector_ShowPopup at %p");
 		ADD_HOOK(DMMGameGuard_NPGameMonCallback, "DMMGameGuard_NPGameMonCallback at %p");
 		// ADD_HOOK(DMMGameGuard_Setup, "DMMGameGuard_Setup at %p");
@@ -835,24 +1062,9 @@ namespace
 			startSCGUI();
 			// needPrintStack = !needPrintStack;
 		};
+		SCCamera::initCameraSettings();
 		g_on_hook_ready();
 	}
-}
-
-
-bool init_hook()
-{
-	if (mh_inited)
-		return false;
-
-	if (MH_Initialize() != MH_OK)
-		return false;
-
-	mh_inited = true;
-
-	MH_CreateHook(LoadLibraryW, load_library_w_hook, &load_library_w_orig);
-	MH_EnableHook(LoadLibraryW);
-	return true;
 }
 
 void uninit_hook()
@@ -862,4 +1074,24 @@ void uninit_hook()
 
 	MH_DisableHook(MH_ALL_HOOKS);
 	MH_Uninitialize();
+}
+
+bool init_hook()
+{
+	if (mh_inited)
+		return false;
+
+	if (MH_Initialize() != MH_OK)
+		return false;
+
+	g_on_close = []() {
+		uninit_hook();
+		TerminateProcess(GetCurrentProcess(), 0);
+	};
+
+	mh_inited = true;
+
+	MH_CreateHook(LoadLibraryW, load_library_w_hook, &load_library_w_orig);
+	MH_EnableHook(LoadLibraryW);
+	return true;
 }

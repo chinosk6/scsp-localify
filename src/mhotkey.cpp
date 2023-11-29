@@ -1,4 +1,4 @@
-#define _WIN32_WINNT 0x0400
+// #define _WIN32_WINNT 0x0400
 #pragma comment( lib, "user32.lib" )
 
 #include <windows.h>
@@ -7,8 +7,11 @@
 #include <thread>
 #include <format>
 #include <functional>
+#include <WinUser.h>
+#include "camera/camera.hpp"
 
 extern std::function<void()> on_hotKey_0;
+extern std::function<void()> g_on_close;
 
 namespace MHotkey{
     namespace {
@@ -59,8 +62,9 @@ namespace MHotkey{
         mKeyBoardRawCallBack = cbfunc;
     }
     
-    __declspec(dllexport) LRESULT CALLBACK KeyboardEvent(int nCode, WPARAM wParam, LPARAM lParam)
-    {
+
+    WNDPROC g_pfnOldWndProc = NULL;
+    LRESULT CALLBACK WndProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         DWORD SHIFT_key = 0;
         DWORD CTRL_key = 0;
         DWORD ALT_key = 0;
@@ -70,89 +74,115 @@ namespace MHotkey{
         DWORD LEFT_key = 0;
         DWORD RIGHT_key = 0;
 
+        switch (uMsg) {
+        case WM_INPUT: {
+            RAWINPUT rawInput;
+            UINT size = sizeof(RAWINPUT);
+            if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, &rawInput, &size, sizeof(RAWINPUTHEADER)) == size) {
 
-        if (nCode == HC_ACTION)
-        {
-            if ((wParam == WM_SYSKEYUP) || wParam == WM_KEYUP) {
-                KBDLLHOOKSTRUCT hooked_key = *((KBDLLHOOKSTRUCT*)lParam);
-                int key = hooked_key.vkCode;
-                if (mKeyBoardRawCallBack != nullptr) mKeyBoardRawCallBack(wParam, key);
-            }
-            else if ((wParam == WM_SYSKEYDOWN) || (wParam == WM_KEYDOWN)) {
-                KBDLLHOOKSTRUCT hooked_key = *((KBDLLHOOKSTRUCT*)lParam);
-                DWORD dwMsg = 1;
-                dwMsg += hooked_key.scanCode << 16;
-                dwMsg += hooked_key.flags << 24;
-                char lpszKeyName[1024] = { 0 };
-                lpszKeyName[0] = '[';
-
-                int i = GetKeyNameText(dwMsg, (lpszKeyName + 1), 0xFF) + 1;
-                lpszKeyName[i] = ']';
-
-                int key = hooked_key.vkCode;
-
-                if (mKeyBoardRawCallBack != nullptr) mKeyBoardRawCallBack(wParam, key);
-                SHIFT_key = GetAsyncKeyState(VK_SHIFT);
-                CTRL_key = GetAsyncKeyState(VK_CONTROL);
-                ALT_key = GetAsyncKeyState(VK_MENU);
-                SPACE_key = GetAsyncKeyState(VK_SPACE);
-
-                UP_key = GetAsyncKeyState(VK_UP);
-                DOWN_key = GetAsyncKeyState(VK_DOWN);
-                LEFT_key = GetAsyncKeyState(VK_LEFT);
-                RIGHT_key = GetAsyncKeyState(VK_RIGHT);
-
-                if (mKeyBoardCallBack != nullptr) {
-                    mKeyBoardCallBack(key, SHIFT_key, CTRL_key, ALT_key, SPACE_key, UP_key, DOWN_key, LEFT_key, RIGHT_key);
-                }
-
-                if (key >= 'A' && key <= 'Z')
+                if (rawInput.header.dwType == RIM_TYPEMOUSE)
                 {
-
-                    if (GetAsyncKeyState(VK_SHIFT) >= 0) key += 32;
-
-                    if (CTRL_key != 0 && key == hotk)
-                    {
-                        // fopenExternalPlugin(tlgport);
-                        printf("hotKey pressed.\n");
-                        if (on_hotKey_0) on_hotKey_0();
+                    switch (rawInput.data.mouse.ulButtons) {
+                    case 0: {  // move
+                        SCCamera::mouseMove(rawInput.data.mouse.lLastX, rawInput.data.mouse.lLastY, 3);
+                    }; break;
+                    case 4: {  // press
+                        SCCamera::mouseMove(0, 0, 1);
+                    }; break;
+                    case 8: {  // release
+                        SCCamera::mouseMove(0, 0, 2);
+                    }; break;
+                    default: break;
                     }
 
-                    SHIFT_key = 0;
-                    CTRL_key = 0;
-                    ALT_key = 0;
-                    SPACE_key = 0;
-                    DWORD UP_key = 0;
-                    DWORD DOWN_key = 0;
-                    DWORD LEFT_key = 0;
-                    DWORD RIGHT_key = 0;
+                    if (rawInput.data.mouse.usButtonFlags == RI_MOUSE_WHEEL) {
+                        if (rawInput.data.mouse.usButtonData == 120) {
+                            SCCamera::mouseMove(0, 1, 4);
+                        }
+                        else {
+                            SCCamera::mouseMove(0, -1, 4);
+                        }
+                    }
+
                 }
             }
+        }; break;
 
+        case WM_SYSKEYUP:
+        case WM_KEYUP: {
+            int key = wParam;
+            if (mKeyBoardRawCallBack != nullptr) mKeyBoardRawCallBack(uMsg, key);
+        }; break;
+
+        case WM_SYSKEYDOWN:
+        case WM_KEYDOWN: {
+            int key = wParam;
+
+            if (mKeyBoardRawCallBack != nullptr) mKeyBoardRawCallBack(uMsg, key);
+            SHIFT_key = GetAsyncKeyState(VK_SHIFT);
+            CTRL_key = GetAsyncKeyState(VK_CONTROL);
+            ALT_key = GetAsyncKeyState(VK_MENU);
+            SPACE_key = GetAsyncKeyState(VK_SPACE);
+
+            UP_key = GetAsyncKeyState(VK_UP);
+            DOWN_key = GetAsyncKeyState(VK_DOWN);
+            LEFT_key = GetAsyncKeyState(VK_LEFT);
+            RIGHT_key = GetAsyncKeyState(VK_RIGHT);
+
+            if (mKeyBoardCallBack != nullptr) {
+                mKeyBoardCallBack(key, SHIFT_key, CTRL_key, ALT_key, SPACE_key, UP_key, DOWN_key, LEFT_key, RIGHT_key);
+            }
+
+            if (key >= 'A' && key <= 'Z')
+            {
+
+                if (GetAsyncKeyState(VK_SHIFT) >= 0) key += 32;
+
+                if (CTRL_key != 0 && key == hotk)
+                {
+                    // fopenExternalPlugin(tlgport);
+                    printf("hotKey pressed.\n");
+                    if (on_hotKey_0) on_hotKey_0();
+                }
+
+                SHIFT_key = 0;
+                CTRL_key = 0;
+                ALT_key = 0;
+                SPACE_key = 0;
+                DWORD UP_key = 0;
+                DWORD DOWN_key = 0;
+                DWORD LEFT_key = 0;
+                DWORD RIGHT_key = 0;
+            }
+        }; break;
+        case WM_NCACTIVATE: {
+            if (!wParam) {
+                SCCamera::onKillFocus();
+                return FALSE;
+            }
+        }; break;
+        case WM_KILLFOCUS: {
+            SCCamera::onKillFocus();
+            return FALSE;
+        }; break;
+        case WM_CLOSE: {
+            if (g_on_close) g_on_close();
+        }; break;
+        default: break;
         }
-        return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
+
+        return CallWindowProc(g_pfnOldWndProc, hWnd, uMsg, wParam, lParam);
     }
 
-    void MessageLoop()
+    void InstallWndProcHook()
     {
-        MSG message;
-        while (GetMessage(&message, NULL, 0, 0))
-        {
-            TranslateMessage(&message);
-            DispatchMessage(&message);
-        }
+        g_pfnOldWndProc = (WNDPROC)GetWindowLongPtr(FindWindowW(L"UnityWndClass", L"imasscprism"), GWLP_WNDPROC);
+        SetWindowLongPtr(FindWindowW(L"UnityWndClass", L"imasscprism"), GWLP_WNDPROC, (LONG_PTR)WndProcCallback);
     }
 
-    DWORD WINAPI my_HotKey(LPVOID lpParm)
+    void UninstallWndProcHook(HWND hWnd)
     {
-        HINSTANCE hInstance = GetModuleHandle(NULL);
-        if (!hInstance) hInstance = LoadLibrary((LPCSTR)lpParm);
-        if (!hInstance) return 1;
-
-        hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)KeyboardEvent, hInstance, NULL);
-        MessageLoop();
-        UnhookWindowsHookEx(hKeyboardHook);
-        return 0;
+        SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)g_pfnOldWndProc);
     }
 
     bool get_uma_stat() {
@@ -181,13 +211,9 @@ namespace MHotkey{
         DWORD dwThread;
 
         hotKeyThreadStarted = true;
-        hThread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)my_HotKey, (LPVOID)"", NULL, &dwThread);
+        InstallWndProcHook();
 
-        // ShowWindow(FindWindowA("ConsoleWindowClass", NULL), false);
         return 1;
-
-        if (hThread) return WaitForSingleObject(hThread, INFINITE);
-        else return 1;
 
     }
 }

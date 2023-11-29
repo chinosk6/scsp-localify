@@ -10,5 +10,11 @@
     "extraAssetBundlePaths": [
         "scsp_localify/scsp-bundle"
     ],
-    "customFontPath": "assets/font/sbtphumminge-regular.ttf"
+    "customFontPath": "assets/font/sbtphumminge-regular.ttf",
+    "blockOutOfFocus": true,
+    "baseFreeCamera": {
+        "enable": false,
+        "moveStep": 50,
+        "mouseSpeed": 35
+    }
 }
