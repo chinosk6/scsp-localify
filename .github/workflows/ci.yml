@@ -14,6 +14,7 @@ on:
       - 'deps/**'
       - 'src/**'
       - 'utils/**'
+      - 'ci.yml'
   pull_request:
       paths:
       - '**.lua'
@@ -28,6 +29,7 @@ on:
       - 'deps/**'
       - 'src/**'
       - 'utils/**'
+      - 'ci.yml'
 jobs:
   build:
     runs-on: windows-2019
@@ -54,12 +56,12 @@ jobs:
           mkdir package
           cp build/bin/x64/Release/version.dll package/version.dll
           cp resources/scsp-config.json package/scsp-config.json
-          cp resources/schinese/scsp_localify package/scsp_localify
+          cp -r resources/schinese/scsp_localify package/scsp_localify
       - uses: actions/upload-artifact@v2
         with:
           name: scsp-localify
           path: package
       - uses: actions/upload-artifact@v2
         with:
-          name: scsp-localify-g-dll
+          name: scsp-localify-dll
           path: package/version.dll
