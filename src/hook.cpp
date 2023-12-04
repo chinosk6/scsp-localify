@@ -864,7 +864,6 @@ namespace
 		pathed = true;
 
 		printf("Trying to patch GameAssembly.dll...\n");
-		// il2cpp_symbols::init(module);
 
 		// load il2cpp exported functions
 		il2cpp_symbols::init(il2cpp_module);
