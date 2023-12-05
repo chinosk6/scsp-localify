@@ -69,7 +69,7 @@
 # 如何汉化：
 
 - 将 dumps 目录内的 Json 文件汉化后，放进 scsp_localify 目录即可。
-- 汉化仓库：[SCSPTranslationData](https://github.com/chinosk6/SCSPTranslationData) 欢迎各位贡献自己的翻译~
+- 汉化仓库：[SCSPTranslationData](https://github.com/ShinyGroup/SCSPTranslationData) 欢迎各位贡献自己的翻译~
 
 
 
