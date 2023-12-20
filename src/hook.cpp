@@ -402,6 +402,7 @@ namespace
 	void* (*TMP_FontAsset_CreateFontAsset)(void* font);
 	void (*TMP_Text_set_font)(void* _this, void* fontAsset);
 	void* (*TMP_Text_get_font)(void* _this);
+	void* lastUpdateFontPtr = nullptr;
 
 	void* UITextMeshProUGUI_Awake_orig;
 	void UITextMeshProUGUI_Awake_hook(void* _this) {
@@ -443,11 +444,19 @@ namespace
 			il2cpp_symbols::get_method_pointer("Unity.TextMeshPro.dll", "TMPro",
 				"TMP_FontAsset", "set_sourceFontFile", 1)
 			);
+		static auto UpdateFontAssetData = reinterpret_cast<void (*)(void*)>(
+			il2cpp_symbols::get_method_pointer("Unity.TextMeshPro.dll", "TMPro",
+				"TMP_FontAsset", "UpdateFontAssetData", 0)
+			);
 
 		auto replaceFont = getReplaceFont();
 		if (replaceFont) {
 			auto origFont = TMP_Text_get_font(_this);
 			set_sourceFontFile(origFont, replaceFont);
+			if (origFont != lastUpdateFontPtr) {
+				UpdateFontAssetData(origFont);
+				lastUpdateFontPtr = origFont;
+			}
 		}
 		reinterpret_cast<decltype(UITextMeshProUGUI_Awake_hook)*>(UITextMeshProUGUI_Awake_orig)(_this);
 	}
