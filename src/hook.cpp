@@ -402,7 +402,8 @@ namespace
 	void* (*TMP_FontAsset_CreateFontAsset)(void* font);
 	void (*TMP_Text_set_font)(void* _this, void* fontAsset);
 	void* (*TMP_Text_get_font)(void* _this);
-	void* lastUpdateFontPtr = nullptr;
+	// void* lastUpdateFontPtr = nullptr;
+	std::unordered_set<void*> updatedFontPtrs{};
 
 	void* UITextMeshProUGUI_Awake_orig;
 	void UITextMeshProUGUI_Awake_hook(void* _this) {
@@ -453,10 +454,15 @@ namespace
 		if (replaceFont) {
 			auto origFont = TMP_Text_get_font(_this);
 			set_sourceFontFile(origFont, replaceFont);
+			if (!updatedFontPtrs.contains(origFont)) {
+				updatedFontPtrs.emplace(origFont);
+				UpdateFontAssetData(origFont);
+			}
+			/*
 			if (origFont != lastUpdateFontPtr) {
 				UpdateFontAssetData(origFont);
 				lastUpdateFontPtr = origFont;
-			}
+			}*/
 		}
 		reinterpret_cast<decltype(UITextMeshProUGUI_Awake_hook)*>(UITextMeshProUGUI_Awake_orig)(_this);
 	}
