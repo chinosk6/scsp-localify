@@ -145,7 +145,7 @@ namespace SCLocal {
 		return false;
 	}
 
-	void dumpGenericText(const std::string& dumpStr, const char* fileName) {
+	void dumpGenericText(const std::string& dumpStr, const char* fileName, bool withOrigText = false) {
 		try {
 			const std::filesystem::path dumpBasePath("dumps");
 			const auto dumpFilePath = dumpBasePath / fileName;
@@ -162,8 +162,8 @@ namespace SCLocal {
 			std::ifstream dumpLrcFile(dumpFilePath);
 			std::string fileContent((std::istreambuf_iterator<char>(dumpLrcFile)), std::istreambuf_iterator<char>());
 			dumpLrcFile.close();
-			auto fileData = nlohmann::json::parse(fileContent);
-			fileData[dumpStr] = "";
+			auto fileData = nlohmann::ordered_json::parse(fileContent);
+			fileData[dumpStr] = withOrigText ? dumpStr : "";
 			const auto newStr = fileData.dump(4, 32, false);
 			std::ofstream dumpWriteLrcFile(dumpFilePath, std::ofstream::out);
 			dumpWriteLrcFile << newStr.c_str();
@@ -193,7 +193,7 @@ namespace SCLocal {
 		}
 		else {
 			if (g_dump_untrans_lyrics) {
-				dumpGenericText(lrcStr, "lyrics.json");
+				dumpGenericText(lrcStr, "lyrics.json", true);
 			}
 		}
 		return lrcStr;

@@ -384,7 +384,25 @@ namespace
 	void LiveMVView_UpdateLyrics_hook(void* _this, Il2CppString* text) {
 		const std::wstring origWstr(text->start_char);
 		const auto newText = SCLocal::getLyricsTrans(origWstr);
-		reinterpret_cast<decltype(LiveMVView_UpdateLyrics_hook)*>(LiveMVView_UpdateLyrics_orig)(_this, il2cpp_string_new(newText.c_str()));
+		return reinterpret_cast<decltype(LiveMVView_UpdateLyrics_hook)*>(LiveMVView_UpdateLyrics_orig)(_this, il2cpp_string_new(newText.c_str()));
+	}
+
+	std::pair<std::wstring, std::string> lastLrc{};
+	void* TimelineController_SetLyric_orig;
+	void TimelineController_SetLyric_hook(void* _this, Il2CppString* text) {
+		const std::wstring origWstr(text->start_char);
+		std::string newText = "";
+		if (!origWstr.empty()) {
+			if (lastLrc.first.compare(origWstr) != 0) {
+				newText = SCLocal::getLyricsTrans(origWstr);
+				lastLrc.first = origWstr;
+				lastLrc.second = newText;
+			}
+			else {
+				newText = lastLrc.second;
+			}
+		}
+		return reinterpret_cast<decltype(TimelineController_SetLyric_hook)*>(TimelineController_SetLyric_orig)(_this, il2cpp_string_new(newText.c_str()));
 	}
 
 	void* TMP_Text_set_text_orig;
@@ -1005,6 +1023,10 @@ namespace
 			"PRISM.Legacy.dll", "PRISM.Live",
 			"LiveMVView", "UpdateLyrics", 1
 		);
+		auto TimelineController_SetLyric_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM",
+			"TimelineController", "SetLyric", 1
+		);
 
 		auto get_baseCamera_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
@@ -1085,6 +1107,7 @@ namespace
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(get_NeedsLocalization, "get_NeedsLocalization at %p");
 		ADD_HOOK(LiveMVView_UpdateLyrics, "LiveMVView_UpdateLyrics at %p");
+		ADD_HOOK(TimelineController_SetLyric, "TimelineController_SetLyric at %p");
 		ADD_HOOK(get_baseCamera, "get_baseCamera at %p");
 		ADD_HOOK(Unity_set_pos_injected, "Unity_set_pos_injected at %p");
 		ADD_HOOK(Unity_get_pos_injected, "Unity_get_pos_injected at %p");
