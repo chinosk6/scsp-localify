@@ -18,6 +18,9 @@ namespace SCGUILoop {
 
 	void mainLoop() {
         if (ImGui::Begin("SC Plugin Config")) {
+            if (ImGui::Button("Reload Config And Translate Data")) {
+                g_reload_all_data();
+            }
             ImGui::Checkbox("Waiting Extract Text", &SCGUIData::needExtractText);
             ImGui::Checkbox("Live Allow Same Idol (Dangerous)", &g_allow_same_idol);
             ImGui::Checkbox("Live Allow Use Try On Costume (Dangerous)", &g_allow_use_tryon_costume);

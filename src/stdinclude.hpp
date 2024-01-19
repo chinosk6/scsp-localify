@@ -45,6 +45,7 @@
 #include "camera/camera.hpp"
 
 
+extern std::function<void()> g_reload_all_data;
 extern bool g_enable_plugin;
 extern int g_max_fps;
 extern int g_vsync_count;

@@ -181,6 +181,7 @@ void reload_all_data() {
 }
 
 extern std::function<void()> g_on_hook_ready;
+std::function<void()> g_reload_all_data = reload_all_data;
 
 int __stdcall DllMain(HINSTANCE dllModule, DWORD reason, LPVOID)
 {
