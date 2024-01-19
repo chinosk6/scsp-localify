@@ -59,3 +59,5 @@ extern char hotKey;
 extern bool g_enable_free_camera;
 extern bool g_block_out_of_focus;
 extern float g_free_camera_mouse_speed;
+extern bool g_allow_use_tryon_costume;
+extern bool g_allow_same_idol;

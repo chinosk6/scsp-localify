@@ -19,6 +19,8 @@ namespace SCGUILoop {
 	void mainLoop() {
         if (ImGui::Begin("SC Plugin Config")) {
             ImGui::Checkbox("Waiting Extract Text", &SCGUIData::needExtractText);
+            ImGui::Checkbox("Live Allow Same Idol (Dangerous)", &g_allow_same_idol);
+            ImGui::Checkbox("Live Allow Use Try On Costume (Dangerous)", &g_allow_use_tryon_costume);
 
             if (ImGui::CollapsingHeader("Resolution Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 if (ImGui::Button("720P")) {

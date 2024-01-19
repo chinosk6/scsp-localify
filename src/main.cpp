@@ -36,6 +36,8 @@ char hotKey = 'u';
 bool g_enable_free_camera = false;
 bool g_block_out_of_focus = false;
 float g_free_camera_mouse_speed = 35;
+bool g_allow_use_tryon_costume = false;
+bool g_allow_same_idol = false;
 
 std::filesystem::path g_localify_base("scsp_localify");
 constexpr const char ConfigJson[] = "scsp-config.json";
@@ -153,6 +155,13 @@ namespace
 						g_free_camera_mouse_speed = freeCamConfig["mouseSpeed"].GetFloat();
 					}
 				}
+			}
+
+			if (document.HasMember("allowUseTryOnCostume")) {
+				g_allow_use_tryon_costume = document["allowUseTryOnCostume"].GetBool();
+			}
+			if (document.HasMember("allowSameIdol")) {
+				g_allow_same_idol = document["allowSameIdol"].GetBool();
 			}
 			
 		}

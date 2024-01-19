@@ -550,6 +550,37 @@ namespace
 		}
 	}
 
+	bool isCancelTryOn = false;
+	void* LiveCostumeChangeView_setTryOnMode_orig;
+	void LiveCostumeChangeView_setTryOnMode_hook(void* _this, void* idol, bool isTryOn) {
+		if (!isTryOn) isCancelTryOn = true;
+		reinterpret_cast<decltype(LiveCostumeChangeView_setTryOnMode_hook)*>(LiveCostumeChangeView_setTryOnMode_orig)(_this, idol, isTryOn);
+		isCancelTryOn = false;
+	}
+
+	void* LiveCostumeChangeView_setIdolCostume_orig;
+	void LiveCostumeChangeView_setIdolCostume_hook(void* _this, void* idol, int category, int costumeId) {
+		if (g_allow_use_tryon_costume) {
+			static auto iidol_klass = il2cpp_symbols::get_class_from_instance(idol);
+			static auto get_CharacterId_mtd = il2cpp_class_get_method_from_name(iidol_klass, "get_CharacterId", 0);
+			if (get_CharacterId_mtd) {
+				const auto idolId = reinterpret_cast<int (*)(void*)>(get_CharacterId_mtd->methodPointer)(idol);
+				printf("LiveCostumeChangeView_setIdolCostume idol: %d, category: %d, costumeId: %d\n", idolId, category, costumeId);
+			}
+			if (isCancelTryOn) return;
+		}
+
+		return reinterpret_cast<decltype(LiveCostumeChangeView_setIdolCostume_hook)*>(LiveCostumeChangeView_setIdolCostume_orig)(_this, idol, category, costumeId);
+	}
+
+	void* LiveMVUnit_GetMemberChangeRequestData_orig;
+	void* LiveMVUnit_GetMemberChangeRequestData_hook(void* _this, int position, void* idol, int exchangePosition) {
+		if (g_allow_same_idol) {
+			exchangePosition = -1;
+		}
+		return reinterpret_cast<decltype(LiveMVUnit_GetMemberChangeRequestData_hook)*>(LiveMVUnit_GetMemberChangeRequestData_orig)(_this, position, idol, exchangePosition);
+	}
+
 	void* CriWareErrorHandler_HandleMessage_orig;
 	void CriWareErrorHandler_HandleMessage_hook(void* _this, Il2CppString* msg) {
 		// wprintf(L"CriWareErrorHandler_HandleMessage: %ls\n%ls\n\n", msg->start_char, environment_get_stacktrace()->start_char);
@@ -1005,6 +1036,20 @@ namespace
 			"PRISM.Legacy.dll", "PRISM",
 			"LiveScene", "Update", 0
 		);
+		auto LiveCostumeChangeView_setTryOnMode_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Interactions.Live.dll", "PRISM.Interactions",
+			"LiveCostumeChangeView", "_setTryOnMode", 2
+		);
+		auto LiveCostumeChangeView_setIdolCostume_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Interactions.Live.dll", "PRISM.Interactions",
+			"LiveCostumeChangeView", "_setIdolCostume", 3
+		);
+
+		auto LiveMVUnit_GetMemberChangeRequestData_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM.Live",
+			"LiveMVUnit", "GetMemberChangeRequestData", 3
+		);
+
 		auto CriWareErrorHandler_HandleMessage_addr = il2cpp_symbols::get_method_pointer(
 			"CriMw.CriWare.Runtime.dll", "CriWare",
 			"CriWareErrorHandler", "HandleMessage", 1
@@ -1062,6 +1107,9 @@ namespace
 		ADD_HOOK(InvokeMoveNext, "InvokeMoveNext at %p");
 		ADD_HOOK(Live_SetEnableDepthOfField, "Live_SetEnableDepthOfField at %p");
 		ADD_HOOK(Live_Update, "Live_Update at %p");
+		ADD_HOOK(LiveCostumeChangeView_setTryOnMode, "LiveCostumeChangeView_setTryOnMode at %p");
+		ADD_HOOK(LiveCostumeChangeView_setIdolCostume, "LiveCostumeChangeView_setIdolCostume at %p");
+		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
 		ADD_HOOK(CriWareErrorHandler_HandleMessage, "CriWareErrorHandler_HandleMessage at %p");
 		ADD_HOOK(GGIregualDetector_ShowPopup, "GGIregualDetector_ShowPopup at %p");
 		ADD_HOOK(DMMGameGuard_NPGameMonCallback, "DMMGameGuard_NPGameMonCallback at %p");
