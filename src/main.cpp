@@ -38,6 +38,7 @@ bool g_block_out_of_focus = false;
 float g_free_camera_mouse_speed = 35;
 bool g_allow_use_tryon_costume = false;
 bool g_allow_same_idol = false;
+bool g_unlock_all_dress = false;
 
 std::filesystem::path g_localify_base("scsp_localify");
 constexpr const char ConfigJson[] = "scsp-config.json";
@@ -162,6 +163,9 @@ namespace
 			}
 			if (document.HasMember("allowSameIdol")) {
 				g_allow_same_idol = document["allowSameIdol"].GetBool();
+			}
+			if (document.HasMember("unlockAllDress")) {
+				g_unlock_all_dress = document["unlockAllDress"].GetBool();
 			}
 			
 		}

@@ -27,6 +27,10 @@ il2cpp_class_from_type_t il2cpp_class_from_type;
 il2cpp_runtime_class_init_t il2cpp_runtime_class_init;
 il2cpp_runtime_invoke_t il2cpp_runtime_invoke;
 il2cpp_class_get_static_field_data_t il2cpp_class_get_static_field_data;
+il2cpp_field_get_value_t il2cpp_field_get_value;
+il2cpp_field_get_value_object_t il2cpp_field_get_value_object;
+il2cpp_class_from_system_type_t il2cpp_class_from_system_type;
+il2cpp_get_corlib_t il2cpp_get_corlib;
 
 char* il2cpp_array_addr_with_size(void* array, int32_t size, uintptr_t idx)
 {
@@ -68,6 +72,10 @@ namespace il2cpp_symbols
 		RESOLVE_IMPORT(il2cpp_runtime_class_init);
 		RESOLVE_IMPORT(il2cpp_runtime_invoke);
 		RESOLVE_IMPORT(il2cpp_class_get_static_field_data);
+		RESOLVE_IMPORT(il2cpp_field_get_value);
+		RESOLVE_IMPORT(il2cpp_field_get_value_object);
+		RESOLVE_IMPORT(il2cpp_class_from_system_type);
+		RESOLVE_IMPORT(il2cpp_get_corlib);
 
 		il2cpp_domain = il2cpp_domain_get();
 	}

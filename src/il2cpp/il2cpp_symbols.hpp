@@ -271,6 +271,10 @@ typedef void* (*il2cpp_class_from_type_t)(const Il2CppType* type);
 typedef void (*il2cpp_runtime_class_init_t)(void* klass);
 typedef void* (*il2cpp_runtime_invoke_t)(MethodInfo* method, void* obj, void** params, Il2CppObject** exc);
 typedef void* (*il2cpp_class_get_static_field_data_t)(void* klass);
+typedef void (*il2cpp_field_get_value_t)(void* obj, void* field, void* value);
+typedef void* (*il2cpp_field_get_value_object_t)(void* field, void* obj);
+typedef void* (*il2cpp_class_from_system_type_t)(Il2CppReflectionType* type);
+typedef void* (*il2cpp_get_corlib_t)();
 
 // function defines
 extern il2cpp_string_new_utf16_t il2cpp_string_new_utf16;
@@ -300,6 +304,10 @@ extern il2cpp_class_from_type_t il2cpp_class_from_type;
 extern il2cpp_runtime_class_init_t il2cpp_runtime_class_init;
 extern il2cpp_runtime_invoke_t il2cpp_runtime_invoke;
 extern il2cpp_class_get_static_field_data_t il2cpp_class_get_static_field_data;
+extern il2cpp_field_get_value_t il2cpp_field_get_value;
+extern il2cpp_field_get_value_object_t il2cpp_field_get_value_object;
+extern il2cpp_class_from_system_type_t il2cpp_class_from_system_type;
+extern il2cpp_get_corlib_t il2cpp_get_corlib;
 
 char* il2cpp_array_addr_with_size(void* arr, int32_t size, uintptr_t idx);
 

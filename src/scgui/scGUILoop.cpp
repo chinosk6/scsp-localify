@@ -3,6 +3,7 @@
 #include "scgui/scGUIData.hpp"
 
 extern void* SetResolution_orig;
+extern std::vector<std::pair<std::pair<int, int>, int>> replaceDressResIds;
 
 
 #define INPUT_AND_SLIDER_FLOAT(label, data, min, max) \
@@ -12,9 +13,37 @@ extern void* SetResolution_orig;
     ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - inputFloatWidth - 1.0f);\
     ImGui::SliderFloat(label, data, min, max)
 
+#define HELP_TOOLTIP(label, text) \
+    ImGui::TextDisabled(label); \
+    if (ImGui::IsItemHovered()) { \
+        ImGui::BeginTooltip(); \
+        ImGui::Text(text); \
+        ImGui::EndTooltip(); \
+    }
 
 namespace SCGUILoop {
     static float inputFloatWidth = 50.0f;
+
+    // 没用的
+    void dressReplaceSetLoop() {
+        if (ImGui::Begin("SC Dress Replace")) {
+            for (size_t i = 0; i < replaceDressResIds.size(); ++i) {
+                auto& dressData = replaceDressResIds[i];
+
+                ImGui::InputInt2(("CharaId, DressId##CharacterDressID" + std::to_string(i)).c_str(), &dressData.first.first);
+                ImGui::InputInt(("RepalceResId##ReplaceResID" + std::to_string(i)).c_str(), &dressData.second);
+
+                if (ImGui::Button(("Remove##" + std::to_string(i)).c_str())) {
+                    replaceDressResIds.erase(replaceDressResIds.begin() + i);
+                    --i;
+                }
+            }
+            if (ImGui::Button("Add")) {
+                replaceDressResIds.push_back({ {-1, -1}, -1 });
+            }
+        }
+        ImGui::End();
+    }
 
 	void mainLoop() {
         if (ImGui::Begin("SC Plugin Config")) {
@@ -22,8 +51,18 @@ namespace SCGUILoop {
                 g_reload_all_data();
             }
             ImGui::Checkbox("Waiting Extract Text", &SCGUIData::needExtractText);
+
+            ImGui::Checkbox("Live Unlock All Dress", &g_unlock_all_dress);
+            ImGui::SameLine();
+            HELP_TOOLTIP("(?)", "实现服（接）装（头）自（霸）由（王）！\n此模式下可以在 Live 中自由选择任何人的服装。\n此模式下，修改服装后可以不点击确定，直接返回也能生效\n若点击了确定，修改后的服装会被重置为默认服装。\n（此模式上传的编组数据为默认初始服装，无危险性）")
+
             ImGui::Checkbox("Live Allow Same Idol (Dangerous)", &g_allow_same_idol);
+            ImGui::SameLine();
+            HELP_TOOLTIP("(?)", "影分身术！\n允许在 Live 中选择同一人。\n（此模式的编组数据会上传，请小心你的号）")
+
             ImGui::Checkbox("Live Allow Use Try On Costume (Dangerous)", &g_allow_use_tryon_costume);
+            ImGui::SameLine();
+            HELP_TOOLTIP("(?)", "偶像的事，怎么能叫抢呢（\n切换到试穿模式换装后，切回普通模式，仍旧锁定试穿模式的衣服\n（此模式的编组数据会上传，请小心你的号）")
 
             if (ImGui::CollapsingHeader("Resolution Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 if (ImGui::Button("720P")) {
@@ -80,5 +119,6 @@ namespace SCGUILoop {
 
         }
         ImGui::End();
+        // dressReplaceSetLoop();
 	}
 }

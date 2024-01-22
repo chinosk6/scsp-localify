@@ -14,6 +14,7 @@ std::function<void()> g_on_hook_ready;
 std::function<void()> g_on_close;
 std::function<void()> on_hotKey_0;
 bool needPrintStack = false;
+std::vector<std::pair<std::pair<int, int>, int>> replaceDressResIds{};
 
 template<typename T, typename TF>
 void convertPtrType(T* cvtTarget, TF func_ptr) {
@@ -87,7 +88,6 @@ namespace
 
 		return reinterpret_cast<decltype(LoadLibraryW)*>(load_library_w_orig)(path);
 	}
-
 
 	void* (*Encoding_get_UTF8)();
 	Il2CppString* (*Encoding_GetString)(void* _this, void* bytes);
@@ -279,6 +279,21 @@ namespace
 			i++;
 		}
 		return dumpedCount;
+	}
+
+	void dumpByteArray(const std::wstring& tag, const std::wstring& name, void* bytes) {
+		static auto WriteAllBytes = reinterpret_cast<void (*)(Il2CppString*, void*)>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.IO",
+				"File", "WriteAllBytes", 2)
+			);
+
+		std::filesystem::path dumpPath = dumpBasePath / tag;
+		if (!std::filesystem::is_directory(dumpPath)) {
+			std::filesystem::create_directories(dumpPath);
+		}
+		std::filesystem::path dumpName = dumpPath / name;
+		WriteAllBytes(il2cpp_symbols::NewWStr(dumpName.c_str()), bytes);
+
 	}
 
 	std::string localizationDataCache("{}");
@@ -591,6 +606,160 @@ namespace
 		return reinterpret_cast<decltype(LiveCostumeChangeView_setIdolCostume_hook)*>(LiveCostumeChangeView_setIdolCostume_orig)(_this, idol, category, costumeId);
 	}
 
+	void* cacheDress = NULL;
+	void* LiveCostumeChangeModel_GetDress_orig;
+	void* LiveCostumeChangeModel_GetDress_hook(void* _this, int id) {  // 替换服装 ResID
+		auto ret = reinterpret_cast<decltype(LiveCostumeChangeModel_GetDress_hook)*>(LiveCostumeChangeModel_GetDress_orig)(_this, id);
+		if (!g_unlock_all_dress) return ret;
+
+		static auto get_Idol = reinterpret_cast<void* (*)(void*)>(il2cpp_symbols::get_method_pointer(
+				"PRISM.Adapters.dll", "PRISM.Adapters",
+				"LiveCostumeChangeModel", "get_Idol", 0
+			));
+		static auto CostumeStatus_klass = il2cpp_symbols::get_class_from_instance(ret);
+		static auto resourceId_field = il2cpp_class_get_field_from_name(CostumeStatus_klass, "resourceId_");
+		static auto mstCostumeId_field = il2cpp_class_get_field_from_name(CostumeStatus_klass, "mstCostumeId_");
+		static auto mstCharacterInfoId_field = il2cpp_class_get_field_from_name(CostumeStatus_klass, "mstCharacterInfoId_");
+
+		if (get_Idol) {
+			const auto idol = get_Idol(_this);
+			static auto iidol_klass = il2cpp_symbols::get_class_from_instance(idol);
+			static auto get_CharacterId_mtd = il2cpp_class_get_method_from_name(iidol_klass, "get_CharacterId", 0);
+			if (get_CharacterId_mtd) {
+				const auto idolId = reinterpret_cast<int (*)(void*)>(get_CharacterId_mtd->methodPointer)(idol);
+				const auto resId = il2cpp_symbols::read_field<int>(ret, resourceId_field);
+				printf("GetDress idol: %d, dressId: %d, ResId: %d, this at %p\n", idolId, id, resId, _this);
+
+				const auto replaceDressId = 100001 + idolId * 1000;
+
+				const auto replaceResId = id == replaceDressId ? 1 : il2cpp_symbols::read_field<int>(ret, resourceId_field);
+				auto newRet = reinterpret_cast<decltype(LiveCostumeChangeModel_GetDress_hook)*>(LiveCostumeChangeModel_GetDress_orig)(_this, replaceDressId);
+				il2cpp_symbols::write_field(newRet, resourceId_field, replaceResId);
+				return newRet;
+			}
+		}
+
+		return ret;
+	}
+
+	bool confirmationingModel = false;
+	std::map<int, void*> cacheDressMap{};
+	MethodInfo* dic_int_ICostumeStatus_add_func = NULL;
+
+	void* LiveCostumeChangeModel_ctor_orig;
+	void LiveCostumeChangeModel_ctor_hook(void* _this, void* reply, void* idol, int costumeType) {  // 添加服装到 dressDic
+		/*
+		static auto iidol_klass = il2cpp_symbols::get_class_from_instance(idol);
+		static auto get_CharacterId_mtd = il2cpp_class_get_method_from_name(iidol_klass, "get_CharacterId", 0);
+		if (get_CharacterId_mtd) {
+			const auto idolId = reinterpret_cast<int (*)(void*)>(get_CharacterId_mtd->methodPointer)(idol);
+			printf("LiveCostumeChangeModel_ctor idolId: %d, costumeType: %d\n", idolId, costumeType);
+		}
+		*/
+		reinterpret_cast<decltype(LiveCostumeChangeModel_ctor_hook)*>(LiveCostumeChangeModel_ctor_orig)(_this, reply, idol, costumeType);
+
+		if (g_unlock_all_dress && (costumeType == 1)) {
+			static auto LiveCostumeChangeModel_klass = il2cpp_symbols::get_class("PRISM.Adapters.dll", "PRISM.Adapters", "LiveCostumeChangeModel");
+			static auto dressDic_field = il2cpp_class_get_field_from_name(LiveCostumeChangeModel_klass, "dressDic");
+
+			auto dressDic = il2cpp_field_get_value_object(dressDic_field, _this);
+
+			auto assemblyLoad = reinterpret_cast<void* (*)(Il2CppString*)>(
+				il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Reflection",
+					"Assembly", "Load", 1)
+				);
+			auto assemblyGetType = reinterpret_cast<Il2CppReflectionType * (*)(void*, Il2CppString*)>(
+				il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Reflection",
+					"Assembly", "GetType", 1)
+				);
+
+			// typedef void* (*Assembly_Load_ftn)(Il2CppString*);
+			// typedef Il2CppReflectionType* (*Assembly_GetType_ftn)(void*, Il2CppString*);
+			auto reflectionAssembly = assemblyLoad(il2cpp_string_new("mscorlib"));
+			auto reflectionType = assemblyGetType(
+				reflectionAssembly, il2cpp_string_new("System.Collections.Generic.Dictionary`2[System.Int32, PRISM.Module.Networking.ICostumeStatus]"));
+			auto dic_klass = il2cpp_class_from_system_type(reflectionType);
+
+			auto get_Item_method = il2cpp_class_get_method_from_name(dic_klass, "get_Item", 1);
+			auto Add_method = il2cpp_class_get_method_from_name(dic_klass, "Add", 2);
+			auto ContainsKey_method = il2cpp_class_get_method_from_name(dic_klass, "ContainsKey", 1);
+
+			auto get_Item = reinterpret_cast<void* (*)(void*, int, void* mtd)>(get_Item_method->methodPointer);
+			auto dic_Add = reinterpret_cast<void (*)(void*, int, void* v, void* mtd)>(Add_method->methodPointer);
+			auto ContainsKey = reinterpret_cast<bool (*)(void*, int, void* mtd)>(ContainsKey_method->methodPointer);
+
+			for (auto& i : cacheDressMap) {
+				const auto currId = i.first;
+				if (!ContainsKey(dressDic, currId, ContainsKey_method)) {
+					auto& costumeStat = i.second;
+					// printf("add: %p\n", costumeStat);
+					dic_Add(dressDic, currId, costumeStat, Add_method);
+				}
+			}
+
+		}
+		
+	}
+
+	void checkAndAddCostume(void* _this, int key, void* value, MethodInfo* method) {
+		static auto CostumeStatus_klass = il2cpp_symbols::get_class("PRISM.Module.Networking.dll",
+			"PRISM.Module.Networking.Stub.Status", "CostumeStatus");
+		auto value_klass = il2cpp_symbols::get_class_from_instance(value);
+		/*
+		static auto assemblyLoad = reinterpret_cast<void* (*)(Il2CppString*)>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Reflection",
+				"Assembly", "Load", 1)
+			);
+		static auto assemblyGetType = reinterpret_cast<Il2CppReflectionType * (*)(void*, Il2CppString*)>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Reflection",
+				"Assembly", "GetType", 1)
+			);
+
+		static auto reflectionAssembly = assemblyLoad(il2cpp_string_new("mscorlib"));
+		static auto reflectionType = assemblyGetType(
+			reflectionAssembly, il2cpp_string_new("System.Collections.Generic.Dictionary`2[System.Int32, PRISM.Module.Networking.ICostumeStatus]"));
+		static auto dic_klass = il2cpp_class_from_system_type(reflectionType);
+		static auto ContainsKey_method = il2cpp_class_get_method_from_name(dic_klass, "ContainsKey", 1);
+		static auto set_Item_method = il2cpp_class_get_method_from_name(dic_klass, "set_Item", 2);
+
+		static auto set_Item = reinterpret_cast<void* (*)(void*, int, void*, void* mtd)>(set_Item_method->methodPointer);
+		static auto ContainsKey = reinterpret_cast<bool (*)(void*, int, void* mtd)>(ContainsKey_method->methodPointer);
+		*/
+		if (value_klass == CostumeStatus_klass) {
+			// wprintf(L"dic_int_ICostumeStatus_add: this: %p, key: %d\n", _this, key);
+			if (!dic_int_ICostumeStatus_add_func) dic_int_ICostumeStatus_add_func = method;
+
+			static auto CostumeStatus_klass = il2cpp_symbols::get_class_from_instance(value);  // 解锁服装
+			static auto isUnlocked_field = il2cpp_class_get_field_from_name(CostumeStatus_klass, "isUnlocked_");
+			il2cpp_symbols::write_field(value, isUnlocked_field, true);
+
+			cacheDressMap.emplace(key, value);
+		}
+	}
+
+	void* dic_int_ICostumeStatus_add_orig;
+	void dic_int_ICostumeStatus_add_hook(void* _this, int key, void* value, MethodInfo* method) {  // 添加服装到缓存表
+		if (g_unlock_all_dress && confirmationingModel) checkAndAddCostume(_this, key, value, method);
+		return reinterpret_cast<decltype(dic_int_ICostumeStatus_add_hook)*>(dic_int_ICostumeStatus_add_orig)(_this, key, value, method);
+	}
+
+	void* LiveMVUnitConfirmationModel_ctor_orig;
+	void LiveMVUnitConfirmationModel_ctor_hook(void* _this, void* musicData, void* mvUnitListReply, void* costumeListReply) {
+		confirmationingModel = true;
+		cacheDressMap.clear();
+
+		reinterpret_cast<decltype(LiveMVUnitConfirmationModel_ctor_hook)*>(LiveMVUnitConfirmationModel_ctor_orig)(_this, musicData, mvUnitListReply, costumeListReply);
+		confirmationingModel = false;
+		return;
+	}
+
+	void* PopupSystem_ShowPopup_orig;
+	// 调试用，必要时 HOOK
+	void* PopupSystem_ShowPopup_hook(void* _this, void* iObject, int iPriority, bool isFullSize) {
+		wprintf(L"PopupSystem_ShowPopup_hook:\n%ls\n\n", environment_get_stacktrace()->start_char);
+		return reinterpret_cast<decltype(PopupSystem_ShowPopup_hook)*>(PopupSystem_ShowPopup_orig)(_this, iObject, iPriority, isFullSize);
+	}
+
 	void* LiveMVUnit_GetMemberChangeRequestData_orig;
 	void* LiveMVUnit_GetMemberChangeRequestData_hook(void* _this, int position, void* idol, int exchangePosition) {
 		if (g_allow_same_idol) {
@@ -608,8 +777,9 @@ namespace
 
 	void* UnsafeLoadBytesFromKey_orig;
 	void* UnsafeLoadBytesFromKey_hook(void* _this, Il2CppString* tagName, Il2CppString* assetKey) {
-		//wprintf(L"UnsafeLoadBytesFromKey: tag: %ls, assetKey: %ls\n", tagName->start_char, assetKey->start_char);
-		return reinterpret_cast<decltype(UnsafeLoadBytesFromKey_hook)*>(UnsafeLoadBytesFromKey_orig)(_this, tagName, assetKey);
+		auto ret = reinterpret_cast<decltype(UnsafeLoadBytesFromKey_hook)*>(UnsafeLoadBytesFromKey_orig)(_this, tagName, assetKey);
+		// wprintf(L"UnsafeLoadBytesFromKey: tag: %ls, assetKey: %ls\n", tagName->start_char, assetKey->start_char);
+		return ret;
 	}
 
 	void* baseCameraTransform = nullptr;
@@ -1066,10 +1236,23 @@ namespace
 			"PRISM.Interactions.Live.dll", "PRISM.Interactions",
 			"LiveCostumeChangeView", "_setIdolCostume", 3
 		);
+		auto LiveCostumeChangeModel_GetDress_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Adapters.dll", "PRISM.Adapters",
+			"LiveCostumeChangeModel", "GetDress", 1
+		);
+		auto LiveCostumeChangeModel_ctor_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Adapters.dll", "PRISM.Adapters",
+			"LiveCostumeChangeModel", ".ctor", 3
+		);
 
 		auto LiveMVUnit_GetMemberChangeRequestData_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Live",
 			"LiveMVUnit", "GetMemberChangeRequestData", 3
+		);
+
+		auto PopupSystem_ShowPopup_addr = il2cpp_symbols::get_method_pointer(
+			"ENTERPRISE.UI.dll", "ENTERPRISE.Popup",
+			"PopupSystem", "ShowPopup", 3
 		);
 
 		auto CriWareErrorHandler_HandleMessage_addr = il2cpp_symbols::get_method_pointer(
@@ -1103,6 +1286,26 @@ namespace
 		auto set_vsync_count_addr = il2cpp_resolve_icall("UnityEngine.QualitySettings::set_vSyncCount(System.Int32)");
 		auto Unity_Quit_addr = il2cpp_resolve_icall("UnityEngine.Application::Quit(System.Int32)");
 
+
+		auto assemblyLoad = reinterpret_cast<void* (*)(Il2CppString*)>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Reflection",
+				"Assembly", "Load", 1)
+			);
+		auto assemblyGetType = reinterpret_cast<Il2CppReflectionType * (*)(void*, Il2CppString*)>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Reflection",
+				"Assembly", "GetType", 1)
+			);
+		auto reflectionAssembly = assemblyLoad(il2cpp_string_new("mscorlib"));
+		auto reflectionType = assemblyGetType(
+			reflectionAssembly, il2cpp_string_new("System.Collections.Generic.Dictionary`2[System.Int32, PRISM.Module.Networking.ICostumeStatus]"));
+		auto dic_klass = il2cpp_class_from_system_type(reflectionType);
+		auto dic_int_ICostumeStatus_add_addr = il2cpp_class_get_method_from_name(dic_klass, "Add", 2)->methodPointer;
+
+		auto LiveMVUnitConfirmationModel_ctor_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM.Live",
+			"LiveMVUnitConfirmationModel", ".ctor", 3
+		);
+
 #pragma endregion
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(get_NeedsLocalization, "get_NeedsLocalization at %p");
@@ -1132,6 +1335,11 @@ namespace
 		ADD_HOOK(Live_Update, "Live_Update at %p");
 		ADD_HOOK(LiveCostumeChangeView_setTryOnMode, "LiveCostumeChangeView_setTryOnMode at %p");
 		ADD_HOOK(LiveCostumeChangeView_setIdolCostume, "LiveCostumeChangeView_setIdolCostume at %p");
+		ADD_HOOK(LiveCostumeChangeModel_GetDress, "LiveCostumeChangeModel_GetDress at %p");
+		ADD_HOOK(LiveCostumeChangeModel_ctor, "LiveCostumeChangeModel_ctor at %p");
+		ADD_HOOK(dic_int_ICostumeStatus_add, "dic_int_ICostumeStatus_add at %p");
+		ADD_HOOK(LiveMVUnitConfirmationModel_ctor, "LiveMVUnitConfirmationModel_ctor at %p");
+		// ADD_HOOK(PopupSystem_ShowPopup, "PopupSystem_ShowPopup at %p");
 		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
 		ADD_HOOK(CriWareErrorHandler_HandleMessage, "CriWareErrorHandler_HandleMessage at %p");
 		ADD_HOOK(GGIregualDetector_ShowPopup, "GGIregualDetector_ShowPopup at %p");
