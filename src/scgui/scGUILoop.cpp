@@ -55,6 +55,12 @@ namespace SCGUILoop {
             ImGui::Checkbox("Live Unlock All Dress", &g_unlock_all_dress);
             ImGui::SameLine();
             HELP_TOOLTIP("(?)", "实现服（接）装（头）自（霸）由（王）！\n此模式下可以在 Live 中自由选择任何人的服装。\n此模式下，修改服装后可以不点击确定，直接返回也能生效\n若点击了确定，修改后的服装会被重置为默认服装。\n（此模式上传的编组数据为默认初始服装，无危险性）")
+            
+            if (g_unlock_all_dress) {
+                ImGui::Checkbox("Live Unlock All Headwear (Warning)", &g_unlock_all_headwear);
+                ImGui::SameLine();
+                HELP_TOOLTIP("(?)", "解锁 Live 头饰\n警告：\n若未解锁 头发/眼镜/耳环/面妆 等项目的第一个，换装对应项目时，可能会上传异常数据。")
+            }
 
             ImGui::Checkbox("Live Allow Same Idol (Dangerous)", &g_allow_same_idol);
             ImGui::SameLine();

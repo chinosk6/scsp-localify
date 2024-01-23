@@ -165,4 +165,19 @@ namespace il2cpp_symbols
 	{
 		return il2cpp_string_new_utf16(str.data(), str.size());
 	}
+
+	void* get_system_class_from_reflection_type_str(const char* typeStr, const char* assemblyName) {
+		static auto assemblyLoad = reinterpret_cast<void* (*)(Il2CppString*)>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Reflection",
+				"Assembly", "Load", 1)
+			);
+		static auto assemblyGetType = reinterpret_cast<Il2CppReflectionType * (*)(void*, Il2CppString*)>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Reflection",
+				"Assembly", "GetType", 1)
+			);
+
+		static auto reflectionAssembly = assemblyLoad(il2cpp_string_new(assemblyName));
+		auto reflectionType = assemblyGetType(reflectionAssembly, il2cpp_string_new(typeStr));
+		return il2cpp_class_from_system_type(reflectionType);
+	}
 }

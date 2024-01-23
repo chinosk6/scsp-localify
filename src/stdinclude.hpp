@@ -63,3 +63,4 @@ extern float g_free_camera_mouse_speed;
 extern bool g_allow_use_tryon_costume;
 extern bool g_allow_same_idol;
 extern bool g_unlock_all_dress;
+extern bool g_unlock_all_headwear;

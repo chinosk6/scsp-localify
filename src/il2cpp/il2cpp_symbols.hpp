@@ -421,4 +421,5 @@ namespace il2cpp_symbols
 	}
 
 	Il2CppString* NewWStr(std::wstring_view str);
+	void* get_system_class_from_reflection_type_str(const char* typeStr, const char* assemblyName = "mscorlib");
 }

@@ -26,7 +26,7 @@ bool guiDone = true;
 bool attachToGame = false;
 
 HWND hwnd;
-RECT cacheRect{ 100, 100, 730, 850 };
+RECT cacheRect{ 100, 100, 730, 880 };
 
 void SetGuiDone(bool isDone) {
     guiDone = isDone;
