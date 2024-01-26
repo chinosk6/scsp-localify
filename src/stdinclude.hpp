@@ -141,3 +141,4 @@ extern bool g_allow_same_idol;
 extern bool g_unlock_all_dress;
 extern bool g_unlock_all_headwear;
 extern bool g_enable_chara_param_edit;
+extern float g_font_size_offset;

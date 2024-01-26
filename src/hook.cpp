@@ -562,6 +562,14 @@ namespace
 			il2cpp_symbols::get_method_pointer("Unity.TextMeshPro.dll", "TMPro",
 				"TMP_FontAsset", "UpdateFontAssetData", 0)
 			);
+		static auto set_fontSize = reinterpret_cast<void (*)(void*, float)>(
+			il2cpp_symbols::get_method_pointer("Unity.TextMeshPro.dll", "TMPro",
+				"TMP_Text", "set_fontSize", 1)
+			);
+		static auto get_fontSize = reinterpret_cast<float (*)(void*)>(
+			il2cpp_symbols::get_method_pointer("Unity.TextMeshPro.dll", "TMPro",
+				"TMP_Text", "get_fontSize", 0)
+			);
 
 		auto replaceFont = getReplaceFont();
 		if (replaceFont) {
@@ -577,6 +585,7 @@ namespace
 				lastUpdateFontPtr = origFont;
 			}*/
 		}
+		set_fontSize(_this, get_fontSize(_this) + g_font_size_offset);
 		reinterpret_cast<decltype(UITextMeshProUGUI_Awake_hook)*>(UITextMeshProUGUI_Awake_orig)(_this);
 	}
 
@@ -988,7 +997,7 @@ namespace
 
 	void* TextLog_AddLog_orig;
 	void TextLog_AddLog_hook(void* _this, int speakerFlag, Il2CppString* textID, Il2CppString* text, bool isChoice) {
-		reinterpret_cast<decltype(TextLog_AddLog_hook)*>(TextLog_AddLog_orig)(_this, speakerFlag, textID, text, isChoice);
+		return reinterpret_cast<decltype(TextLog_AddLog_hook)*>(TextLog_AddLog_orig)(_this, speakerFlag, textID, text, isChoice);
 
 		static auto TextLog_klass = il2cpp_symbols::get_class_from_instance(_this);
 		static auto dicConvertID_field = il2cpp_class_get_field_from_name(TextLog_klass, "dicConvertID");

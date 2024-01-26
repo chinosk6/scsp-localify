@@ -32,6 +32,7 @@ int g_vsync_count = 0;
 std::string g_custom_font_path = "";
 std::list<std::string> g_extra_assetbundle_paths{};
 char hotKey = 'u';
+float g_font_size_offset = -3.0f;
 
 bool g_enable_free_camera = false;
 bool g_block_out_of_focus = false;
@@ -139,6 +140,9 @@ namespace
 			}
 			if (document.HasMember("customFontPath")) {
 				g_custom_font_path = document["customFontPath"].GetString();
+			}
+			if (document.HasMember("fontSizeOffset")) {
+				g_font_size_offset = document["fontSizeOffset"].GetFloat();
 			}
 
 			if (document.HasMember("blockOutOfFocus")) {

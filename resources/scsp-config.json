@@ -11,6 +11,7 @@
         "scsp_localify/scsp-bundle"
     ],
     "customFontPath": "assets/font/sbtphumminge-regular.ttf",
+    "fontSizeOffset": -3,
     "blockOutOfFocus": true,
     "baseFreeCamera": {
         "enable": false,
