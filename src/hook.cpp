@@ -15,6 +15,9 @@ std::function<void()> g_on_close;
 std::function<void()> on_hotKey_0;
 bool needPrintStack = false;
 std::vector<std::pair<std::pair<int, int>, int>> replaceDressResIds{};
+std::map<std::string, CharaParam_t> charaParam{};
+CharaParam_t baseParam(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+std::vector<std::function<bool()>> mainThreadTasks{};  // 返回 true，执行后移除列表；返回 false，执行后不移除
 
 template<typename T, typename TF>
 void convertPtrType(T* cvtTarget, TF func_ptr) {
@@ -32,7 +35,28 @@ void convertPtrType(T* cvtTarget, TF func_ptr) {
 
 bool exd = false;
 void* SetResolution_orig;
+void* AssembleCharacter_ApplyParam_orig;
 Il2CppString* (*environment_get_stacktrace)();
+
+
+void CharaParam_t::Apply() {
+	const auto ApplyParamFunc = reinterpret_cast<void (*)(void*, float, float, float, float, float)>(
+		AssembleCharacter_ApplyParam_orig
+		);
+	auto currObjPtr = getObjPtr();
+	if (currObjPtr) {
+		ApplyParamFunc(currObjPtr, height + baseParam.height, bust + baseParam.bust,
+			head + baseParam.head, arm + baseParam.arm, hand + baseParam.hand);
+	}
+}
+
+void CharaParam_t::ApplyOnMainThread() {
+	mainThreadTasks.push_back([this](){
+		this->Apply();
+		if (!g_enable_chara_param_edit) return true;
+		return !(this->gui_real_time_apply || baseParam.gui_real_time_apply);
+		});
+}
 
 
 namespace Utils {
@@ -828,6 +852,62 @@ namespace
 		
 	}
 
+	void AssembleCharacter_ApplyParam_hook(void* mdl, float height, float bust, float head, float arm, float hand) {
+		if (g_enable_chara_param_edit) {
+			static auto get_ObjectName = reinterpret_cast<Il2CppString * (*)(void*)>(il2cpp_resolve_icall("UnityEngine.Object::GetName(UnityEngine.Object)"));
+			const auto objNameIlStr = get_ObjectName(mdl);
+			const std::string objName = objNameIlStr ? utility::conversions::to_utf8string(std::wstring(objNameIlStr->start_char)) : std::format("Unnamed Obj {:p}", mdl);
+			std::string showObjName;
+			if (objName.starts_with("m_ALL_")) {
+				const auto nextFlagPos = objName.find_first_of(L'_', 6);
+				if (nextFlagPos > 6) {
+					showObjName = objName.substr(0, nextFlagPos);
+				}
+				else {
+					showObjName = objName;
+				}
+			}
+			else {
+				showObjName = objName;
+			}
+			if (auto it = charaParam.find(showObjName); it != charaParam.end()) {
+				it->second.SetObjPtr(mdl);
+				it->second.UpdateParam(&height, &bust, &head, &arm, &hand);
+				return it->second.Apply();
+			}
+			else {
+				charaParam.emplace(showObjName, CharaParam_t(height, bust, head, arm, hand, mdl));
+			}
+		}
+		return reinterpret_cast<decltype(AssembleCharacter_ApplyParam_hook)*>(AssembleCharacter_ApplyParam_orig)(mdl, height, bust, head, arm, hand);
+	}
+
+	void* MainThreadDispatcher_LateUpdate_orig;
+	void MainThreadDispatcher_LateUpdate_hook(void* _this, void* method) {
+		try {
+			auto it = mainThreadTasks.begin();
+			while (it != mainThreadTasks.end()) {
+				try {
+					bool result = (*it)();
+					if (result) {
+						it = mainThreadTasks.erase(it);
+					}
+					else {
+						++it;
+					}
+				}
+				catch (std::exception& e) {
+					printf("MainThreadDispatcher Tasks Error: %s\n", e.what());
+					it = mainThreadTasks.erase(it);
+				}
+			}
+		}
+		catch (std::exception& ex) {
+			printf("MainThreadDispatcher Error: %s\n", ex.what());
+		}
+		return reinterpret_cast<decltype(MainThreadDispatcher_LateUpdate_hook)*>(MainThreadDispatcher_LateUpdate_orig)(_this, method);
+	}
+
 	void checkAndAddCostume(void* _this, int key, void* value, MethodInfo* method) {
 		static auto CostumeStatus_klass = il2cpp_symbols::get_class("PRISM.Module.Networking.dll",
 			"PRISM.Module.Networking.Stub.Status", "CostumeStatus");
@@ -902,7 +982,40 @@ namespace
 	void* UnsafeLoadBytesFromKey_hook(void* _this, Il2CppString* tagName, Il2CppString* assetKey) {
 		auto ret = reinterpret_cast<decltype(UnsafeLoadBytesFromKey_hook)*>(UnsafeLoadBytesFromKey_orig)(_this, tagName, assetKey);
 		// wprintf(L"UnsafeLoadBytesFromKey: tag: %ls, assetKey: %ls\n", tagName->start_char, assetKey->start_char);
+		// dumpByteArray(tagName->start_char, assetKey->start_char, ret);
 		return ret;
+	}
+
+	void* TextLog_AddLog_orig;
+	void TextLog_AddLog_hook(void* _this, int speakerFlag, Il2CppString* textID, Il2CppString* text, bool isChoice) {
+		reinterpret_cast<decltype(TextLog_AddLog_hook)*>(TextLog_AddLog_orig)(_this, speakerFlag, textID, text, isChoice);
+
+		static auto TextLog_klass = il2cpp_symbols::get_class_from_instance(_this);
+		static auto dicConvertID_field = il2cpp_class_get_field_from_name(TextLog_klass, "dicConvertID");
+		static auto speakerTable_field = il2cpp_class_get_field_from_name(TextLog_klass, "speakerTable");
+		static auto listTextLogData_field = il2cpp_class_get_field_from_name(TextLog_klass, "listTextLogData");
+		static auto unitIdol_field = il2cpp_class_get_field_from_name(TextLog_klass, "unitIdol");
+		static auto convertList_field = il2cpp_class_get_field_from_name(TextLog_klass, "convertList");
+
+		static auto toJsonStr = reinterpret_cast<Il2CppString * (*)(void*)>(
+			il2cpp_symbols::get_method_pointer("Newtonsoft.Json.dll", "Newtonsoft.Json",
+				"JsonConvert", "SerializeObject", 1)
+			);
+
+		auto dicConvertID = il2cpp_field_get_value_object(dicConvertID_field, _this);
+		auto speakerTable = il2cpp_field_get_value_object(speakerTable_field, _this);
+		auto listTextLogData = il2cpp_field_get_value_object(listTextLogData_field, _this);
+		auto unitIdol = il2cpp_field_get_value_object(unitIdol_field, _this);
+		auto convertList = il2cpp_field_get_value_object(convertList_field, _this);
+
+		wprintf(L"TextLog_AddLog: speakerFlag: %d, textID: %ls, text: %ls\ndicConvertID:\n%ls\n\nspeakerTable:\n%ls\n\nlistTextLogData:\n%ls\n\nunitIdol:\n%ls\n\nconvertList:\n%ls\n\n", 
+			speakerFlag, textID->start_char, text->start_char,
+			toJsonStr(dicConvertID)->start_char,
+			toJsonStr(speakerTable)->start_char,
+			toJsonStr(listTextLogData)->start_char,
+			toJsonStr(unitIdol)->start_char,
+			toJsonStr(convertList)->start_char
+		);
 	}
 
 	void* baseCameraTransform = nullptr;
@@ -1304,6 +1417,11 @@ namespace
 			"ResourceLoader", "UnsafeLoadBytesFromKey", 2
 		);
 
+		auto TextLog_AddLog_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM.Scenario",
+			"TextLog", "AddLog", 4
+		);
+
 		auto LocalizationManager_GetTextOrNull_addr = il2cpp_symbols::get_method_pointer(
 			"ENTERPRISE.Localization.dll", "ENTERPRISE.Localization",
 			"LocalizationManager", "GetTextOrNull", 2
@@ -1380,6 +1498,16 @@ namespace
 		auto LiveCostumeChangeModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Adapters.dll", "PRISM.Adapters",
 			"LiveCostumeChangeModel", ".ctor", 3
+		);
+
+		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM",
+			"AssembleCharacter", "ApplyParam", 6
+		);
+
+		auto MainThreadDispatcher_LateUpdate_addr = il2cpp_symbols::get_method_pointer(
+			"UniRx.dll", "UniRx",
+			"MainThreadDispatcher", "LateUpdate", 0
 		);
 
 		auto LiveMVUnit_GetMemberChangeRequestData_addr = il2cpp_symbols::get_method_pointer(
@@ -1466,6 +1594,7 @@ namespace
 		ADD_HOOK(ScenarioManager_Init, "ScenarioManager_Init at %p");
 		ADD_HOOK(DataFile_GetBytes, "DataFile_GetBytes at %p");
 		ADD_HOOK(UnsafeLoadBytesFromKey, "UnsafeLoadBytesFromKey at %p");
+		ADD_HOOK(TextLog_AddLog, "TextLog_AddLog at %p");
 		ADD_HOOK(SetResolution, "SetResolution at %p");
 		ADD_HOOK(InvokeMoveNext, "InvokeMoveNext at %p");
 		ADD_HOOK(Live_SetEnableDepthOfField, "Live_SetEnableDepthOfField at %p");
@@ -1476,6 +1605,8 @@ namespace
 		ADD_HOOK(LiveCostumeChangeModel_GetHairstyle, "LiveCostumeChangeModel_GetHairstyle at %p");
 		ADD_HOOK(LiveCostumeChangeModel_GetAccessory, "LiveCostumeChangeModel_GetAccessory at %p");
 		ADD_HOOK(LiveCostumeChangeModel_ctor, "LiveCostumeChangeModel_ctor at %p");
+		ADD_HOOK(AssembleCharacter_ApplyParam, "AssembleCharacter_ApplyParam at %p");
+		ADD_HOOK(MainThreadDispatcher_LateUpdate, "MainThreadDispatcher_LateUpdate at %p");
 		ADD_HOOK(dic_int_ICostumeStatus_add, "dic_int_ICostumeStatus_add at %p");
 		ADD_HOOK(LiveMVUnitConfirmationModel_ctor, "LiveMVUnitConfirmationModel_ctor at %p");
 		// ADD_HOOK(PopupSystem_ShowPopup, "PopupSystem_ShowPopup at %p");
