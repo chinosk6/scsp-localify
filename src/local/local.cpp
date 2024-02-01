@@ -38,6 +38,8 @@ namespace SCLocal {
 	}
 
 	void loadLocalTrans() {
+		loadLrcTrans();
+		loadUnlocalTrans();
 		localTrans.clear();
 		printf("Loading localify.json...\n");
 		int totalItemCount = 0;
@@ -56,7 +58,10 @@ namespace SCLocal {
 				for (auto& v : i.value().items()) {
 					const auto& subIdStr = v.key();
 					const auto subId = std::stoi(subIdStr);
-					const std::string localText = v.value();
+					std::string localText = v.value();
+					if (auto it = unLocalTrans.find(localText); it != unLocalTrans.end()) {
+						localText = it->second;
+					}
 					localTrans[key][subId] = localText;
 					totalItemCount++;
 				}
@@ -66,8 +71,6 @@ namespace SCLocal {
 			printf("Load localify.json failed: %s\n", e.what());
 		}
 		printf("%d items in localify.json loaded.\n", totalItemCount);
-		loadLrcTrans();
-		loadUnlocalTrans();
 	}
 
 	bool getLocalifyText(const std::string& category, int id, std::string* getStr) {
