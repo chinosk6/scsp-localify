@@ -14,6 +14,23 @@
 
 
 
+# 功能列表
+
+- dump 文本
+
+- 汉化、替换字体
+- 解锁帧数
+- 切换窗口不暂停
+- Free Camera 自由视角
+- Live MV 相关 **(在 GUI 中修改)**
+  - 解锁服装
+  - 自由选择服装，可以穿别人的衣服
+  - 允许相同偶像登场
+
+- 角色身体参数实时修改，可修改 身高、头部、胸部、手臂、手掌 大小 **(在 GUI 中修改)**
+
+
+
 # 配置说明
 
 - 配置项位于 `scsp-config.json` 文件中
@@ -24,7 +41,7 @@
 | enableVSync           | Bool                                     | `false`                                | 是否启用垂直同步                                     |
 | maxFps                | Int                                      | `60`                                   | 最大帧数<br>当启用 `enableVSync` 时，此项配置失效    |
 | localifyBasePath      | String                                   | `scsp_localify`                        | 本地化文件目录                                       |
-| hotKey                | String (Char)                            | `u`                                    | 按下 `Ctrl` + 此项配置的热键，打开插件 GUI           |
+| hotKey                | String (Char)                            | `u`                                    | 按下 `Ctrl` + 此项配置的热键，**打开插件 GUI**       |
 | dumpUntransLyrics     | Bool                                     | `false`                                | dump 未翻译的歌词                                    |
 | dumpUntransLocal2     | Bool                                     | `false`                                | dump 未翻译的文本                                    |
 | autoDumpAllJson       | Bool                                     | `false`                                | dump 所有游戏加载的 JSON                             |
@@ -50,16 +67,19 @@
 - 将 `scsp-config.json` 中 `baseFreeCamera` - `enable` 设置为 `true` 即可。
 - 生效范围：所有 3D 场景。包括但不限于主页、故事、Live
 
+
+
 ## 自由视角操作方法
 
 - 移动: `W`, `S`, `A`, `D`
 - 上移: `Space`，下移: `Ctrl`
+- 摄像头复位: `R`
+
 - 视角转动: 
   - 键盘: `↑`, `↓`, `←`, `→`
   - 鼠标: 
     - 按 ` 键（数字键最左边，TAB 键上方）切换
     - 或者**按住**鼠标右键
-
 - 调整视场角 (FOV)
   - 键盘: `Q`, `E`
   - 或者鼠标滚轮
