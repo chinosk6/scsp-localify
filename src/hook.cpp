@@ -111,6 +111,84 @@ namespace Utils {
 		dic_containsKey_t dic_containsKey;
 	};
 
+	template <typename T = void*>
+	class CSListEditor {
+	public:
+		CSListEditor(void* list) {
+			list_klass = il2cpp_symbols::get_class_from_instance(list);
+			lst = list;
+
+			lst_get_Count_method = il2cpp_class_get_method_from_name(list_klass, "get_Count", 0);
+			lst_get_Item_method = il2cpp_class_get_method_from_name(list_klass, "get_Item", 1);
+			lst_Add_method = il2cpp_class_get_method_from_name(list_klass, "Add", 1);
+
+			lst_get_Count = reinterpret_cast<lst_get_Count_t>(lst_get_Count_method->methodPointer);
+			lst_get_Item = reinterpret_cast<lst_get_Item_t>(lst_get_Item_method->methodPointer);
+			lst_Add = reinterpret_cast<lst_Add_t>(lst_Add_method->methodPointer);
+		}
+
+		void Add(T value) {
+			lst_Add(lst, value, lst_Add_method);
+		}
+
+		T get_Item(int index) {
+			return lst_get_Item(lst, index, lst_get_Item_method);
+		}
+
+		int get_Count() {
+			return lst_get_Count(lst, lst_get_Count_method);
+		}
+
+		T operator[] (int key) {
+			return get_Item(key);
+		}
+
+		class Iterator {
+		public:
+			Iterator(CSListEditor<T>* editor, int index) : editor(editor), index(index) {}
+
+			T operator*() const {
+				return editor->get_Item(index);
+			}
+
+			Iterator& operator++() {
+				++index;
+				return *this;
+			}
+
+			bool operator!=(const Iterator& other) const {
+				return index != other.index;
+			}
+
+		private:
+			CSListEditor<T>* editor;
+			int index;
+		};
+
+		Iterator begin() {
+			return Iterator(this, 0);
+		}
+
+		Iterator end() {
+			return Iterator(this, get_Count());
+		}
+
+		void* lst;
+		void* list_klass;
+	private:
+		typedef T(*lst_get_Item_t)(void*, int, void* mtd);
+		typedef void(*lst_Add_t)(void*, T, void* mtd);
+		typedef int(*lst_get_Count_t)(void*, void* mtd);
+
+		MethodInfo* lst_get_Item_method;
+		MethodInfo* lst_Add_method;
+		MethodInfo* lst_get_Count_method;
+
+		lst_get_Item_t lst_get_Item;
+		lst_Add_t lst_Add;
+		lst_get_Count_t lst_get_Count;
+	};
+
 }
 
 
@@ -819,7 +897,7 @@ namespace
 	std::map<int, void*> cacheAccessoryMap{};
 
 	void* LiveCostumeChangeModel_ctor_orig;
-	void LiveCostumeChangeModel_ctor_hook(void* _this, void* reply, void* idol, int costumeType) {  // 添加服装到 dressDic
+	void LiveCostumeChangeModel_ctor_hook(void* _this, void* reply, void* idol, int costumeType, bool useOtherCharacterCostume) {  // 添加服装到 dressDic
 		/*
 		static auto iidol_klass = il2cpp_symbols::get_class_from_instance(idol);
 		static auto get_CharacterId_mtd = il2cpp_class_get_method_from_name(iidol_klass, "get_CharacterId", 0);
@@ -828,7 +906,7 @@ namespace
 			printf("LiveCostumeChangeModel_ctor idolId: %d, costumeType: %d\n", idolId, costumeType);
 		}
 		*/
-		reinterpret_cast<decltype(LiveCostumeChangeModel_ctor_hook)*>(LiveCostumeChangeModel_ctor_orig)(_this, reply, idol, costumeType);
+		reinterpret_cast<decltype(LiveCostumeChangeModel_ctor_hook)*>(LiveCostumeChangeModel_ctor_orig)(_this, reply, idol, costumeType, useOtherCharacterCostume);
 
 		if (g_unlock_all_dress && (costumeType == 1)) {
 			static auto LiveCostumeChangeModel_klass = il2cpp_symbols::get_class("PRISM.Adapters.dll", "PRISM.Adapters", "LiveCostumeChangeModel");
@@ -917,7 +995,7 @@ namespace
 		return reinterpret_cast<decltype(MainThreadDispatcher_LateUpdate_hook)*>(MainThreadDispatcher_LateUpdate_orig)(_this, method);
 	}
 
-	void checkAndAddCostume(void* _this, int key, void* value, MethodInfo* method) {
+	void checkAndAddCostume(int key, void* value) {
 		static auto CostumeStatus_klass = il2cpp_symbols::get_class("PRISM.Module.Networking.dll",
 			"PRISM.Module.Networking.Stub.Status", "CostumeStatus");
 		static auto HairstyleStatus_klass = il2cpp_symbols::get_class("PRISM.Module.Networking.dll",
@@ -948,9 +1026,53 @@ namespace
 	}
 
 	void* dic_int_ICostumeStatus_add_orig;
-	void dic_int_ICostumeStatus_add_hook(void* _this, int key, void* value, MethodInfo* method) {  // 添加服装到缓存表
-		if ((g_unlock_all_dress || g_allow_use_tryon_costume) && confirmationingModel) checkAndAddCostume(_this, key, value, method);
+	void dic_int_ICostumeStatus_add_hook(void* _this, int key, void* value, MethodInfo* method) {  // 添加服装到缓存表(失效)
+		if ((g_unlock_all_dress || g_allow_use_tryon_costume) && confirmationingModel) checkAndAddCostume(key, value);
 		return reinterpret_cast<decltype(dic_int_ICostumeStatus_add_hook)*>(dic_int_ICostumeStatus_add_orig)(_this, key, value, method);
+	}
+
+	void checkCostumeListReply(void* _this, void* ret, const char* costumeIdFieldName) {
+		if (g_unlock_all_dress || g_allow_use_tryon_costume) {
+			static auto GetCostumeListReply_klass = il2cpp_symbols::get_class("PRISM.Module.Networking.dll",
+				"PRISM.Module.Networking.Stub.Api", "GetCostumeListReply");
+			auto this_klass = il2cpp_symbols::get_class_from_instance(_this);
+
+			if (this_klass == GetCostumeListReply_klass) {
+				void* CostumeStatus_klass = NULL;
+				FieldInfo* mstCostumeId_field;
+
+				Utils::CSListEditor retList(ret);
+				for (auto i : retList) {
+					if (CostumeStatus_klass == NULL) {
+						CostumeStatus_klass = il2cpp_symbols::get_class_from_instance(i);
+						mstCostumeId_field = il2cpp_class_get_field_from_name(CostumeStatus_klass, costumeIdFieldName);
+					}
+					const auto mstCostumeId = il2cpp_symbols::read_field<int>(i, mstCostumeId_field);
+					checkAndAddCostume(mstCostumeId, i);
+				}
+			}
+		}
+	}
+
+	void* GetCostumeListReply_get_CostumeList_orig;
+	void* GetCostumeListReply_get_CostumeList_hook(void* _this) {  // 添加服装到缓存表
+		auto ret = reinterpret_cast<decltype(GetCostumeListReply_get_CostumeList_hook)*>(GetCostumeListReply_get_CostumeList_orig)(_this);
+		checkCostumeListReply(_this, ret, "mstCostumeId_");
+		return ret;
+	}
+
+	void* GetCostumeListReply_get_HairstyleList_orig;
+	void* GetCostumeListReply_get_HairstyleList_hook(void* _this) {  // 添加服装到缓存表
+		auto ret = reinterpret_cast<decltype(GetCostumeListReply_get_HairstyleList_hook)*>(GetCostumeListReply_get_HairstyleList_orig)(_this);
+		checkCostumeListReply(_this, ret, "mstHairstyleId_");
+		return ret;
+	}
+
+	void* GetCostumeListReply_get_AccessoryList_orig;
+	void* GetCostumeListReply_get_AccessoryList_hook(void* _this) {  // 添加服装到缓存表
+		auto ret = reinterpret_cast<decltype(GetCostumeListReply_get_AccessoryList_hook)*>(GetCostumeListReply_get_AccessoryList_orig)(_this);
+		checkCostumeListReply(_this, ret, "mstAccessoryId_");
+		return ret;
 	}
 
 	void* LiveMVUnitConfirmationModel_ctor_orig;
@@ -1506,7 +1628,7 @@ namespace
 		);
 		auto LiveCostumeChangeModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Adapters.dll", "PRISM.Adapters",
-			"LiveCostumeChangeModel", ".ctor", 3
+			"LiveCostumeChangeModel", ".ctor", 4
 		);
 
 		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::get_method_pointer(
@@ -1575,6 +1697,13 @@ namespace
 		auto dic_klass = il2cpp_class_from_system_type(reflectionType);
 		auto dic_int_ICostumeStatus_add_addr = il2cpp_class_get_method_from_name(dic_klass, "Add", 2)->methodPointer;
 
+		auto GetCostumeListReply_get_CostumeList_addr = il2cpp_symbols::get_method_pointer("PRISM.Module.Networking.dll",
+			"PRISM.Module.Networking.Stub.Api", "GetCostumeListReply", "get_CostumeList", 0);
+		auto GetCostumeListReply_get_HairstyleList_addr = il2cpp_symbols::get_method_pointer("PRISM.Module.Networking.dll",
+			"PRISM.Module.Networking.Stub.Api", "GetCostumeListReply", "get_HairstyleList", 0);
+		auto GetCostumeListReply_get_AccessoryList_addr = il2cpp_symbols::get_method_pointer("PRISM.Module.Networking.dll",
+			"PRISM.Module.Networking.Stub.Api", "GetCostumeListReply", "get_AccessoryList", 0);
+
 		auto LiveMVUnitConfirmationModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Live",
 			"LiveMVUnitConfirmationModel", ".ctor", 3
@@ -1617,6 +1746,9 @@ namespace
 		ADD_HOOK(AssembleCharacter_ApplyParam, "AssembleCharacter_ApplyParam at %p");
 		ADD_HOOK(MainThreadDispatcher_LateUpdate, "MainThreadDispatcher_LateUpdate at %p");
 		ADD_HOOK(dic_int_ICostumeStatus_add, "dic_int_ICostumeStatus_add at %p");
+		ADD_HOOK(GetCostumeListReply_get_CostumeList, "GetCostumeListReply_get_CostumeList at %p");
+		ADD_HOOK(GetCostumeListReply_get_HairstyleList, "GetCostumeListReply_get_HairstyleList at %p");
+		ADD_HOOK(GetCostumeListReply_get_AccessoryList, "GetCostumeListReply_get_AccessoryList at %p");
 		ADD_HOOK(LiveMVUnitConfirmationModel_ctor, "LiveMVUnitConfirmationModel_ctor at %p");
 		// ADD_HOOK(PopupSystem_ShowPopup, "PopupSystem_ShowPopup at %p");
 		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
