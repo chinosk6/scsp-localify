@@ -35,6 +35,47 @@ namespace SCGUILoop {
 
     void charaParamEditLoop() {
         if (ImGui::Begin("Character Parameter Edit")) {
+            if (ImGui::CollapsingHeader("Sway offset (Non real-time, requires reloading)")) {
+                static int currentEdit = 0x7;  // BreastPointed
+
+                if (ImGui::BeginCombo("Edit Type", swayTypes[currentEdit].c_str())) {
+                    for (const auto& pair : swayTypes) {
+                        bool isSelected = (currentEdit == pair.first);
+                        if (ImGui::Selectable(pair.second.c_str(), isSelected)) {
+                            currentEdit = pair.first;
+                        }
+                        if (isSelected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+                auto& currEditData = charaSwayStringOffset[currentEdit];
+
+                INPUT_AND_SLIDER_FLOAT("Rate##sway", &currEditData.rate, -1.5, 1.5);
+                INPUT_AND_SLIDER_FLOAT("BendStrength##sway", &currEditData.P_bendStrength, -5, 5.0);
+                INPUT_AND_SLIDER_FLOAT("BaseGravity##sway", &currEditData.P_baseGravity, -50, 50.0);
+                INPUT_AND_SLIDER_FLOAT("InertiaMoment##sway", &currEditData.P_inertiaMoment, -2, 2.0);
+                INPUT_AND_SLIDER_FLOAT("AirResistance##sway", &currEditData.P_airResistance, -2, 2.0);
+                INPUT_AND_SLIDER_FLOAT("DeformResistance##sway", &currEditData.P_deformResistance, -30, 30.0);
+
+                if (ImGui::Button("Reset##sway")) {
+                    currEditData.rate = 0;
+                    currEditData.P_bendStrength = 0;
+                    currEditData.P_baseGravity = 0;
+                    currEditData.P_inertiaMoment = 0;
+                    currEditData.P_airResistance = 0;
+                    currEditData.P_deformResistance = 0;
+                }
+                ImGui::NewLine();
+            }
+            if (ImGui::IsItemHovered()) {
+                ImGui::BeginTooltip(); 
+                ImGui::Text("SwayString 偏移调整。加载角色时生效，非实时生效。");
+                ImGui::EndTooltip(); 
+            }
+
             bool baseApply = false;
             bool resetAll = false;
             if (ImGui::CollapsingHeader("Base Offset", ImGuiTreeNodeFlags_DefaultOpen)) {

@@ -121,6 +121,38 @@ private:
 };
 
 
+class CharaSwayStringParam_t {
+public:
+	CharaSwayStringParam_t(float rate, float P_bendStrength, float P_baseGravity, 
+		float P_inertiaMoment, float P_airResistance, float P_deformResistance): 
+		rate(rate), P_bendStrength(P_bendStrength), P_baseGravity(P_baseGravity), 
+		P_inertiaMoment(P_inertiaMoment), P_airResistance(P_airResistance), P_deformResistance(P_deformResistance){
+
+	}
+
+	CharaSwayStringParam_t() :
+		rate(0), P_bendStrength(0), P_baseGravity(0),
+		P_inertiaMoment(0), P_airResistance(0), P_deformResistance(0) {
+
+	}
+
+	bool isEdited() const {
+		return (rate != 0 || P_bendStrength != 0 || P_baseGravity != 0 ||
+			P_inertiaMoment != 0 || P_airResistance != 0 || P_deformResistance != 0);
+	}
+
+	float rate;
+	float P_bendStrength;
+	float P_baseGravity;
+	float P_inertiaMoment;
+	float P_airResistance;
+	float P_deformResistance;
+
+};
+
+extern std::map<int, std::string> swayTypes;
+extern std::map<int, CharaSwayStringParam_t> charaSwayStringOffset;
+
 extern std::function<void()> g_reload_all_data;
 extern bool g_enable_plugin;
 extern int g_max_fps;

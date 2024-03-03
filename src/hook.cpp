@@ -19,6 +19,30 @@ std::map<std::string, CharaParam_t> charaParam{};
 CharaParam_t baseParam(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 std::vector<std::function<bool()>> mainThreadTasks{};  // 返回 true，执行后移除列表；返回 false，执行后不移除
 
+std::map<int, CharaSwayStringParam_t> charaSwayStringOffset{};
+std::map<int, std::string> swayTypes{
+	{0x0, "Test"},
+	{0x1, "HairPointed"},
+	{0x2, "HairSmooth"},
+	{0x3, "HairBundle"},
+	{0x4, "HairFront"},
+	{0x5, "ClothPointed"},
+	{0x6, "ClothSmooth"},
+	{0x7, "BreastPointed"},
+	{0x8, "BreastSmooth"},
+	{0x9, "AccessoryBundle"},
+	{0xa, "AccessoryPendulum"},
+	{0xb, "ClothBundle"},
+	{0xc, "HairLong"},
+	{0xd, "Max"},
+};
+
+void initcharaSwayStringOffset() {
+	for (auto& i : swayTypes) {
+		charaSwayStringOffset.emplace(i.first, CharaSwayStringParam_t());
+	}
+}
+
 template<typename T, typename TF>
 void convertPtrType(T* cvtTarget, TF func_ptr) {
 	*cvtTarget = reinterpret_cast<T>(func_ptr);
@@ -1087,6 +1111,82 @@ namespace
 		return;
 	}
 
+	void updateSwayStringPoint(void* _this) {
+		if (!g_enable_chara_param_edit) return;
+
+		static auto SwayString_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM", "SwayString");
+		static auto swayType_field = il2cpp_class_get_field_from_name(SwayString_klass, "swayType");
+		static auto swaySubType_field = il2cpp_class_get_field_from_name(SwayString_klass, "swaySubType");
+		static auto forceParam_field = il2cpp_class_get_field_from_name(SwayString_klass, "forceParam");
+
+		static auto SetTest = reinterpret_cast<void (*)(void*, int swayType, float bendStrength, float baseGravity, float inertiaMoment, float airResistance)>(
+			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetTest", 5)
+			);
+		static auto SetRate = reinterpret_cast<void (*)(void*, float)>(
+			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetRate", 1)
+			);
+		static auto GetRate = reinterpret_cast<float (*)(void*)>(
+			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "GetRate", 0)
+			);
+
+		static std::unordered_set<int> targetTypes{ 0x7, 0x8 };
+		const auto swayType = il2cpp_symbols::read_field<int>(_this, swayType_field);
+		const auto swaySubType = il2cpp_symbols::read_field<int>(_this, swaySubType_field);
+		if (!charaSwayStringOffset.contains(swayType)) return;
+		const auto& currConfig = charaSwayStringOffset[swayType];
+		if (!currConfig.isEdited()) return;
+
+		const auto rate = GetRate(_this);
+		SetRate(_this, rate + currConfig.rate);
+
+		auto forceParam = il2cpp_field_get_value_object(forceParam_field, _this);
+		int currIndex = 0;
+		il2cpp_symbols::iterate_IEnumerable(forceParam, [&](void* param) {
+			if (currIndex == swayType) {
+				if (!param) {
+					// printf("Invalid param.\n");
+					return;
+				}
+				static auto forceParam_klass = il2cpp_symbols::get_class_from_instance(param);
+				static auto bendStrength_field = il2cpp_class_get_field_from_name(forceParam_klass, "bendStrength");
+				static auto baseGravity_field = il2cpp_class_get_field_from_name(forceParam_klass, "baseGravity");
+				static auto inertiaMoment_field = il2cpp_class_get_field_from_name(forceParam_klass, "inertiaMoment");
+				static auto airResistance_field = il2cpp_class_get_field_from_name(forceParam_klass, "airResistance");
+				static auto deformResistance_field = il2cpp_class_get_field_from_name(forceParam_klass, "deformResistance");
+
+				const auto bendStrength = il2cpp_symbols::read_field<float>(param, bendStrength_field);
+				const auto baseGravity = il2cpp_symbols::read_field<float>(param, baseGravity_field);
+				const auto inertiaMoment = il2cpp_symbols::read_field<float>(param, inertiaMoment_field);
+				const auto airResistance = il2cpp_symbols::read_field<float>(param, airResistance_field);
+				const auto deformResistance = il2cpp_symbols::read_field<float>(param, deformResistance_field);
+
+				printf("SwayString original: swayType: %d, swaySubType: %d, rate: %f, bendStrength: %f, baseGravity: %f, "
+					"inertiaMoment: %f, airResistance: %f, deformResistance: %f\n", 
+					swayType, swaySubType, rate, bendStrength, baseGravity, inertiaMoment, airResistance, deformResistance);
+
+				il2cpp_symbols::write_field(param, bendStrength_field, bendStrength + currConfig.P_bendStrength);
+				il2cpp_symbols::write_field(param, baseGravity_field, baseGravity + currConfig.P_baseGravity);
+				il2cpp_symbols::write_field(param, inertiaMoment_field, inertiaMoment + currConfig.P_inertiaMoment);
+				il2cpp_symbols::write_field(param, airResistance_field, airResistance + currConfig.P_airResistance);
+				il2cpp_symbols::write_field(param, deformResistance_field, deformResistance + currConfig.P_deformResistance);
+			}
+
+			currIndex++;
+			});
+	}
+
+	void* SwayString_SetupPoint_orig;
+	void SwayString_SetupPoint_hook(void* _this) {
+		if (g_enable_chara_param_edit) {
+			static auto SwayString_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM", "SwayString");
+			auto this_klass = il2cpp_symbols::get_class_from_instance(_this);
+			if (this_klass == SwayString_klass) {
+				updateSwayStringPoint(_this);
+			}
+		}
+		reinterpret_cast<decltype(SwayString_SetupPoint_hook)*>(SwayString_SetupPoint_orig)(_this);
+	}
+
 	void* PopupSystem_ShowPopup_orig;
 	// 调试用，必要时 HOOK
 	void* PopupSystem_ShowPopup_hook(void* _this, void* iObject, int iPriority, bool isFullSize) {
@@ -1465,6 +1565,7 @@ namespace
 		pathed = true;
 
 		printf("Trying to patch GameAssembly.dll...\n");
+		initcharaSwayStringOffset();
 
 		// load il2cpp exported functions
 		il2cpp_symbols::init(il2cpp_module);
@@ -1709,6 +1810,11 @@ namespace
 			"LiveMVUnitConfirmationModel", ".ctor", 3
 		);
 
+		auto SwayString_SetupPoint_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM",
+			"SwayString", "SetupPoint", 0
+		);
+
 #pragma endregion
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(get_NeedsLocalization, "get_NeedsLocalization at %p");
@@ -1750,6 +1856,7 @@ namespace
 		ADD_HOOK(GetCostumeListReply_get_HairstyleList, "GetCostumeListReply_get_HairstyleList at %p");
 		ADD_HOOK(GetCostumeListReply_get_AccessoryList, "GetCostumeListReply_get_AccessoryList at %p");
 		ADD_HOOK(LiveMVUnitConfirmationModel_ctor, "LiveMVUnitConfirmationModel_ctor at %p");
+		ADD_HOOK(SwayString_SetupPoint, "SwayString_SetupPoint at %p");
 		// ADD_HOOK(PopupSystem_ShowPopup, "PopupSystem_ShowPopup at %p");
 		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
 		ADD_HOOK(CriWareErrorHandler_HandleMessage, "CriWareErrorHandler_HandleMessage at %p");

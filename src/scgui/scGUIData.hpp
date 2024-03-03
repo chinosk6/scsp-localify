@@ -1,3 +1,4 @@
+#pragma once
 
 namespace SCGUIData {
 	extern bool needExtractText;
