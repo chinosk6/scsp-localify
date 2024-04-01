@@ -7,6 +7,9 @@
 #include "scgui/scGUIData.hpp"
 #include <scgui/scGUIMain.hpp>
 #include <mhotkey.hpp>
+#include <cpprest/http_client.h>
+#include <cpprest/filestream.h>
+#include <boost/beast/core/detail/base64.hpp>
 
 //using namespace std;
 
@@ -421,6 +424,28 @@ namespace
 
 	std::filesystem::path dumpBasePath("dumps");
 
+	// 调用之前检查 DataFile_IsKeyExist
+	void fmtAndDumpJsonBytesData(const std::wstring& dumpName) {
+		const auto dumpNameIl = il2cpp_symbols::NewWStr(dumpName);
+		auto dataBytes = reinterpret_cast<void* (*)(Il2CppString*)>(DataFile_GetBytes_orig)(dumpNameIl);
+		auto newStr = bytesToIl2cppString(dataBytes);
+		auto writeWstr = std::wstring(newStr->start_char);
+		const std::wstring searchStr = L"\r";
+		const std::wstring replaceStr = L"\\r";
+		size_t pos = writeWstr.find(searchStr);
+		while (pos != std::wstring::npos) {
+			writeWstr.replace(pos, 1, replaceStr);
+			pos = writeWstr.find(searchStr, pos + replaceStr.length());
+		}
+		if (writeWstr.ends_with(L",]")) {  // 代哥的 Json 就是不一样
+			writeWstr.erase(writeWstr.length() - 2, 1);
+		}
+		const auto dumpLocalFilePath = dumpBasePath / SCLocal::getFilePathByName(dumpName, true, dumpBasePath);
+		std::ofstream dumpFile(dumpLocalFilePath, std::ofstream::out);
+		dumpFile << utility::conversions::to_utf8string(writeWstr).c_str();
+		printf("dump %ls success. (%ls)\n", dumpName.c_str(), dumpLocalFilePath.c_str());
+	}
+
 	int dumpScenarioDataById(const std::string& sid) {
 		int i = 0;
 		int notFoundCount = 0;
@@ -430,7 +455,7 @@ namespace
 			const auto dumpName = std::format(L"{}_{:02}.json", utility::conversions::to_utf16string(sid), i);
 			const auto dumpNameIl = il2cpp_symbols::NewWStr(dumpName);
 			if (!DataFile_IsKeyExist(dumpNameIl)) {
-				printf("%ls - continue.\n", dumpName.c_str());
+				// printf("%ls - continue.\n", dumpName.c_str());
 				notFoundCount++;
 				if (notFoundCount < 5) {
 					i++;
@@ -440,27 +465,25 @@ namespace
 					break;
 				}
 			}
-			auto dataBytes = reinterpret_cast<void* (*)(Il2CppString*)>(DataFile_GetBytes_orig)(dumpNameIl);
-			auto newStr = bytesToIl2cppString(dataBytes);
-			auto writeWstr = std::wstring(newStr->start_char);
-			const std::wstring searchStr = L"\r";
-			const std::wstring replaceStr = L"\\r";
-			size_t pos = writeWstr.find(searchStr);
-			while (pos != std::wstring::npos) {
-				writeWstr.replace(pos, 1, replaceStr);
-				pos = writeWstr.find(searchStr, pos + replaceStr.length());
-			}
-			if (writeWstr.ends_with(L",]")) {  // 代哥的 Json 就是不一样
-				writeWstr.erase(writeWstr.length() - 2, 1);
-			}
-			const auto dumpLocalFilePath = dumpBasePath / SCLocal::getFilePathByName(dumpName, true, dumpBasePath);
-			std::ofstream dumpFile(dumpLocalFilePath, std::ofstream::out);
-			dumpFile << utility::conversions::to_utf8string(writeWstr).c_str();
-			printf("dump %ls success. (%ls)\n", dumpName.c_str(), dumpLocalFilePath.c_str());
+			fmtAndDumpJsonBytesData(dumpName);
 			dumpedCount++;
 			i++;
 		}
 		return dumpedCount;
+	}
+
+	bool dumpScenarioDataByJsonFileName(const std::string& fileName) {
+		std::string searchName;
+		if (!fileName.ends_with(".json")) {
+			searchName = fileName + ".json";
+		}
+		else {
+			searchName = fileName;
+		}
+		auto searchNameStr = il2cpp_string_new(searchName.c_str());
+		if (!DataFile_IsKeyExist(searchNameStr)) return false;
+		fmtAndDumpJsonBytesData(utility::conversions::to_string_t(searchName));
+		return true;
 	}
 
 	void dumpByteArray(const std::wstring& tag, const std::wstring& name, void* bytes) {
@@ -478,8 +501,17 @@ namespace
 
 	}
 
+	int dumpScenarioFromCatalog();
+
 	std::string localizationDataCache("{}");
 	int dumpAllScenarioData() {
+		try {
+			return dumpScenarioFromCatalog();
+		}
+		catch (std::exception& e) {
+			printf("dumpScenarioFromCatalog error: %s\n", e.what());
+		}
+		// 下方方法已过时
 		int totalCount = 0;
 		const auto titleData = nlohmann::json::parse(localizationDataCache);
 		for (auto& it : titleData.items()) {
@@ -502,6 +534,11 @@ namespace
 			guiStarting = false;
 			printf("GUI END\n");
 			}).detach();
+	}
+
+	void* (*ReadAllBytes)(Il2CppString*);
+	void* readFileAllBytes(const std::wstring& name) {
+		return ReadAllBytes(il2cpp_symbols::NewWStr(name));
 	}
 
 	void itLocalizationManagerDic(void* _this) {
@@ -575,6 +612,289 @@ namespace
 		auto ret = reinterpret_cast<decltype(get_NeedsLocalization_hook)*>(get_NeedsLocalization_orig)(_this);
 		//printf("get_NeedsLocalization: %d\n", ret);
 		return ret;
+	}
+
+	void* AssetBundle_LoadAsset_orig;
+	void* AssetBundle_LoadAsset_hook(void* _this, Il2CppString* name, Il2CppReflectionType* type)
+	{
+		// printf("AssetBundle_LoadAsset: %ls\n", name->start_char);
+		return reinterpret_cast<decltype(AssetBundle_LoadAsset_hook)*>(AssetBundle_LoadAsset_orig)(_this, name, type);
+	}
+
+	class SpanReader {
+	private:
+		const uint8_t* dataPtr;
+		size_t dataSize;
+		size_t offset;
+
+	public:
+		SpanReader(const uint8_t* data, size_t size) : dataPtr(data), dataSize(size), offset(0) {}
+
+		template<typename T>
+		T Read() {
+			T value;
+			std::memcpy(&value, dataPtr + offset, sizeof(T));
+			offset += sizeof(T);
+
+			// if !littleEndian
+			std::reverse(reinterpret_cast<uint8_t*>(&value), reinterpret_cast<uint8_t*>(&value) + sizeof(T));
+			
+			return value;
+		}
+
+		uint64_t ReadUInt64() {
+			return Read<uint64_t>();
+		}
+
+		uint64_t ReadVarUInt64() {
+			uint64_t value = 0;
+			int shift = 0;
+
+			do {
+				uint8_t b = dataPtr[offset++];
+				value |= static_cast<uint64_t>(b & 0x7FU) << shift;
+				if (b < 0x80)
+					break;
+				shift += 7;
+			} while (64 > shift);
+
+			return value;
+		}
+	};
+
+	void* FromCatalogInfo(const std::wstring& encodedInfo, const UINT64 rootHash) {
+		static auto CatalogManifest_FromValues = reinterpret_cast<void* (*)(UINT64 labelCrc, UINT64 size, UINT64 checksum, UINT64 seed)>(
+			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+				"CatalogManifest", "FromValues", 4)
+			);
+
+		unsigned char info[5120];
+		const auto cvString = utility::conversions::to_utf8string(encodedInfo);
+		boost::beast::detail::base64::decode(&info, cvString.c_str(), cvString.size());
+
+		SpanReader reader(info, sizeof(info));
+
+		const auto checksum = reader.ReadUInt64();
+		const auto size = reader.ReadVarUInt64();
+		const auto seed = reader.ReadUInt64();
+
+		// wprintf(L"encodedInfo: %ls, rootHash: %llu, size: %llu, checksum: %llu, seed: %llu\n", encodedInfo.c_str(), rootHash, size, checksum, seed);
+		return CatalogManifest_FromValues(rootHash, size, checksum, seed);
+	}
+	
+	void* entryAsManifest(void* entry) {
+		static auto CatalogManifest_FromValues = reinterpret_cast<void* (*)(UINT64 labelCrc, UINT64 size, UINT64 checksum, UINT64 seed)>(
+			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+				"CatalogManifest", "FromValues", 4)
+			);
+
+		static auto CatalogBinaryEntry_klass = il2cpp_symbols::get_class("Limelight.Shared.dll", "Limelight", "CatalogBinaryEntry");
+		static auto LabelCrc_field = il2cpp_class_get_field_from_name(CatalogBinaryEntry_klass, "<LabelCrc>k__BackingField");
+		static auto Size_field = il2cpp_class_get_field_from_name(CatalogBinaryEntry_klass, "<Size>k__BackingField");
+		static auto Checksum_field = il2cpp_class_get_field_from_name(CatalogBinaryEntry_klass, "<Checksum>k__BackingField");
+		static auto Seed_field = il2cpp_class_get_field_from_name(CatalogBinaryEntry_klass, "<Seed>k__BackingField");
+
+		const auto LabelCrc = il2cpp_symbols::read_field<UINT64>(entry, LabelCrc_field);
+		const auto Size = il2cpp_symbols::read_field<UINT64>(entry, Size_field);
+		const auto Checksum = il2cpp_symbols::read_field<UINT64>(entry, Checksum_field);
+		const auto Seed = il2cpp_symbols::read_field<UINT64>(entry, Seed_field);
+
+		return CatalogManifest_FromValues(LabelCrc, Size, Checksum, Seed);
+	}
+	
+
+	void* checkAndDownloadFile(Il2CppString* fileNameStr) {
+		try {
+			const std::wstring fileName(fileNameStr->start_char);
+
+			std::filesystem::path userProfile = getenv("UserProfile");
+			std::filesystem::path filePath = userProfile / "AppData/LocalLow/BNE/imasscprism/D" / fileName.substr(0, 2) / fileName;
+			if (std::filesystem::exists(filePath)) {
+				return readFileAllBytes(filePath);
+			}
+
+			const auto url = std::format(L"https://asset.imassc.song4.prism.bn765.com/r/{}/{}", fileName.substr(0, 2), fileName);
+			web::http::client::http_client_config cfg;
+			cfg.set_timeout(utility::seconds(30));
+			web::http::client::http_client client(url, cfg);
+			auto response = client.request(web::http::methods::GET).get();
+			if (response.status_code() != 200) {
+				wprintf(L"File download failed: %ls (%d)\n", url.c_str(), response.status_code());
+				return NULL;
+			}
+
+			concurrency::streams::fstream::open_ostream(filePath.c_str()).then([=](concurrency::streams::ostream output_stream) {
+				return response.body().read_to_end(output_stream.streambuf());
+				}).then([=](size_t) {
+					wprintf(L"File downloaded successfully: %ls\n", filePath.c_str());
+					}).wait();
+
+			return readFileAllBytes(filePath);
+		}
+		catch (std::exception& e) {
+			printf("checkAndDownloadFile error: %s\n", e.what());
+			return NULL;
+		}
+
+	}
+
+
+	int dumpScenarioFromCatalog() {
+		static auto getGameVersion = reinterpret_cast<Il2CppString* (*)()>(
+			il2cpp_resolve_icall("UnityEngine.Application::get_version()")
+			);
+		
+		static auto Global_get_instance = reinterpret_cast<void* (*)()>(
+			il2cpp_symbols::get_method_pointer("PRISM.ResourceManagement.dll", "PRISM",
+				"Global", "get_Instance", 0)
+			);
+
+		static auto get_CurrentResourceVersion = reinterpret_cast<Il2CppString* (*)(void*)>(
+			il2cpp_symbols::get_method_pointer("PRISM.ResourceManagement.dll", "PRISM",
+				"Global", "get_CurrentResourceVersion", 0)
+			);
+
+		static auto string_op_Implicit = reinterpret_cast<void* (*)(void* retstr, Il2CppString*)>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System",
+				"String", "op_Implicit", 1)
+			);
+
+		static auto ReadOnlySpan_char_klass = il2cpp_symbols::get_system_class_from_reflection_type_str(
+			"System.ReadOnlySpan`1[System.Char]");
+
+		static auto HashUtils_Crc64 = reinterpret_cast<UINT64 (*)(void*, UINT64)>(
+			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+				"HashUtils", "Crc64", 2)
+			);
+
+		static auto CatalogManifest_GetRealName = reinterpret_cast<Il2CppString* (*)(void*)>(
+			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+				"CatalogManifest", "GetRealName", 0)
+			);
+
+		static auto CatalogBinaryParser_ParseEncoded = reinterpret_cast<void* (*)(void* manifest, void* input)>(
+			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+				"CatalogBinaryParser", "ParseEncoded", 2)
+			);
+
+		static auto CatalogBinary_get_Entries = reinterpret_cast<void* (*)(void*)>(
+			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+				"CatalogBinary", "get_Entries", 0)
+			);
+
+		static auto CatalogBinaryEntry_ToCatalogManifest = reinterpret_cast<void* (*)(void*)>(
+			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+				"CatalogBinaryEntry", "ToCatalogManifest", 0)
+			);
+
+		static auto CatalogBinaryEntry_get_Label = reinterpret_cast<void* (*)(void* retstr, void* _this)>(
+			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+				"CatalogBinaryEntry", "get_Label", 0)
+			);
+
+		static auto CatalogBinaryEntry_klass = il2cpp_symbols::get_class("Limelight.Shared.dll", "Limelight", "CatalogBinaryEntry");
+		static auto Label_field = il2cpp_class_get_field_from_name(CatalogBinaryEntry_klass, "<Label>k__BackingField");
+
+		static auto Encoding_get_UTF8 = reinterpret_cast<void* (*)()>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Text",
+				"Encoding", "get_UTF8", 0)
+			);
+
+		static auto Encoding_GetString = reinterpret_cast<Il2CppString* (*)(void*, void*, int, int)>(
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Text",
+				"Encoding", "GetString", 3)
+			);
+
+		const std::wstring gameVer(getGameVersion()->start_char);
+		const std::wstring resVersion(get_CurrentResourceVersion(Global_get_instance())->start_char);
+
+		const auto atPos = resVersion.find(L'@');
+		const auto simpleVersion = resVersion.substr(0, atPos);
+		const auto encodedInfo = resVersion.substr(atPos + 1);
+		
+		auto ReadOnlySpan_char = il2cpp_object_new(ReadOnlySpan_char_klass);
+		
+		const auto cmpStr = il2cpp_symbols::NewWStr(std::format(L"{}:{}", gameVer, simpleVersion));
+		const auto rootHash = HashUtils_Crc64(string_op_Implicit(ReadOnlySpan_char, cmpStr), 0);
+
+		auto manifest = FromCatalogInfo(encodedInfo, rootHash);
+
+		wprintf(L"manifest at %p, rootHash: %llu (%ls)\n", manifest, rootHash, cmpStr->start_char);
+
+		auto encodedCatalog = checkAndDownloadFile(CatalogManifest_GetRealName(manifest));
+		if (encodedCatalog == NULL) {
+			printf("readCatalog failed: encodedCatalog is NULL.\n");
+			return 0;
+		}
+
+		auto catalog = CatalogBinaryParser_ParseEncoded(manifest, encodedCatalog);  // Limelight.CatalogBinary
+		int dumpCount = 0;
+
+		il2cpp_symbols::iterate_IEnumerable(CatalogBinary_get_Entries(catalog), [&dumpCount](void* entry) {
+			auto manifest2 = entryAsManifest(entry);
+			auto encodedCatalog2 = checkAndDownloadFile(CatalogManifest_GetRealName(manifest2));
+			auto catalog2 = CatalogBinaryParser_ParseEncoded(manifest2, encodedCatalog2);  // Limelight.CatalogBinary
+
+			il2cpp_symbols::iterate_IEnumerable(CatalogBinary_get_Entries(catalog2), [&dumpCount](void* info) {
+				static auto toJsonStr = reinterpret_cast<Il2CppString * (*)(void*)>(
+					il2cpp_symbols::get_method_pointer("Newtonsoft.Json.dll", "Newtonsoft.Json",
+						"JsonConvert", "SerializeObject", 1)
+					);
+				
+				/*
+				wprintf(L"label:\n%ls\n\n", toJsonStr(info)->start_char);
+				static auto ArraySegment_Byte_klass = il2cpp_symbols::get_system_class_from_reflection_type_str(
+					"System.ArraySegment`1[System.Byte]");
+				auto label = il2cpp_object_new(ArraySegment_Byte_klass);  // System.ArraySegment`1<unsigned int8>
+
+				label = CatalogBinaryEntry_get_Label(label, info);  // System.ArraySegment`1<unsigned int8>
+				*/
+
+				auto label = il2cpp_field_get_value_object(Label_field, info);
+
+				const std::wstring labelArrayStr(toJsonStr(label)->start_char);
+				auto labelArray = nlohmann::json::parse(labelArrayStr);
+				std::string labelStr;
+				for (auto& i : labelArray) {
+					int l = i;
+					labelStr += (char)l;
+				}
+
+				static std::regex pattern("^s\\d+_\\d+_\\d+$");
+				
+				if (std::regex_match(labelStr, pattern)) {
+					// printf("labelStr: %s\n", labelStr.c_str());
+					if (dumpScenarioDataByJsonFileName(labelStr)) {
+						dumpCount++;
+					}
+				}
+
+				/*
+				static auto ArraySegment_Byte_klass = il2cpp_symbols::get_class_from_instance(label);
+
+				static auto ArraySegment_get_Array = reinterpret_cast<void* (*)(void*)>(
+					il2cpp_class_get_method_from_name(ArraySegment_Byte_klass, "get_Array", 0)->methodPointer
+					);
+				static auto ArraySegment_get_Offset = reinterpret_cast<int (*)(void*)>(
+					il2cpp_class_get_method_from_name(ArraySegment_Byte_klass, "get_Offset", 0)->methodPointer
+					);
+				static auto ArraySegment_get_Count = reinterpret_cast<int (*)(void*)>(
+					il2cpp_class_get_method_from_name(ArraySegment_Byte_klass, "get_Count", 0)->methodPointer
+					);
+
+				auto labelStrArray = ArraySegment_get_Array(label);
+				auto labelStrOffset = ArraySegment_get_Offset(label);
+				auto labelStrCount = ArraySegment_get_Count(label);
+
+
+				wprintf(L"labelStrOffset: %d, labelStrCount: %d\n", labelStrOffset, labelStrCount);
+				auto labelStr = Encoding_GetString(Encoding_get_UTF8(), labelStrArray, labelStrOffset, labelStrCount);
+
+				wprintf(L"labelStr: %ls\n", labelStr->start_char);*/
+				});
+
+			});
+		return dumpCount;
 	}
 
 	void* LiveMVView_UpdateLyrics_orig;
@@ -695,11 +1015,6 @@ namespace
 	void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName) {
 		// printf("ScenarioManager_Init: %ls\n%ls\n\n", scrName->start_char, environment_get_stacktrace()->start_char);
 		return reinterpret_cast<decltype(ScenarioManager_Init_hook)*>(ScenarioManager_Init_orig)(retstr, _this, scrName);
-	}
-
-	void* (*ReadAllBytes)(Il2CppString*);
-	void* readFileAllBytes(const std::wstring& name) {
-		return ReadAllBytes(il2cpp_symbols::NewWStr(name));
 	}
 
 	void* DataFile_GetBytes_hook(Il2CppString* path) {
@@ -1676,6 +1991,9 @@ namespace
 			"CameraController", "get_baseCamera", 0
 		);
 
+		const auto AssetBundle_LoadAsset_addr =
+			il2cpp_resolve_icall("UnityEngine.AssetBundle::LoadAsset_Internal(System.String,System.Type)");
+
 		auto Unity_get_pos_injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::get_position_Injected(UnityEngine.Vector3&)");
 		auto Unity_set_pos_injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::set_position_Injected(UnityEngine.Vector3&)");
 
@@ -1818,6 +2136,7 @@ namespace
 #pragma endregion
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(get_NeedsLocalization, "get_NeedsLocalization at %p");
+		ADD_HOOK(AssetBundle_LoadAsset, "AssetBundle_LoadAsset at %p");
 		ADD_HOOK(LiveMVView_UpdateLyrics, "LiveMVView_UpdateLyrics at %p");
 		ADD_HOOK(TimelineController_SetLyric, "TimelineController_SetLyric at %p");
 		ADD_HOOK(get_baseCamera, "get_baseCamera at %p");
