@@ -1729,14 +1729,22 @@ namespace
 
 	void* GGIregualDetector_ShowPopup_orig;
 	void GGIregualDetector_ShowPopup_hook(void* _this, int code) {
+		static auto End = reinterpret_cast<void (*)(void*)>(
+			il2cpp_symbols::get_method_pointer(
+				"PRISM.Legacy.dll", "PRISM",
+				"GGIregualDetector", "End", 0
+			));
+
 		//printf("GGIregualDetector_ShowPopup: code: %d\n%ls\n\n", code, environment_get_stacktrace()->start_char);
 		//readDMMGameGuardData();
+
+		return End(_this);
 
 		static auto this_klass = il2cpp_symbols::get_class_from_instance(_this);
 		static FieldInfo* isShowPopup_field = il2cpp_class_get_field_from_name(this_klass, "_isShowPopup");
 		static FieldInfo* isError_field = il2cpp_class_get_field_from_name(this_klass, "_isError");
 		auto fieldData = il2cpp_class_get_static_field_data(this_klass);
-		auto isError = il2cpp_symbols::read_field<bool>(fieldData, isError_field);
+		auto isError = il2cpp_symbols::read_field<bool>(_this, isError_field);
 
 		if (isError) {
 			// if (code == 0) return;

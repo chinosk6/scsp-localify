@@ -1,8 +1,14 @@
+<div align="center">
+
 # SCSP-localify
+
+简体中文 | [English](readme_EN.md)
 
 - 偶像大师 闪耀色彩 棱镜之歌 **DMM 版** 本地化插件。
 
 - 注意：使用外部插件属于违反游戏条款的行为。若使用插件后账号被封禁，造成的后果由用户自行承担。
+
+</div>
 
 
 
@@ -10,7 +16,6 @@
 
 - 将插件本体解压到游戏安装目录内即可 (`version.dll` 和 `imasscprism.exe` 在同一级目录)
 - 启动游戏后看见控制台（需打开`enableConsole` ）即安装成功
-- 游戏登录界面会出现安全策略相关错误弹窗。因为插件拦截了游戏的反作弊程序，属于正常现象，关闭弹窗即可。
 
 
 
@@ -86,19 +91,19 @@
 
 
 
-# 如何汉化：
+# 如何汉化
 
-- 将 dumps 目录内的 Json 文件汉化后，放进 scsp_localify 目录即可。
+- 将 dumps 目录内的 Json 文件汉化后，放进 `scsp_localify` 目录即可。
 - 汉化仓库：[SCSPTranslationData](https://github.com/ShinyGroup/SCSPTranslationData) 欢迎各位贡献自己的翻译~
 
 
 
-## 自行 dump 原文：
+## 自行 dump 原文
 - 游戏内的 UI 文本大致可以分为三类。
 
-  - 1、通过游戏内的 Localify 接口加载
+  - 1、通过游戏内的 `Localify` 接口加载
 
-  - 2、不通过 Localify 接口加载
+  - 2、不通过 `Localify`接口加载
 
   - 3、直接通过 Json 加载（这部分不止文本，还有其它诸如镜头数据、人物动作等，插件也支持替换。）
 
@@ -110,7 +115,7 @@
 
 - 除此之外的文件都对应第三类
 
-- （UI 文本一部分走 Localify，一部分不走，很奇怪。）
+- （UI 文本一部分走 `Localify`，一部分不走，很奇怪。）
 
 
 
