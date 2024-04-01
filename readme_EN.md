@@ -4,9 +4,9 @@
 
 [简体中文](readme.md) | English
 
-- iM@S SCSP localify plugin.
+iM@S SCSP localify plugin.
 
-- **Note: Using external plugins violates the game's terms of service. If your account is banned due to plugin usage, the consequences are solely your responsibility.**
+**Note: Using external plugins violates the game's terms of service. If your account is banned due to plugin usage, the consequences are solely your responsibility.**
 
 </div>
 
