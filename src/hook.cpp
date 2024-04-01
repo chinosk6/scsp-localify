@@ -833,6 +833,10 @@ namespace
 		il2cpp_symbols::iterate_IEnumerable(CatalogBinary_get_Entries(catalog), [&dumpCount](void* entry) {
 			auto manifest2 = entryAsManifest(entry);
 			auto encodedCatalog2 = checkAndDownloadFile(CatalogManifest_GetRealName(manifest2));
+			if (encodedCatalog2 == NULL) {
+				printf("encodedCatalog2 failed: encodedCatalog is NULL.\n");
+				return;
+			}
 			auto catalog2 = CatalogBinaryParser_ParseEncoded(manifest2, encodedCatalog2);  // Limelight.CatalogBinary
 
 			il2cpp_symbols::iterate_IEnumerable(CatalogBinary_get_Entries(catalog2), [&dumpCount](void* info) {
