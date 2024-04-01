@@ -2,7 +2,7 @@
 
 # SCSP-localify
 
-[简体中文](readme.md) | English
+[简体中文](README.md) | English
 
 iM@S SCSP localify plugin.
 
