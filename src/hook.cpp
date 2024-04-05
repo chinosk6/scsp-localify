@@ -1524,23 +1524,21 @@ namespace
 
 	int slotNewCount = 0;
 	bool settingLiveIdolSlot = false;
-	void* lastNewMvUnitSlot = NULL;
+	void* lastIdol = NULL;
 
 	void* MvUnitSlotGenerator_NewMvUnitSlot_orig;
 	void* MvUnitSlotGenerator_NewMvUnitSlot_hook(int slot, void* idol, void* method) {
 		if (g_allow_same_idol && settingLiveIdolSlot) {
 			if (slotNewCount >= 1) {
 				printf("catch exchange.\n");
-				return lastNewMvUnitSlot;
+				idol = lastIdol;
 			}
 			else {
 				slotNewCount++;
+				lastIdol = idol;
 			}
 		}
-
-		auto ret = reinterpret_cast<decltype(MvUnitSlotGenerator_NewMvUnitSlot_hook)*>(MvUnitSlotGenerator_NewMvUnitSlot_orig)(slot, idol, method);
-		lastNewMvUnitSlot = ret;
-		return ret;
+		return reinterpret_cast<decltype(MvUnitSlotGenerator_NewMvUnitSlot_hook)*>(MvUnitSlotGenerator_NewMvUnitSlot_orig)(slot, idol, method);
 	}
 
 	void* LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_orig;
