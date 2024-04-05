@@ -1296,6 +1296,7 @@ namespace
 				else {
 					showObjName = objName;
 				}
+				showObjName = std::format("{} ({:p})", showObjName, mdl);
 			}
 			else {
 				showObjName = objName;
@@ -1515,10 +1516,43 @@ namespace
 
 	void* LiveMVUnit_GetMemberChangeRequestData_orig;
 	void* LiveMVUnit_GetMemberChangeRequestData_hook(void* _this, int position, void* idol, int exchangePosition) {
-		if (g_allow_same_idol) {
+		if (g_allow_same_idol) {  // 此方法已过时
 			exchangePosition = -1;
 		}
 		return reinterpret_cast<decltype(LiveMVUnit_GetMemberChangeRequestData_hook)*>(LiveMVUnit_GetMemberChangeRequestData_orig)(_this, position, idol, exchangePosition);
+	}
+
+	int slotNewCount = 0;
+	bool settingLiveIdolSlot = false;
+	void* lastNewMvUnitSlot = NULL;
+
+	void* MvUnitSlotGenerator_NewMvUnitSlot_orig;
+	void* MvUnitSlotGenerator_NewMvUnitSlot_hook(int slot, void* idol, void* method) {
+		if (g_allow_same_idol && settingLiveIdolSlot) {
+			if (slotNewCount >= 1) {
+				printf("catch exchange.\n");
+				return lastNewMvUnitSlot;
+			}
+			else {
+				slotNewCount++;
+			}
+		}
+
+		auto ret = reinterpret_cast<decltype(MvUnitSlotGenerator_NewMvUnitSlot_hook)*>(MvUnitSlotGenerator_NewMvUnitSlot_orig)(slot, idol, method);
+		lastNewMvUnitSlot = ret;
+		return ret;
+	}
+
+	void* LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_orig;
+	void LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_hook(void* _this, MethodInfo* method) {
+		slotNewCount = 0;
+		settingLiveIdolSlot = true;
+
+		reinterpret_cast<decltype(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_hook)*>
+			(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_orig)(_this, method);
+
+		slotNewCount = 0;
+		settingLiveIdolSlot = false;
 	}
 
 	void* CriWareErrorHandler_HandleMessage_orig;
@@ -2077,6 +2111,27 @@ namespace
 			"LiveMVUnit", "GetMemberChangeRequestData", 3
 		);
 
+		auto LiveMVUnitMemberChangePresenter_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Live", "LiveMVUnitMemberChangePresenter");
+		auto LiveMVUnitMemberChangePresenter_c__DisplayClass7_0_klass
+			= il2cpp_symbols::find_nested_class_from_name(LiveMVUnitMemberChangePresenter_klass, "<>c__DisplayClass7_0");
+		auto LiveMVUnitMemberChangePresenter_c__DisplayClass7_0_klass_initializeAsync_b__4_d_klass
+			= il2cpp_symbols::find_nested_class_from_name(LiveMVUnitMemberChangePresenter_c__DisplayClass7_0_klass, "<<_initializeAsync>b__4>d");
+		auto LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_method =
+			il2cpp_class_get_method_from_name(LiveMVUnitMemberChangePresenter_c__DisplayClass7_0_klass_initializeAsync_b__4_d_klass, "MoveNext", 0);
+		uintptr_t LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_addr = NULL;
+
+		if (LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_method) {
+			LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_addr = LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_method->methodPointer;
+		}
+		else {
+			printf("LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_method not found.\n");
+		}
+
+		auto MvUnitSlotGenerator_NewMvUnitSlot_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM",
+			"MvUnitSlotGenerator", "NewMvUnitSlot", 2
+		);
+
 		auto PopupSystem_ShowPopup_addr = il2cpp_symbols::get_method_pointer(
 			"ENTERPRISE.UI.dll", "ENTERPRISE.Popup",
 			"PopupSystem", "ShowPopup", 3
@@ -2190,6 +2245,8 @@ namespace
 		ADD_HOOK(SwayString_SetupPoint, "SwayString_SetupPoint at %p");
 		// ADD_HOOK(PopupSystem_ShowPopup, "PopupSystem_ShowPopup at %p");
 		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
+		ADD_HOOK(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext, "LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext at %p");
+		ADD_HOOK(MvUnitSlotGenerator_NewMvUnitSlot, "MvUnitSlotGenerator_NewMvUnitSlot at %p");
 		ADD_HOOK(CriWareErrorHandler_HandleMessage, "CriWareErrorHandler_HandleMessage at %p");
 		ADD_HOOK(GGIregualDetector_ShowPopup, "GGIregualDetector_ShowPopup at %p");
 		ADD_HOOK(DMMGameGuard_NPGameMonCallback, "DMMGameGuard_NPGameMonCallback at %p");
