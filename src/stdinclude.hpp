@@ -174,3 +174,4 @@ extern bool g_unlock_all_dress;
 extern bool g_unlock_all_headwear;
 extern bool g_enable_chara_param_edit;
 extern float g_font_size_offset;
+extern float g_3d_resolution_scale;

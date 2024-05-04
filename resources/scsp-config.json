@@ -2,6 +2,7 @@
     "enableConsole": true,
     "enableVSync": false,
     "maxFps": 60,
+    "3DResolutionScale": 1.0,
     "localifyBasePath": "scsp_localify",
     "hotKey": "u",
     "dumpUntransLyrics": false,

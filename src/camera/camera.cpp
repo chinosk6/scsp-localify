@@ -19,6 +19,7 @@
 
 namespace SCCamera {
 	BaseCamera::Camera baseCamera{};
+	Vector2Int_t currRenderResolution{ -1, -1 };
 
 	bool rMousePressFlg = false;
 

@@ -29,6 +29,7 @@ bool g_dump_untrans_lyrics = false;
 bool g_dump_untrans_unlocal = false;
 int g_max_fps = 60;
 int g_vsync_count = 0;
+float g_3d_resolution_scale = 1.0f;
 std::string g_custom_font_path = "";
 std::list<std::string> g_extra_assetbundle_paths{};
 char hotKey = 'u';
@@ -101,6 +102,9 @@ namespace
 			}
 			if (document.HasMember("maxFps")) {
 				g_max_fps = document["maxFps"].GetInt();
+			}
+			if (document.HasMember("3DResolutionScale")) {
+				g_3d_resolution_scale = document["3DResolutionScale"].GetFloat();
 			}
 
 			if (document.HasMember("enableConsole")) {

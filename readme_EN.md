@@ -44,6 +44,7 @@ iM@S SCSP localify plugin.
 | enableConsole         | Bool      | `true`                                | Enable console                                         |
 | enableVSync           | Bool      | `false`                               | Enable vertical sync                                   |
 | maxFps                | Int       | `60`                                  | Maximum frame rate<br>When `enableVSync` is enabled, this configuration is ineffective |
+| 3DResolutionScale | Float | `1.0` | 3D resolution render scale |
 | localifyBasePath      | String    | `scsp_localify`                      | Localization file directory                            |
 | hotKey                | String (Char) | `u`                               | Press `Ctrl` + this configured hotkey to **open the plugin GUI** |
 | dumpUntransLyrics     | Bool      | `false`                               | Dump untranslated lyrics                               |

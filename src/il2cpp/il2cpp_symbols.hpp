@@ -26,6 +26,14 @@ public:
 	float y;
 };
 
+// UnityEngine.Vector2
+struct Vector2Int_t
+{
+public:
+	int x;
+	int y;
+};
+
 // UnityEngine.Vector3
 struct Vector3_t
 {

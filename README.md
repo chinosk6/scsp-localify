@@ -45,6 +45,7 @@
 | enableConsole         | Bool                                     | `true`                                 | 是否开启控制台                                       |
 | enableVSync           | Bool                                     | `false`                                | 是否启用垂直同步                                     |
 | maxFps                | Int                                      | `60`                                   | 最大帧数<br>当启用 `enableVSync` 时，此项配置失效    |
+| 3DResolutionScale     | Float                                    | `1.0`                                  | 3D 渲染分辨率倍率                                    |
 | localifyBasePath      | String                                   | `scsp_localify`                        | 本地化文件目录                                       |
 | hotKey                | String (Char)                            | `u`                                    | 按下 `Ctrl` + 此项配置的热键，**打开插件 GUI**       |
 | dumpUntransLyrics     | Bool                                     | `false`                                | dump 未翻译的歌词                                    |

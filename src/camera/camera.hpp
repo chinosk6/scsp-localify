@@ -3,6 +3,7 @@
 
 namespace SCCamera {
 	extern BaseCamera::Camera baseCamera;
+	extern Vector2Int_t currRenderResolution;
 
 	void onKillFocus();
 	void initCameraSettings();

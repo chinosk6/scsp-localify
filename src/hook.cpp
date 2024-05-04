@@ -614,6 +614,18 @@ namespace
 		return ret;
 	}
 
+	void* GetResolutionSize_orig;
+	Vector2Int_t GetResolutionSize_hook(void* camera, void* method) {
+		auto ret = reinterpret_cast<decltype(GetResolutionSize_hook)*>(GetResolutionSize_orig)(camera, method);
+		if (g_3d_resolution_scale != 1.0f) {
+			ret.x *= g_3d_resolution_scale;
+			ret.y *= g_3d_resolution_scale;
+			SCCamera::currRenderResolution.x = ret.x;
+			SCCamera::currRenderResolution.y = ret.y;
+		}
+		return ret;
+	}
+
 	void* AssetBundle_LoadAsset_orig;
 	void* AssetBundle_LoadAsset_hook(void* _this, Il2CppString* name, Il2CppReflectionType* type)
 	{
@@ -2021,6 +2033,10 @@ namespace
 			"ENTERPRISE.UI.dll", "ENTERPRISE.UI",
 			"UITextMeshProUGUI", "get_NeedsLocalization", 0
 		);
+		auto GetResolutionSize_addr = il2cpp_symbols::get_method_pointer(
+			"Prism.Rendering.Runtime.dll", "PRISM.Rendering",
+			"RenderManager", "GetResolutionSize", 1
+		);
 		auto LiveMVView_UpdateLyrics_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Live",
 			"LiveMVView", "UpdateLyrics", 1
@@ -2201,6 +2217,7 @@ namespace
 #pragma endregion
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(get_NeedsLocalization, "get_NeedsLocalization at %p");
+		ADD_HOOK(GetResolutionSize, "GetResolutionSize at %p");
 		ADD_HOOK(AssetBundle_LoadAsset, "AssetBundle_LoadAsset at %p");
 		ADD_HOOK(LiveMVView_UpdateLyrics, "LiveMVView_UpdateLyrics at %p");
 		ADD_HOOK(TimelineController_SetLyric, "TimelineController_SetLyric at %p");

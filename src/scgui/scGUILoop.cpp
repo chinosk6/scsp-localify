@@ -173,6 +173,8 @@ namespace SCGUILoop {
             HELP_TOOLTIP("(?)", "启用角色身体参数编辑器")
 
             if (ImGui::CollapsingHeader("Resolution Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::Text("Window Resolution Settings");
+
                 if (ImGui::Button("720P")) {
                     SCGUIData::screenW = 1280;
                     SCGUIData::screenH = 720;
@@ -207,6 +209,15 @@ namespace SCGUILoop {
                     }
 
                 }
+
+                ImGui::Separator();
+
+                INPUT_AND_SLIDER_FLOAT("3D Resolution Scale", &g_3d_resolution_scale, 0.1f, 5.0f);
+                if (g_3d_resolution_scale == 1.0f) {
+                    SCCamera::currRenderResolution.x = SCGUIData::screenW;
+                    SCCamera::currRenderResolution.y = SCGUIData::screenH;
+                }
+                ImGui::Text("Current 3D Resolution: %d, %d", SCCamera::currRenderResolution.x, SCCamera::currRenderResolution.y);
             }
 
             if (ImGui::CollapsingHeader("Camera Info", ImGuiTreeNodeFlags_DefaultOpen)) {
