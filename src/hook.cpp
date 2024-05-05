@@ -593,6 +593,48 @@ namespace
 
 	}
 
+	// NOT HOOK
+	void* PIdolDetailPopupViewModel_Create_orig;
+	void* PIdolDetailPopupViewModel_Create_hook(void* produceIdol, void* costumeSetInfoList, void* idolBase, void* idolParameter, bool isChangeableIdolSkill, bool isChangeableFavorite, void* produceAdvStatusList, bool isPlayableAdv, bool inLive, bool upgradingButtonActive) {
+		auto ret = reinterpret_cast<decltype(PIdolDetailPopupViewModel_Create_hook)*>(PIdolDetailPopupViewModel_Create_orig)(
+			produceIdol, costumeSetInfoList, idolBase, idolParameter, isChangeableIdolSkill, isChangeableFavorite, produceAdvStatusList, isPlayableAdv, inLive, upgradingButtonActive
+			);
+		return ret;
+		/*  // 功能被 EventModel_ctor_hook 替代
+		static auto get_EventList = reinterpret_cast<void* (*)(void*)>(
+			il2cpp_symbols::get_method_pointer("PRISM.Adapters.dll", "PRISM.Adapters",
+				"PIdolDetailPopupViewModel", "get_EventList", 0)
+			);
+		static auto EventModel_klass = il2cpp_symbols::get_class("PRISM.Adapters.dll", "PRISM.Adapters", "EventModel");
+		static auto Read_field = il2cpp_class_get_field_from_name(EventModel_klass, "<Read>k__BackingField");
+		static auto IsAdvPlayable_field = il2cpp_class_get_field_from_name(EventModel_klass, "<IsAdvPlayable>k__BackingField");
+
+		printf("PIdolDetailPopupViewModel_Create\n");
+
+		auto events = get_EventList(ret);
+
+		il2cpp_symbols::iterate_IEnumerable(events, [](void* event) {
+			const auto read = il2cpp_symbols::read_field<bool>(event, Read_field);
+			const auto isAdvPlayable = il2cpp_symbols::read_field<bool>(event, IsAdvPlayable_field);
+			printf("read: %d, isAdvPlayable: %d\n", read, isAdvPlayable);
+
+			il2cpp_symbols::write_field(event, Read_field, true);
+			});
+
+		return ret;*/
+	}
+
+	void* EventModel_ctor_orig;
+	void EventModel_ctor_hook(void* _this, void* scenarioID, Il2CppString* title, Il2CppString* summary, bool read, bool isAdvPlayable) {
+		if (g_unlock_PIdol_and_SChara_events) {
+			if (!read) {
+				wprintf(L"Force Unlock Event: %ls\n", title->start_char);
+				read = true;
+			}
+		}
+		return reinterpret_cast<decltype(EventModel_ctor_hook)*>(EventModel_ctor_orig)(_this, scenarioID, title, summary, read, isAdvPlayable);
+	}
+
 	void* LocalizationManager_GetTextOrNull_orig;
 	Il2CppString* LocalizationManager_GetTextOrNull_hook(void* _this, Il2CppString* category, int id) {
 		if (g_max_fps != -1) set_fps_hook(g_max_fps);
@@ -2025,6 +2067,15 @@ namespace
 			"TextLog", "AddLog", 4
 		);
 
+		auto PIdolDetailPopupViewModel_Create_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Adapters.dll", "PRISM.Adapters",
+			"PIdolDetailPopupViewModel", "Create", 10
+		);
+		auto EventModel_ctor_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Adapters.dll", "PRISM.Adapters", 
+			"EventModel", ".ctor", 5
+		);
+
 		auto LocalizationManager_GetTextOrNull_addr = il2cpp_symbols::get_method_pointer(
 			"ENTERPRISE.Localization.dll", "ENTERPRISE.Localization",
 			"LocalizationManager", "GetTextOrNull", 2
@@ -2215,6 +2266,8 @@ namespace
 		);
 
 #pragma endregion
+		// ADD_HOOK(PIdolDetailPopupViewModel_Create, "PIdolDetailPopupViewModel_Create at %p");
+		ADD_HOOK(EventModel_ctor, "EventModel_ctor at %p");
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(get_NeedsLocalization, "get_NeedsLocalization at %p");
 		ADD_HOOK(GetResolutionSize, "GetResolutionSize at %p");

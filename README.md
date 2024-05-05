@@ -40,21 +40,22 @@
 
 - 配置项位于 `scsp-config.json` 文件中
 
-| 配置项                | 类型                                     | 默认值                                 | 说明                                                 |
-| --------------------- | ---------------------------------------- | -------------------------------------- | ---------------------------------------------------- |
-| enableConsole         | Bool                                     | `true`                                 | 是否开启控制台                                       |
-| enableVSync           | Bool                                     | `false`                                | 是否启用垂直同步                                     |
-| maxFps                | Int                                      | `60`                                   | 最大帧数<br>当启用 `enableVSync` 时，此项配置失效    |
-| 3DResolutionScale     | Float                                    | `1.0`                                  | 3D 渲染分辨率倍率                                    |
-| localifyBasePath      | String                                   | `scsp_localify`                        | 本地化文件目录                                       |
-| hotKey                | String (Char)                            | `u`                                    | 按下 `Ctrl` + 此项配置的热键，**打开插件 GUI**       |
-| dumpUntransLyrics     | Bool                                     | `false`                                | dump 未翻译的歌词                                    |
-| dumpUntransLocal2     | Bool                                     | `false`                                | dump 未翻译的文本                                    |
-| autoDumpAllJson       | Bool                                     | `false`                                | dump 所有游戏加载的 JSON                             |
-| extraAssetBundlePaths | String[]                                 | `["scsp_localify/scsp-bundle"]`        | 自定义数据包路径                                     |
-| customFontPath        | String                                   | `assets/font/sbtphumminge-regular.ttf` | 自定义数据包中字体路径<br>用于替换游戏内置字体       |
-| blockOutOfFocus       | Bool                                     | `true`                                 | 拦截窗口失焦事件<br>切换到其它窗口后不会触发游戏暂停 |
-| baseFreeCamera        | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera)      | 自由视角配置                                         |
+| 配置项                     | 类型                                     | 默认值                                 | 说明                                                 |
+| -------------------------- | ---------------------------------------- | -------------------------------------- | ---------------------------------------------------- |
+| enableConsole              | Bool                                     | `true`                                 | 是否开启控制台                                       |
+| enableVSync                | Bool                                     | `false`                                | 是否启用垂直同步                                     |
+| maxFps                     | Int                                      | `60`                                   | 最大帧数<br>当启用 `enableVSync` 时，此项配置失效    |
+| 3DResolutionScale          | Float                                    | `1.0`                                  | 3D 渲染分辨率倍率                                    |
+| localifyBasePath           | String                                   | `scsp_localify`                        | 本地化文件目录                                       |
+| hotKey                     | String (Char)                            | `u`                                    | 按下 `Ctrl` + 此项配置的热键，**打开插件 GUI**       |
+| dumpUntransLyrics          | Bool                                     | `false`                                | dump 未翻译的歌词                                    |
+| dumpUntransLocal2          | Bool                                     | `false`                                | dump 未翻译的文本                                    |
+| autoDumpAllJson            | Bool                                     | `false`                                | dump 所有游戏加载的 JSON                             |
+| extraAssetBundlePaths      | String[]                                 | `["scsp_localify/scsp-bundle"]`        | 自定义数据包路径                                     |
+| customFontPath             | String                                   | `assets/font/sbtphumminge-regular.ttf` | 自定义数据包中字体路径<br>用于替换游戏内置字体       |
+| blockOutOfFocus            | Bool                                     | `true`                                 | 拦截窗口失焦事件<br>切换到其它窗口后不会触发游戏暂停 |
+| baseFreeCamera             | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera)      | 自由视角配置                                         |
+| unlockPIdolAndSCharaEvents | Bool                                     | `false`                                | 解锁 `角色` - `一览` 中的P卡和S卡事件                |
 
 
 

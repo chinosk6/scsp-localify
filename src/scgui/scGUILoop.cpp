@@ -172,6 +172,10 @@ namespace SCGUILoop {
             ImGui::SameLine();
             HELP_TOOLTIP("(?)", "启用角色身体参数编辑器")
 
+            ImGui::Checkbox("Unlock PIdol And SChara Events", &g_unlock_PIdol_and_SChara_events);
+            ImGui::SameLine();
+            HELP_TOOLTIP("(?)", "解锁 角色 - 一览 中的P卡和S卡事件\nUnlock Idol Event (アイドルイベント) and Support Event (サポートイベント)")
+
             if (ImGui::CollapsingHeader("Resolution Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 ImGui::Text("Window Resolution Settings");
 

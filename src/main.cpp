@@ -43,6 +43,7 @@ bool g_allow_same_idol = false;
 bool g_unlock_all_dress = false;
 bool g_unlock_all_headwear = false;
 bool g_enable_chara_param_edit = false;
+bool g_unlock_PIdol_and_SChara_events = false;
 
 std::filesystem::path g_localify_base("scsp_localify");
 constexpr const char ConfigJson[] = "scsp-config.json";
@@ -179,6 +180,9 @@ namespace
 			}
 			if (document.HasMember("unlockAllHeadwear")) {
 				g_unlock_all_headwear = document["unlockAllHeadwear"].GetBool() && g_unlock_all_dress;
+			}
+			if (document.HasMember("unlockPIdolAndSCharaEvents")) {
+				g_unlock_PIdol_and_SChara_events = document["unlockPIdolAndSCharaEvents"].GetBool();
 			}
 			
 		}

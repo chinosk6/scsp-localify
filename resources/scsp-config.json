@@ -18,5 +18,6 @@
         "enable": false,
         "moveStep": 50,
         "mouseSpeed": 35
-    }
+    },
+    "unlockPIdolAndSCharaEvents": false
 }
