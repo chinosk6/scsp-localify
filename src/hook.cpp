@@ -40,9 +40,81 @@ std::map<int, std::string> swayTypes{
 	{0xd, "Max"},
 };
 
+void loadGUIDataCache() {
+	try {
+		if (!std::filesystem::exists("scsp-gui-save.json")) return;
+		std::ifstream file("scsp-gui-save.json");
+		if (!file.is_open()) return;
+		std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+		file.close();
+
+		auto fileData = nlohmann::json::parse(fileContent);
+
+		if (fileData.contains("charaSwayStringOffset")) {
+			auto& swaySaveData = fileData["charaSwayStringOffset"];
+			for (auto& sway : swaySaveData.items()) {
+				const std::string keyStr = sway.key();
+				const int key = atoi(keyStr.c_str());
+
+				const auto& value = sway.value();
+				const float rate = value["rate"];
+				const float P_bendStrength = value["P_bendStrength"];
+				const float P_baseGravity = value["P_baseGravity"];
+				const float P_inertiaMoment = value["P_inertiaMoment"];
+				const float P_airResistance = value["P_airResistance"];
+				const float P_deformResistance = value["P_deformResistance"];
+
+				if (auto it = charaSwayStringOffset.find(key); it != charaSwayStringOffset.end()) {
+					it->second.rate = rate;
+					it->second.P_bendStrength = P_bendStrength;
+					it->second.P_baseGravity = P_baseGravity;
+					it->second.P_inertiaMoment = P_inertiaMoment;
+					it->second.P_airResistance = P_airResistance;
+					it->second.P_deformResistance = P_deformResistance;
+				}
+				else {
+					charaSwayStringOffset.emplace(key, CharaSwayStringParam_t(rate, P_bendStrength, P_baseGravity,
+						P_inertiaMoment, P_airResistance, P_deformResistance));
+				}
+			}
+		}
+	}
+	catch (std::exception& e) {
+		printf("initcharaSwayStringOffset failed: %s\n\n", e.what());
+	}
+}
+
 void initcharaSwayStringOffset() {
 	for (auto& i : swayTypes) {
 		charaSwayStringOffset.emplace(i.first, CharaSwayStringParam_t());
+	}
+	loadGUIDataCache();
+}
+
+void saveGUIDataCache() {
+	try {
+		auto saveData = nlohmann::json::object();
+		saveData["charaSwayStringOffset"] = nlohmann::json::object();
+
+		auto& swaySaveData = saveData["charaSwayStringOffset"];
+		for (const auto& pair : charaSwayStringOffset) {
+			const auto currKey = std::to_string(pair.first);
+			swaySaveData[currKey] = nlohmann::json::object();
+			swaySaveData[currKey]["rate"] = pair.second.rate;
+			swaySaveData[currKey]["P_bendStrength"] = pair.second.P_bendStrength;
+			swaySaveData[currKey]["P_baseGravity"] = pair.second.P_baseGravity;
+			swaySaveData[currKey]["P_inertiaMoment"] = pair.second.P_inertiaMoment;
+			swaySaveData[currKey]["P_airResistance"] = pair.second.P_airResistance;
+			swaySaveData[currKey]["P_deformResistance"] = pair.second.P_deformResistance;
+		}
+
+		const auto saveStr = saveData.dump(4);
+		std::ofstream out("scsp-gui-save.json");
+		out << saveStr;
+		out.close();
+	}
+	catch (std::exception& e) {
+		printf("saveGUIDataCache error: %s\n", e.what());
 	}
 }
 

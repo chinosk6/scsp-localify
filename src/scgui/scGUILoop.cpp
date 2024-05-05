@@ -6,6 +6,7 @@ extern void* SetResolution_orig;
 // extern std::vector<std::pair<std::pair<int, int>, int>> replaceDressResIds;
 extern std::map<std::string, CharaParam_t> charaParam;
 extern CharaParam_t baseParam;
+extern void saveGUIDataCache();
 
 
 #define INPUT_AND_SLIDER_FLOAT(label, data, min, max) \
@@ -67,6 +68,10 @@ namespace SCGUILoop {
                     currEditData.P_inertiaMoment = 0;
                     currEditData.P_airResistance = 0;
                     currEditData.P_deformResistance = 0;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Save##sway")) {
+                    saveGUIDataCache();
                 }
                 ImGui::NewLine();
             }
