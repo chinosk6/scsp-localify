@@ -864,12 +864,16 @@ namespace
 
 	}
 
+	struct GameVersion {
+		std::wstring gameVersion;
+		std::wstring resourceVersion;
+	};
 
-	int dumpScenarioFromCatalog() {
+	GameVersion getGameVersions() {
 		static auto getGameVersion = reinterpret_cast<Il2CppString* (*)()>(
 			il2cpp_resolve_icall("UnityEngine.Application::get_version()")
 			);
-		
+
 		static auto Global_get_instance = reinterpret_cast<void* (*)()>(
 			il2cpp_symbols::get_method_pointer("PRISM.ResourceManagement.dll", "PRISM",
 				"Global", "get_Instance", 0)
@@ -880,6 +884,14 @@ namespace
 				"Global", "get_CurrentResourceVersion", 0)
 			);
 
+		const std::wstring gameVer(getGameVersion()->start_char);
+		const std::wstring resVersion(get_CurrentResourceVersion(Global_get_instance())->start_char);
+
+		return GameVersion{ .gameVersion = gameVer , .resourceVersion = resVersion };
+	}
+
+
+	int dumpScenarioFromCatalog() {
 		static auto string_op_Implicit = reinterpret_cast<void* (*)(void* retstr, Il2CppString*)>(
 			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System",
 				"String", "op_Implicit", 1)
@@ -931,8 +943,9 @@ namespace
 				"Encoding", "GetString", 3)
 			);
 
-		const std::wstring gameVer(getGameVersion()->start_char);
-		const std::wstring resVersion(get_CurrentResourceVersion(Global_get_instance())->start_char);
+		const auto gameVerInfo = getGameVersions();
+		const std::wstring gameVer = gameVerInfo.gameVersion;
+		const std::wstring resVersion = gameVerInfo.resourceVersion;
 
 		const auto atPos = resVersion.find(L'@');
 		const auto simpleVersion = resVersion.substr(0, atPos);
@@ -945,7 +958,7 @@ namespace
 
 		auto manifest = FromCatalogInfo(encodedInfo, rootHash);
 
-		wprintf(L"manifest at %p, rootHash: %llu (%ls)\n", manifest, rootHash, cmpStr->start_char);
+		wprintf(L"manifest at %p, rootHash: %llu (%ls), resVersion: %ls\n", manifest, rootHash, cmpStr->start_char, resVersion.c_str());
 
 		auto encodedCatalog = checkAndDownloadFile(CatalogManifest_GetRealName(manifest));
 		if (encodedCatalog == NULL) {
@@ -2403,6 +2416,9 @@ namespace
 		};
 		SCCamera::initCameraSettings();
 		g_on_hook_ready();
+
+		const auto gameVersionInfo = getGameVersions();
+		wprintf(L"Plugin Loaded - Game Version: %ls, Resource Version: %ls\n", gameVersionInfo.gameVersion.c_str(), gameVersionInfo.resourceVersion.c_str());
 	}
 }
 
