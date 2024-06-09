@@ -57,11 +57,11 @@ jobs:
           cp build/bin/x64/Release/version.dll package/version.dll
           cp resources/scsp-config.json package/scsp-config.json
           cp -r resources/schinese/scsp_localify package/scsp_localify
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: scsp-localify
           path: package
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: scsp-localify-dll
           path: package/version.dll
