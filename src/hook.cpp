@@ -890,6 +890,58 @@ namespace
 		return GameVersion{ .gameVersion = gameVer , .resourceVersion = resVersion };
 	}
 
+	std::pair<void*, void*> getManifestFile(Il2CppString* defaultFileName) {
+		try {
+			auto defaultData = checkAndDownloadFile(defaultFileName);
+			if (defaultData != NULL) {
+				return std::make_pair(nullptr, defaultData);
+			}
+			printf("Try get fallback version...\n");
+
+			static auto CatalogManifest_FromUniqueVersion = reinterpret_cast<void* (*)(Il2CppString * uniqueVersion, Il2CppString * bundleVersion)>(
+				il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+					"CatalogManifest", "FromUniqueVersion", 2)
+				);
+			static auto CatalogManifest_GetRealName = reinterpret_cast<Il2CppString * (*)(void*)>(
+				il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+					"CatalogManifest", "GetRealName", 0)
+				);
+
+			const auto gameVerInfo = getGameVersions();
+			const std::wstring gameVer = gameVerInfo.gameVersion;
+			const std::wstring resVersion = gameVerInfo.resourceVersion;
+
+			const auto subPointPos = gameVer.rfind(L'.', -1);
+			if (subPointPos == std::wstring::npos) {
+				wprintf(L"Invalid game version: %ls\n", gameVer.c_str());
+				return std::make_pair(nullptr, nullptr);
+			}
+			const auto baseVersionString = gameVer.substr(0, subPointPos + 1);
+			auto subVersion = std::stoi(gameVer.substr(subPointPos + 1, gameVer.length()));
+
+			while (subVersion >= 0) {
+				const auto currentVersion = std::format(L"{}{}", baseVersionString, subVersion);
+				wprintf(L"Checking version: %ls\n", currentVersion.c_str());
+				auto manifest = CatalogManifest_FromUniqueVersion(il2cpp_symbols::NewWStr(resVersion), il2cpp_symbols::NewWStr(currentVersion));
+				if (manifest) {
+					auto data = checkAndDownloadFile(CatalogManifest_GetRealName(manifest));
+					if (data != NULL) {
+						return std::make_pair(manifest, data);
+					}
+				}
+				else {
+					printf("manifest is null.\n");
+				}
+				subVersion--;
+			}
+		}
+		catch (std::exception& ex) {
+			printf("getManifestFile error: %s\n", ex.what());
+		}
+		printf("Get manifest file failed.\n");
+		return std::make_pair(nullptr, nullptr);
+	}
+
 
 	int dumpScenarioFromCatalog() {
 		static auto string_op_Implicit = reinterpret_cast<void* (*)(void* retstr, Il2CppString*)>(
@@ -930,6 +982,11 @@ namespace
 				"CatalogBinaryEntry", "get_Label", 0)
 			);
 
+		static auto CatalogManifest_FromUniqueVersion = reinterpret_cast<void* (*)(Il2CppString* uniqueVersion, Il2CppString* bundleVersion)>(
+			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
+				"CatalogManifest", "FromUniqueVersion", 2)
+			);
+
 		static auto CatalogBinaryEntry_klass = il2cpp_symbols::get_class("Limelight.Shared.dll", "Limelight", "CatalogBinaryEntry");
 		static auto Label_field = il2cpp_class_get_field_from_name(CatalogBinaryEntry_klass, "<Label>k__BackingField");
 
@@ -957,13 +1014,18 @@ namespace
 		const auto rootHash = HashUtils_Crc64(string_op_Implicit(ReadOnlySpan_char, cmpStr), 0);
 
 		auto manifest = FromCatalogInfo(encodedInfo, rootHash);
+		// CatalogManifest_FromUniqueVersion(il2cpp_string_new("10003400@9t5HYphlvDRn0EijwOLgfp0="), il2cpp_string_new("1.7.0"));
+		// auto manifest = CatalogManifest_FromUniqueVersion(il2cpp_symbols::NewWStr(resVersion), il2cpp_symbols::NewWStr(gameVer));
 
 		wprintf(L"manifest at %p, rootHash: %llu (%ls), resVersion: %ls\n", manifest, rootHash, cmpStr->start_char, resVersion.c_str());
 
-		auto encodedCatalog = checkAndDownloadFile(CatalogManifest_GetRealName(manifest));
-		if (encodedCatalog == NULL) {
+		auto [newManifest, encodedCatalog] = getManifestFile(CatalogManifest_GetRealName(manifest));
+		if (encodedCatalog == nullptr) {
 			printf("readCatalog failed: encodedCatalog is NULL.\n");
 			return 0;
+		}
+		if (newManifest != nullptr) {
+			manifest = newManifest;
 		}
 
 		auto catalog = CatalogBinaryParser_ParseEncoded(manifest, encodedCatalog);  // Limelight.CatalogBinary
