@@ -19,5 +19,10 @@
         "moveStep": 50,
         "mouseSpeed": 35
     },
-    "unlockPIdolAndSCharaEvents": false
+    "unlockPIdolAndSCharaEvents": false,
+    "startResolution": {
+        "w": 1280,
+        "h": 720,
+        "isFull": false
+    }
 }

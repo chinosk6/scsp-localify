@@ -44,6 +44,9 @@ bool g_unlock_all_dress = false;
 bool g_unlock_all_headwear = false;
 bool g_enable_chara_param_edit = false;
 bool g_unlock_PIdol_and_SChara_events = false;
+int g_start_resolution_w = -1;
+int g_start_resolution_h = -1;
+bool g_start_resolution_fullScreen = false;
 
 std::filesystem::path g_localify_base("scsp_localify");
 constexpr const char ConfigJson[] = "scsp-config.json";
@@ -183,6 +186,13 @@ namespace
 			}
 			if (document.HasMember("unlockPIdolAndSCharaEvents")) {
 				g_unlock_PIdol_and_SChara_events = document["unlockPIdolAndSCharaEvents"].GetBool();
+			}
+
+			if (document.HasMember("startResolution")) {
+				auto& startResolution = document["startResolution"];
+				g_start_resolution_w = startResolution["w"].GetInt();
+				g_start_resolution_h = startResolution["h"].GetInt();
+				g_start_resolution_fullScreen = startResolution["isFull"].GetBool();
 			}
 			
 		}

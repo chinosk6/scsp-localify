@@ -1262,7 +1262,19 @@ namespace
 		return ret;
 	}
 
+	bool isFirstTimeSetResolution = true;
 	void SetResolution_hook(int width, int height, bool fullscreen) {
+		// printf("SetResolution: %d, %d, %d, isFirstTimeSetResolution: %d\n", width, height, fullscreen, isFirstTimeSetResolution);
+		if (isFirstTimeSetResolution) {
+			isFirstTimeSetResolution = false;
+			if ((g_start_resolution_w < 0) || (g_start_resolution_h < 0)) {
+				g_start_resolution_w = width;
+				g_start_resolution_h = height;
+				g_start_resolution_fullScreen = fullscreen;
+			}
+			return reinterpret_cast<decltype(SetResolution_hook)*>(SetResolution_orig)(g_start_resolution_w, 
+				g_start_resolution_h, g_start_resolution_fullScreen);
+		}
 		return;
 		/*
 		width = SCGUIData::screenW;
@@ -2006,7 +2018,9 @@ namespace
 	void* Unity_Quit_orig;
 	void Unity_Quit_hook(int code) {
 		printf("Quit code: %d\n", code);
+		TerminateProcess(GetCurrentProcess(), 0);
 		// printf("Quit code: %d\n%ls\n\n", code, environment_get_stacktrace()->start_char);
+		// return reinterpret_cast<decltype(Unity_Quit_hook)*>(Unity_Quit_orig)(code);
 	}
 
 	void* SetCallbackToGameMon_orig;
@@ -2204,20 +2218,20 @@ namespace
 			"Screen", "SetResolution", 3
 		);
 
-		auto UnsafeLoadBytesFromKey_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.ResourceManagement.dll", "PRISM.ResourceManagement",
-			"ResourceLoader", "UnsafeLoadBytesFromKey", 2
-		);
+		//auto UnsafeLoadBytesFromKey_addr = il2cpp_symbols::get_method_pointer(
+		//	"PRISM.ResourceManagement.dll", "PRISM.ResourceManagement",
+		//	"ResourceLoader", "UnsafeLoadBytesFromKey", 2
+		//);
 
 		auto TextLog_AddLog_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Scenario",
 			"TextLog", "AddLog", 4
 		);
 
-		auto PIdolDetailPopupViewModel_Create_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Adapters.dll", "PRISM.Adapters",
-			"PIdolDetailPopupViewModel", "Create", 10
-		);
+		//auto PIdolDetailPopupViewModel_Create_addr = il2cpp_symbols::get_method_pointer(
+		//	"PRISM.Adapters.dll", "PRISM.Adapters",
+		//	"PIdolDetailPopupViewModel", "Create", 10
+		//);
 		auto EventModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Adapters.dll", "PRISM.Adapters", 
 			"EventModel", ".ctor", 5
@@ -2413,6 +2427,7 @@ namespace
 		);
 
 #pragma endregion
+		ADD_HOOK(SetResolution, "SetResolution at %p");
 		// ADD_HOOK(PIdolDetailPopupViewModel_Create, "PIdolDetailPopupViewModel_Create at %p");
 		ADD_HOOK(EventModel_ctor, "EventModel_ctor at %p");
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
@@ -2438,9 +2453,8 @@ namespace
 		ADD_HOOK(UITextMeshProUGUI_Awake, "UITextMeshProUGUI_Awake at %p");
 		ADD_HOOK(ScenarioManager_Init, "ScenarioManager_Init at %p");
 		ADD_HOOK(DataFile_GetBytes, "DataFile_GetBytes at %p");
-		ADD_HOOK(UnsafeLoadBytesFromKey, "UnsafeLoadBytesFromKey at %p");
+		//ADD_HOOK(UnsafeLoadBytesFromKey, "UnsafeLoadBytesFromKey at %p");
 		ADD_HOOK(TextLog_AddLog, "TextLog_AddLog at %p");
-		ADD_HOOK(SetResolution, "SetResolution at %p");
 		ADD_HOOK(InvokeMoveNext, "InvokeMoveNext at %p");
 		ADD_HOOK(Live_SetEnableDepthOfField, "Live_SetEnableDepthOfField at %p");
 		ADD_HOOK(Live_Update, "Live_Update at %p");

@@ -55,6 +55,7 @@ iM@S SCSP localify plugin.
 | blockOutOfFocus       | Bool      | `true`                                | Intercept window out-of-focus events<br>Game won't pause when switching to other windows |
 | baseFreeCamera        | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera) | Free camera configuration                             |
 | unlockPIdolAndSCharaEvents | Bool | `false` | Unlock Idol Event (アイドルイベント) and Support Event (サポートイベント) in `Characters` - `Overview` |
+| startResolution | [Resolution](#Resolution) Object | [Resolution](#Resolution) | Game window resolution |
 
 
 
@@ -65,6 +66,16 @@ iM@S SCSP localify plugin.
 | enable             | Bool   | `false`       | Enable free camera  |
 | moveStep           | Float  | `50`          | Camera movement speed |
 | mouseSpeed         | Float  | `35`          | Mouse sensitivity for camera movement |
+
+
+
+### Resolution
+
+| Configuration Item | Type | Default Value | Description    |
+| ------------------ | ---- | ------------- | -------------- |
+| w                  | Int  | `1280`        | Window width   |
+| h                  | Int  | `720`         | Window height  |
+| isFull             | Bool | `false`       | Is full screen |
 
 
 

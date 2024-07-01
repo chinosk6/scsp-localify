@@ -56,6 +56,7 @@
 | blockOutOfFocus            | Bool                                     | `true`                                 | 拦截窗口失焦事件<br>切换到其它窗口后不会触发游戏暂停 |
 | baseFreeCamera             | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera)      | 自由视角配置                                         |
 | unlockPIdolAndSCharaEvents | Bool                                     | `false`                                | 解锁 `角色` - `一览` 中的P卡和S卡事件                |
+| startResolution            | [Resolution](#Resolution) Object         | [Resolution](#Resolution)              | 启动游戏初始分辨率                                   |
 
 
 
@@ -66,6 +67,16 @@
 | enable     | Bool  | `false` | 启用自由视角       |
 | moveStep   | Float | `50`    | 摄像机移动速度     |
 | mouseSpeed | Float | `35`    | 鼠标移动视角灵敏度 |
+
+
+
+### Resolution
+
+| 配置项 | 类型 | 默认值  | 说明     |
+| ------ | ---- | ------- | -------- |
+| w      | Int  | `1280`  | 窗口宽度 |
+| h      | Int  | `720`   | 窗口高度 |
+| isFull | Bool | `false` | 是否全屏 |
 
 
 
