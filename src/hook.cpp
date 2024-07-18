@@ -1754,6 +1754,69 @@ namespace
 		return reinterpret_cast<decltype(MvUnitSlotGenerator_NewMvUnitSlot_hook)*>(MvUnitSlotGenerator_NewMvUnitSlot_orig)(slot, idol, method);
 	}
 
+	bool checkMusicDataSatisfy(void* _this, void* unit, int pos = -1) {
+		static auto musicData_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Live", "MusicData");
+		static auto master_klass = il2cpp_symbols::get_class("PRISM.Definitions.dll", "PRISM.Definitions", "MstSong");
+
+		static auto masterData_field = il2cpp_class_get_field_from_name(musicData_klass, "<Master>k__BackingField");
+		static auto isSongParts_field = il2cpp_class_get_field_from_name(master_klass, "<IsSongParts>k__BackingField");
+
+		const auto masterData = il2cpp_symbols::read_field(_this, masterData_field);
+		const auto isSongParts = il2cpp_symbols::read_field<bool>(masterData, isSongParts_field);
+		if (!isSongParts) return false;
+
+		// static auto LiveUnit_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Live", "LiveUnit");
+		static auto LiveUnit_get_Idols = reinterpret_cast<void* (*)(void*)>(
+			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "LiveUnit", "get_Idols", 0)
+			);
+
+		static auto MusicData_IsOriginalMember = reinterpret_cast<bool (*)(void*, int)>(
+			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "MusicData", "IsOriginalMember", 1)
+			);
+
+
+		auto idols = LiveUnit_get_Idols(unit);
+		bool ret = true;
+		int currentSlot = 0;
+		il2cpp_symbols::iterate_IEnumerable(idols, [&](void* idol) {
+			const auto idol_klass = il2cpp_symbols::get_class_from_instance(idol);
+			const auto characterId_field = il2cpp_class_get_field_from_name(idol_klass, "<CharacterId>k__BackingField");
+			const auto characterId = il2cpp_symbols::read_field<int>(idol, characterId_field);
+			const auto isOrigMember = MusicData_IsOriginalMember(_this, characterId);
+			if (!isOrigMember) {
+				if (pos == -1) {
+					ret = false;
+				}
+				else {
+					if (currentSlot == pos) ret = false;
+				}
+			}
+			currentSlot++;
+			});
+
+		return ret;
+	}
+
+	void* CheckLimitedVocalSeparatedSatisfy_orig;
+	bool CheckLimitedVocalSeparatedSatisfy_hook(void* _this, void* unit, void* mtd) {
+		if (!g_allow_same_idol) {
+			return reinterpret_cast<decltype(CheckLimitedVocalSeparatedSatisfy_hook)*>(CheckLimitedVocalSeparatedSatisfy_orig)(
+				_this, unit, mtd);
+		}
+
+		return checkMusicDataSatisfy(_this, unit);
+	}
+
+	void* CheckLimitedVocalSeparatedSatisfy_2_orig;
+	bool CheckLimitedVocalSeparatedSatisfy_2_hook(void* _this, void* unit, int pos, void* mtd) {
+		if (!g_allow_same_idol) {
+			return reinterpret_cast<decltype(CheckLimitedVocalSeparatedSatisfy_2_hook)*>(CheckLimitedVocalSeparatedSatisfy_2_orig)(
+				_this, unit, pos, mtd);
+		}
+
+		return checkMusicDataSatisfy(_this, unit, pos);
+	}
+
 	void* LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_orig;
 	void LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_hook(void* _this, MethodInfo* method) {
 		slotNewCount = 0;
@@ -2358,6 +2421,15 @@ namespace
 			"MvUnitSlotGenerator", "NewMvUnitSlot", 2
 		);
 
+		auto CheckLimitedVocalSeparatedSatisfy_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM.Live",
+			"MusicData", "CheckLimitedVocalSeparatedSatisfy", 1
+		);
+		auto CheckLimitedVocalSeparatedSatisfy_2_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM.Live",
+			"MusicData", "CheckLimitedVocalSeparatedSatisfy", 2
+		);
+
 		auto PopupSystem_ShowPopup_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "ENTERPRISE.Popup",
 			"PopupSystem", "ShowPopup", 3
@@ -2476,6 +2548,8 @@ namespace
 		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
 		ADD_HOOK(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext, "LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext at %p");
 		ADD_HOOK(MvUnitSlotGenerator_NewMvUnitSlot, "MvUnitSlotGenerator_NewMvUnitSlot at %p");
+		ADD_HOOK(CheckLimitedVocalSeparatedSatisfy, "CheckLimitedVocalSeparatedSatisfy at %p");
+		ADD_HOOK(CheckLimitedVocalSeparatedSatisfy_2, "CheckLimitedVocalSeparatedSatisfy_2 at %p");
 		ADD_HOOK(CriWareErrorHandler_HandleMessage, "CriWareErrorHandler_HandleMessage at %p");
 		ADD_HOOK(GGIregualDetector_ShowPopup, "GGIregualDetector_ShowPopup at %p");
 		ADD_HOOK(DMMGameGuard_NPGameMonCallback, "DMMGameGuard_NPGameMonCallback at %p");
