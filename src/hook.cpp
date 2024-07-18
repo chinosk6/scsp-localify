@@ -1495,6 +1495,18 @@ namespace
 		
 	}
 
+	int getCharacterParamAliveCount(const std::string& objName) {
+		int aliveCount = 0;
+		for (auto& i : charaParam) {
+			if (i.first.starts_with(objName)) {
+				if (i.second.checkObjAlive()) {
+					aliveCount++;
+				}
+			}
+		}
+		return aliveCount;
+	}
+
 	void AssembleCharacter_ApplyParam_hook(void* mdl, float height, float bust, float head, float arm, float hand) {
 		if (g_enable_chara_param_edit) {
 			static auto get_ObjectName = reinterpret_cast<Il2CppString * (*)(void*)>(il2cpp_resolve_icall("UnityEngine.Object::GetName(UnityEngine.Object)"));
@@ -1509,7 +1521,17 @@ namespace
 				else {
 					showObjName = objName;
 				}
-				showObjName = std::format("{} ({:p})", showObjName, mdl);
+
+				const auto objAliveCount = getCharacterParamAliveCount(showObjName);
+				if (objAliveCount > 0) {
+					showObjName = std::format("{} [{}]", showObjName, objAliveCount);
+				}
+				/*
+				if (auto it = charaParam.find(showObjName); it != charaParam.end()) {
+					if (it->second.checkObjAlive()) {
+						showObjName = std::format("{} ({:p})", showObjName, mdl);
+					}
+				}*/
 			}
 			else {
 				showObjName = objName;
