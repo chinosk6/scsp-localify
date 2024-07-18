@@ -1102,11 +1102,11 @@ namespace
 		return dumpCount;
 	}
 
-	void* LiveMVView_UpdateLyrics_orig;
-	void LiveMVView_UpdateLyrics_hook(void* _this, Il2CppString* text) {
+	void* LiveMVOverlayView_UpdateLyrics_orig;
+	void LiveMVOverlayView_UpdateLyrics_hook(void* _this, Il2CppString* text) {
 		const std::wstring origWstr(text->start_char);
 		const auto newText = SCLocal::getLyricsTrans(origWstr);
-		return reinterpret_cast<decltype(LiveMVView_UpdateLyrics_hook)*>(LiveMVView_UpdateLyrics_orig)(_this, il2cpp_string_new(newText.c_str()));
+		return reinterpret_cast<decltype(LiveMVOverlayView_UpdateLyrics_hook)*>(LiveMVOverlayView_UpdateLyrics_orig)(_this, il2cpp_string_new(newText.c_str()));
 	}
 
 	std::pair<std::wstring, std::string> lastLrc{};
@@ -1149,20 +1149,20 @@ namespace
 	void UITextMeshProUGUI_Awake_hook(void* _this) {
 		static auto get_Text = reinterpret_cast<Il2CppString * (*)(void*)>(
 			il2cpp_symbols::get_method_pointer(
-				"ENTERPRISE.UI.dll", "ENTERPRISE.UI",
+				"PRISM.Legacy.dll", "ENTERPRISE.UI",
 				"UITextMeshProUGUI", "get_text", 0
 			)
 			);
 		static auto set_Text = reinterpret_cast<void (*)(void*, Il2CppString*)>(
 			il2cpp_symbols::get_method_pointer(
-				"ENTERPRISE.UI.dll", "ENTERPRISE.UI",
+				"PRISM.Legacy.dll", "ENTERPRISE.UI",
 				"UITextMeshProUGUI", "set_text", 1
 			)
 			);
 
 		static auto get_LocalizeOnAwake = reinterpret_cast<bool (*)(void*)>(
 			il2cpp_symbols::get_method_pointer(
-				"ENTERPRISE.UI.dll", "ENTERPRISE.UI",
+				"PRISM.Legacy.dll", "ENTERPRISE.UI",
 				"UITextMeshProUGUI", "get_LocalizeOnAwake", 0
 			)
 			);
@@ -2194,7 +2194,7 @@ namespace
 			"TMP_Text", "set_text", 1
 		);
 		const auto UITextMeshProUGUI_Awake_addr = il2cpp_symbols::get_method_pointer(
-			"ENTERPRISE.UI.dll", "ENTERPRISE.UI",
+			"PRISM.Legacy.dll", "ENTERPRISE.UI",
 			"UITextMeshProUGUI", "Awake", 0
 		);
 
@@ -2238,20 +2238,20 @@ namespace
 		);
 
 		auto LocalizationManager_GetTextOrNull_addr = il2cpp_symbols::get_method_pointer(
-			"ENTERPRISE.Localization.dll", "ENTERPRISE.Localization",
+			"PRISM.Legacy.dll", "ENTERPRISE.Localization",
 			"LocalizationManager", "GetTextOrNull", 2
 		);
 		auto get_NeedsLocalization_addr = il2cpp_symbols::get_method_pointer(
-			"ENTERPRISE.UI.dll", "ENTERPRISE.UI",
+			"PRISM.Legacy.dll", "ENTERPRISE.UI",
 			"UITextMeshProUGUI", "get_NeedsLocalization", 0
 		);
 		auto GetResolutionSize_addr = il2cpp_symbols::get_method_pointer(
 			"Prism.Rendering.Runtime.dll", "PRISM.Rendering",
 			"RenderManager", "GetResolutionSize", 1
 		);
-		auto LiveMVView_UpdateLyrics_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Legacy.dll", "PRISM.Live",
-			"LiveMVView", "UpdateLyrics", 1
+		auto LiveMVOverlayView_UpdateLyrics_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Interactions.Live.dll", "PRISM.Interactions.Live",
+			"LiveMVOverlayView", "UpdateLyrics", 1
 		);
 		auto TimelineController_SetLyric_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
@@ -2260,7 +2260,7 @@ namespace
 
 		auto get_baseCamera_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
-			"CameraController", "get_baseCamera", 0
+			"CameraController", "get_BaseCamera", 0
 		);
 
 		const auto AssetBundle_LoadAsset_addr =
@@ -2359,7 +2359,7 @@ namespace
 		);
 
 		auto PopupSystem_ShowPopup_addr = il2cpp_symbols::get_method_pointer(
-			"ENTERPRISE.UI.dll", "ENTERPRISE.Popup",
+			"PRISM.Legacy.dll", "ENTERPRISE.Popup",
 			"PopupSystem", "ShowPopup", 3
 		);
 
@@ -2434,7 +2434,7 @@ namespace
 		ADD_HOOK(get_NeedsLocalization, "get_NeedsLocalization at %p");
 		ADD_HOOK(GetResolutionSize, "GetResolutionSize at %p");
 		ADD_HOOK(AssetBundle_LoadAsset, "AssetBundle_LoadAsset at %p");
-		ADD_HOOK(LiveMVView_UpdateLyrics, "LiveMVView_UpdateLyrics at %p");
+		ADD_HOOK(LiveMVOverlayView_UpdateLyrics, "LiveMVOverlayView_UpdateLyrics at %p");
 		ADD_HOOK(TimelineController_SetLyric, "TimelineController_SetLyric at %p");
 		ADD_HOOK(get_baseCamera, "get_baseCamera at %p");
 		ADD_HOOK(Unity_set_pos_injected, "Unity_set_pos_injected at %p");
