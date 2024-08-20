@@ -1160,17 +1160,17 @@ namespace
 			)
 			);
 
-		static auto get_LocalizeOnAwake = reinterpret_cast<bool (*)(void*)>(
+		static auto get_NeedsLocalization = reinterpret_cast<bool (*)(void*)>(
 			il2cpp_symbols::get_method_pointer(
 				"PRISM.Legacy.dll", "ENTERPRISE.UI",
-				"UITextMeshProUGUI", "get_LocalizeOnAwake", 0
+				"UITextMeshProUGUI", "get_NeedsLocalization", 0
 			)
 			);
 
 		auto origText = get_Text(_this);
 		if (origText) {
 			// wprintf(L"UITextMeshProUGUI_Awake: %ls\n", origText->start_char);
-			if (!get_LocalizeOnAwake(_this)) {
+			if (!get_NeedsLocalization(_this)) {
 				std::string newTrans("");
 				if (SCLocal::getGameUnlocalTrans(std::wstring(origText->start_char), &newTrans)) {
 					set_Text(_this, il2cpp_string_new(newTrans.c_str()));
@@ -1453,7 +1453,7 @@ namespace
 	std::map<int, void*> cacheAccessoryMap{};
 
 	void* LiveCostumeChangeModel_ctor_orig;
-	void LiveCostumeChangeModel_ctor_hook(void* _this, void* reply, void* idol, int costumeType, bool useOtherCharacterCostume) {  // 添加服装到 dressDic
+	void LiveCostumeChangeModel_ctor_hook(void* _this, void* reply, void* idol, int costumeType) {  // 添加服装到 dressDic
 		/*
 		static auto iidol_klass = il2cpp_symbols::get_class_from_instance(idol);
 		static auto get_CharacterId_mtd = il2cpp_class_get_method_from_name(iidol_klass, "get_CharacterId", 0);
@@ -1462,7 +1462,7 @@ namespace
 			printf("LiveCostumeChangeModel_ctor idolId: %d, costumeType: %d\n", idolId, costumeType);
 		}
 		*/
-		reinterpret_cast<decltype(LiveCostumeChangeModel_ctor_hook)*>(LiveCostumeChangeModel_ctor_orig)(_this, reply, idol, costumeType, useOtherCharacterCostume);
+		reinterpret_cast<decltype(LiveCostumeChangeModel_ctor_hook)*>(LiveCostumeChangeModel_ctor_orig)(_this, reply, idol, costumeType);
 
 		if (g_unlock_all_dress && (costumeType == 1)) {
 			static auto LiveCostumeChangeModel_klass = il2cpp_symbols::get_class("PRISM.Adapters.dll", "PRISM.Adapters", "LiveCostumeChangeModel");
@@ -2404,7 +2404,7 @@ namespace
 		);
 		auto LiveCostumeChangeModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Adapters.dll", "PRISM.Adapters",
-			"LiveCostumeChangeModel", ".ctor", 4
+			"LiveCostumeChangeModel", ".ctor", 3
 		);
 
 		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::get_method_pointer(
