@@ -1819,10 +1819,10 @@ namespace
 		return ret;
 	}
 
-	void* CheckLimitedVocalSeparatedSatisfy_orig;
-	bool CheckLimitedVocalSeparatedSatisfy_hook(void* _this, void* unit, void* mtd) {
+	void* CheckVocalSeparatedSatisfy_orig;
+	bool CheckVocalSeparatedSatisfy_hook(void* _this, void* unit, void* mtd) {
 		if (!g_allow_same_idol) {
-			return reinterpret_cast<decltype(CheckLimitedVocalSeparatedSatisfy_hook)*>(CheckLimitedVocalSeparatedSatisfy_orig)(
+			return reinterpret_cast<decltype(CheckVocalSeparatedSatisfy_hook)*>(CheckVocalSeparatedSatisfy_orig)(
 				_this, unit, mtd);
 		}
 
@@ -1835,7 +1835,7 @@ namespace
 			return reinterpret_cast<decltype(CheckLimitedVocalSeparatedSatisfy_2_hook)*>(CheckLimitedVocalSeparatedSatisfy_2_orig)(
 				_this, unit, pos, mtd);
 		}
-
+		// printf("CheckLimitedVocalSeparatedSatisfy: %d\n", pos);
 		return checkMusicDataSatisfy(_this, unit, pos);
 	}
 
@@ -2443,9 +2443,9 @@ namespace
 			"MvUnitSlotGenerator", "NewMvUnitSlot", 2
 		);
 
-		auto CheckLimitedVocalSeparatedSatisfy_addr = il2cpp_symbols::get_method_pointer(
+		auto CheckVocalSeparatedSatisfy_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Live",
-			"MusicData", "CheckLimitedVocalSeparatedSatisfy", 1
+			"MusicData", "CheckVocalSeparatedSatisfy", 1
 		);
 		auto CheckLimitedVocalSeparatedSatisfy_2_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Live",
@@ -2570,7 +2570,7 @@ namespace
 		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
 		ADD_HOOK(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext, "LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext at %p");
 		ADD_HOOK(MvUnitSlotGenerator_NewMvUnitSlot, "MvUnitSlotGenerator_NewMvUnitSlot at %p");
-		ADD_HOOK(CheckLimitedVocalSeparatedSatisfy, "CheckLimitedVocalSeparatedSatisfy at %p");
+		ADD_HOOK(CheckVocalSeparatedSatisfy, "CheckVocalSeparatedSatisfy at %p");
 		ADD_HOOK(CheckLimitedVocalSeparatedSatisfy_2, "CheckLimitedVocalSeparatedSatisfy_2 at %p");
 		ADD_HOOK(CriWareErrorHandler_HandleMessage, "CriWareErrorHandler_HandleMessage at %p");
 		ADD_HOOK(GGIregualDetector_ShowPopup, "GGIregualDetector_ShowPopup at %p");
