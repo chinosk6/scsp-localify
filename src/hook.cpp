@@ -1290,6 +1290,33 @@ namespace
 		return reinterpret_cast<decltype(InvokeMoveNext_hook)*>(InvokeMoveNext_orig)(enumerator, returnValueAddress);
 	}
 
+	void* DepthOfFieldClip_CreatePlayable_orig;
+	void* DepthOfFieldClip_CreatePlayable_hook(void* retstr, void* _this, void* graph, void* go, void* mtd) {
+		if (g_enable_free_camera) {
+			static auto DepthOfFieldClip_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM", "DepthOfFieldClip");
+			static auto DepthOfFieldClip_behaviour_field = il2cpp_class_get_field_from_name(DepthOfFieldClip_klass, "behaviour");
+
+			static auto DepthOfFieldBehaviour_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM", "DepthOfFieldBehaviour");
+			static auto DepthOfFieldBehaviour_focusDistance_field = il2cpp_class_get_field_from_name(DepthOfFieldBehaviour_klass, "focusDistance");
+			static auto DepthOfFieldBehaviour_aperture_field = il2cpp_class_get_field_from_name(DepthOfFieldBehaviour_klass, "aperture");
+			static auto DepthOfFieldBehaviour_focalLength_field = il2cpp_class_get_field_from_name(DepthOfFieldBehaviour_klass, "focalLength");
+			auto depthOfFieldBehaviour = il2cpp_symbols::read_field(_this, DepthOfFieldClip_behaviour_field);
+			/*
+			auto focusDistance = il2cpp_symbols::read_field<float>(depthOfFieldBehaviour, DepthOfFieldBehaviour_focusDistance_field);
+			auto aperture = il2cpp_symbols::read_field<float>(depthOfFieldBehaviour, DepthOfFieldBehaviour_aperture_field);
+			auto focalLength = il2cpp_symbols::read_field<float>(depthOfFieldBehaviour, DepthOfFieldBehaviour_focalLength_field);
+			*/
+
+			il2cpp_symbols::write_field(depthOfFieldBehaviour, DepthOfFieldBehaviour_focusDistance_field, 1000.0f);
+			il2cpp_symbols::write_field(depthOfFieldBehaviour, DepthOfFieldBehaviour_aperture_field, 32.0f);
+			il2cpp_symbols::write_field(depthOfFieldBehaviour, DepthOfFieldBehaviour_focalLength_field, 1.0f);
+
+			// printf("DepthOfFieldClip_CreatePlayable, focusDistance: %f, aperture: %f, focalLength: %f\n", focusDistance, aperture, focalLength);
+		}
+		return reinterpret_cast<decltype(DepthOfFieldClip_CreatePlayable_hook)*>(DepthOfFieldClip_CreatePlayable_orig)(retstr, _this, graph, go, mtd);
+	}
+
+	// 已过时
 	void* Live_SetEnableDepthOfField_orig;
 	void Live_SetEnableDepthOfField_hook(void* _this, bool isEnable) {
 		if (g_enable_free_camera) {
@@ -1298,11 +1325,12 @@ namespace
 		return reinterpret_cast<decltype(Live_SetEnableDepthOfField_hook)*>(Live_SetEnableDepthOfField_orig)(_this, isEnable);
 	}
 
+	// 未hook
 	void* Live_Update_orig;
 	void Live_Update_hook(void* _this) {
 		reinterpret_cast<decltype(Live_Update_hook)*>(Live_Update_orig)(_this);
 		if (g_enable_free_camera) {
-			Live_SetEnableDepthOfField_hook(_this, false);
+			// Live_SetEnableDepthOfField_hook(_this, false);
 		}
 	}
 
@@ -2368,9 +2396,15 @@ namespace
 			"UnityEngine.CoreModule.dll", "UnityEngine",
 			"SetupCoroutine", "InvokeMoveNext", 2
 		);
+		/*
 		auto Live_SetEnableDepthOfField_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"LiveScene", "SetEnableDepthOfField", 1
+		);*/
+
+		auto DepthOfFieldClip_CreatePlayable_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM",
+			"DepthOfFieldClip", "CreatePlayable", 2
 		);
 		auto Live_Update_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
@@ -2550,8 +2584,9 @@ namespace
 		//ADD_HOOK(UnsafeLoadBytesFromKey, "UnsafeLoadBytesFromKey at %p");
 		ADD_HOOK(TextLog_AddLog, "TextLog_AddLog at %p");
 		ADD_HOOK(InvokeMoveNext, "InvokeMoveNext at %p");
-		ADD_HOOK(Live_SetEnableDepthOfField, "Live_SetEnableDepthOfField at %p");
-		ADD_HOOK(Live_Update, "Live_Update at %p");
+		// ADD_HOOK(Live_SetEnableDepthOfField, "Live_SetEnableDepthOfField at %p");
+		ADD_HOOK(DepthOfFieldClip_CreatePlayable, "DepthOfFieldClip_CreatePlayable at %p");
+		// ADD_HOOK(Live_Update, "Live_Update at %p");
 		ADD_HOOK(LiveCostumeChangeView_setTryOnMode, "LiveCostumeChangeView_setTryOnMode at %p");
 		ADD_HOOK(LiveCostumeChangeView_setIdolCostume, "LiveCostumeChangeView_setIdolCostume at %p");
 		ADD_HOOK(LiveCostumeChangeModel_GetDress, "LiveCostumeChangeModel_GetDress at %p");
