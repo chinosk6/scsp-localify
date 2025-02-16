@@ -178,6 +178,7 @@ struct ParameterInfo
 struct MethodInfo
 {
 	uintptr_t methodPointer;
+	uintptr_t virtualMethodPointer;
 	uintptr_t invoker_method;
 	const char* name;
 	uintptr_t klass;

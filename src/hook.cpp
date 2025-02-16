@@ -2441,10 +2441,22 @@ namespace
 			"LiveCostumeChangeModel", ".ctor", 3
 		);
 
-		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::get_method_pointer(
+		auto AssembleCharacter_ApplyParam_mdl_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"AssembleCharacter", "ApplyParam", 6
 		);
+
+		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::find_method("PRISM.Legacy.dll", "PRISM", "AssembleCharacter", [=](const MethodInfo* mtd) {
+			const std::string mtdName = mtd->name;
+
+			if ((mtdName == "ApplyParam") && (mtd->parameters_count == 6)) {
+				if (mtd->methodPointer != AssembleCharacter_ApplyParam_mdl_addr) {
+					return true;
+				}
+			}
+
+			return false;
+			});
 
 		auto MainThreadDispatcher_LateUpdate_addr = il2cpp_symbols::get_method_pointer(
 			"UniRx.dll", "UniRx",
