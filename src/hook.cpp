@@ -672,7 +672,7 @@ namespace
 			produceIdol, costumeSetInfoList, idolBase, idolParameter, isChangeableIdolSkill, isChangeableFavorite, produceAdvStatusList, isPlayableAdv, inLive, upgradingButtonActive
 			);
 		return ret;
-		/*  // 功能被 EventModel_ctor_hook 替代
+		/*  // 功能被 ScenarioContentViewModel_ctor_hook 替代
 		static auto get_EventList = reinterpret_cast<void* (*)(void*)>(
 			il2cpp_symbols::get_method_pointer("PRISM.Adapters.dll", "PRISM.Adapters",
 				"PIdolDetailPopupViewModel", "get_EventList", 0)
@@ -696,15 +696,17 @@ namespace
 		return ret;*/
 	}
 
-	void* EventModel_ctor_orig;
-	void EventModel_ctor_hook(void* _this, void* scenarioID, Il2CppString* title, Il2CppString* summary, bool read, bool isAdvPlayable) {
+	void* ScenarioContentViewModel_ctor_orig;
+	void ScenarioContentViewModel_ctor_hook(void* _this, void* scenarioID, Il2CppString* title, Il2CppString* summary, bool isLocked, 
+		bool isAdvPlayable, Il2CppString* alias, Il2CppString* characterName, int unlockLevel) {
+
 		if (g_unlock_PIdol_and_SChara_events) {
-			if (!read) {
+			if (!isLocked) {
 				wprintf(L"Force Unlock Event: %ls\n", title->start_char);
-				read = true;
+				isLocked = true;
 			}
 		}
-		return reinterpret_cast<decltype(EventModel_ctor_hook)*>(EventModel_ctor_orig)(_this, scenarioID, title, summary, read, isAdvPlayable);
+		return reinterpret_cast<decltype(ScenarioContentViewModel_ctor_hook)*>(ScenarioContentViewModel_ctor_orig)(_this, scenarioID, title, summary, isLocked, isAdvPlayable, alias, characterName, unlockLevel);
 	}
 
 	void* LocalizationManager_GetTextOrNull_orig;
@@ -719,13 +721,6 @@ namespace
 		}
 		// GG category: mlPublicText_GameGuard, id: 1
 		return reinterpret_cast<decltype(LocalizationManager_GetTextOrNull_hook)*>(LocalizationManager_GetTextOrNull_orig)(_this, category, id);
-	}
-
-	void* get_NeedsLocalization_orig;
-	bool get_NeedsLocalization_hook(void* _this) {
-		auto ret = reinterpret_cast<decltype(get_NeedsLocalization_hook)*>(get_NeedsLocalization_orig)(_this);
-		//printf("get_NeedsLocalization: %d\n", ret);
-		return ret;
 	}
 
 	void* GetResolutionSize_orig;
@@ -1139,6 +1134,31 @@ namespace
 			);
 	}
 
+	bool get_NeedsLocalization_func(void* instanceUITextMeshProUGUI) {
+		return false;
+		/*
+		// static auto UITextMeshProUGUI_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "ENTERPRISE.UI", "UITextMeshProUGUI");
+		auto this_klass = il2cpp_symbols::get_class_from_instance(instanceUITextMeshProUGUI);
+		auto m_EnvMapMatrix_field = il2cpp_class_get_field_from_name(this_klass, "m_EnvMapMatrix");
+		auto Matrix4x4_value_field = il2cpp_symbols::get_field("UnityEngine.CoreModule.dll", "UnityEngine", "Matrix4x4", "m32");
+		
+		auto m_EnvMapMatrix = il2cpp_symbols::read_field(instanceUITextMeshProUGUI, m_EnvMapMatrix_field);
+
+		printf("%p, m_EnvMapMatrix_field: %p, m_EnvMapMatrix at %p\n", instanceUITextMeshProUGUI, m_EnvMapMatrix_field, m_EnvMapMatrix);
+
+		if (!m_EnvMapMatrix) return false;
+
+		auto m_EnvMapMatrix_klass = reinterpret_cast<Il2CppClassHead*>(il2cpp_symbols::get_class_from_instance(m_EnvMapMatrix));
+		printf("m_EnvMapMatrix class: %s::%s\n", m_EnvMapMatrix_klass->namespaze, m_EnvMapMatrix_klass->name);
+
+		auto Matrix4x4_value = il2cpp_symbols::read_field(m_EnvMapMatrix, Matrix4x4_value_field);
+		if (!Matrix4x4_value) return false;
+
+		// printf("m_EnvMapMatrix(%p) - m32: %p\n", m_EnvMapMatrix, Matrix4x4_value);
+
+		return true;*/
+	}
+
 	void* (*TMP_FontAsset_CreateFontAsset)(void* font);
 	void (*TMP_Text_set_font)(void* _this, void* fontAsset);
 	void* (*TMP_Text_get_font)(void* _this);
@@ -1160,17 +1180,10 @@ namespace
 			)
 			);
 
-		static auto get_NeedsLocalization = reinterpret_cast<bool (*)(void*)>(
-			il2cpp_symbols::get_method_pointer(
-				"PRISM.Legacy.dll", "ENTERPRISE.UI",
-				"UITextMeshProUGUI", "get_NeedsLocalization", 0
-			)
-			);
-
 		auto origText = get_Text(_this);
 		if (origText) {
 			// wprintf(L"UITextMeshProUGUI_Awake: %ls\n", origText->start_char);
-			if (!get_NeedsLocalization(_this)) {
+			if (!get_NeedsLocalization_func(_this)) {
 				std::string newTrans("");
 				if (SCLocal::getGameUnlocalTrans(std::wstring(origText->start_char), &newTrans)) {
 					set_Text(_this, il2cpp_string_new(newTrans.c_str()));
@@ -1683,13 +1696,13 @@ namespace
 	}
 
 	void* LiveMVUnitConfirmationModel_ctor_orig;
-	void LiveMVUnitConfirmationModel_ctor_hook(void* _this, void* musicData, void* mvUnitListReply, void* costumeListReply) {
+	void LiveMVUnitConfirmationModel_ctor_hook(void* _this, void* musicData, void* saveData, void* unitListReply, void* costumeService) {
 		confirmationingModel = true;
 		cacheDressMap.clear();
 		cacheHairMap.clear();
 		cacheAccessoryMap.clear();
 
-		reinterpret_cast<decltype(LiveMVUnitConfirmationModel_ctor_hook)*>(LiveMVUnitConfirmationModel_ctor_orig)(_this, musicData, mvUnitListReply, costumeListReply);
+		reinterpret_cast<decltype(LiveMVUnitConfirmationModel_ctor_hook)*>(LiveMVUnitConfirmationModel_ctor_orig)(_this, musicData, saveData, unitListReply, costumeService);
 		confirmationingModel = false;
 		return;
 	}
@@ -1768,13 +1781,6 @@ namespace
 			}
 		}
 		reinterpret_cast<decltype(SwayString_SetupPoint_hook)*>(SwayString_SetupPoint_orig)(_this);
-	}
-
-	void* PopupSystem_ShowPopup_orig;
-	// 调试用，必要时 HOOK
-	void* PopupSystem_ShowPopup_hook(void* _this, void* iObject, int iPriority, bool isFullSize) {
-		wprintf(L"PopupSystem_ShowPopup_hook:\n%ls\n\n", environment_get_stacktrace()->start_char);
-		return reinterpret_cast<decltype(PopupSystem_ShowPopup_hook)*>(PopupSystem_ShowPopup_orig)(_this, iObject, iPriority, isFullSize);
 	}
 
 	void* LiveMVUnit_GetMemberChangeRequestData_orig;
@@ -2345,18 +2351,14 @@ namespace
 		//	"PRISM.Adapters.dll", "PRISM.Adapters",
 		//	"PIdolDetailPopupViewModel", "Create", 10
 		//);
-		auto EventModel_ctor_addr = il2cpp_symbols::get_method_pointer(
+		auto ScenarioContentViewModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Adapters.dll", "PRISM.Adapters", 
-			"EventModel", ".ctor", 5
+			"ScenarioContentViewModel", ".ctor", 8
 		);
 
 		auto LocalizationManager_GetTextOrNull_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "ENTERPRISE.Localization",
 			"LocalizationManager", "GetTextOrNull", 2
-		);
-		auto get_NeedsLocalization_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Legacy.dll", "ENTERPRISE.UI",
-			"UITextMeshProUGUI", "get_NeedsLocalization", 0
 		);
 		auto GetResolutionSize_addr = il2cpp_symbols::get_method_pointer(
 			"Prism.Rendering.Runtime.dll", "PRISM.Rendering",
@@ -2498,11 +2500,6 @@ namespace
 			"MusicData", "CheckLimitedVocalSeparatedSatisfy", 2
 		);
 
-		auto PopupSystem_ShowPopup_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Legacy.dll", "ENTERPRISE.Popup",
-			"PopupSystem", "ShowPopup", 3
-		);
-
 		auto CriWareErrorHandler_HandleMessage_addr = il2cpp_symbols::get_method_pointer(
 			"CriMw.CriWare.Runtime.dll", "CriWare",
 			"CriWareErrorHandler", "HandleMessage", 1
@@ -2557,8 +2554,8 @@ namespace
 			"PRISM.Module.Networking.Stub.Api", "GetCostumeListReply", "get_AccessoryList", 0);
 
 		auto LiveMVUnitConfirmationModel_ctor_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Legacy.dll", "PRISM.Live",
-			"LiveMVUnitConfirmationModel", ".ctor", 3
+			"PRISM.Service.dll", "PRISM.Service.Live",
+			"LiveMvUnitConfirmationModel", ".ctor", 4
 		);
 
 		auto SwayString_SetupPoint_addr = il2cpp_symbols::get_method_pointer(
@@ -2569,9 +2566,8 @@ namespace
 #pragma endregion
 		ADD_HOOK(SetResolution, "SetResolution at %p");
 		// ADD_HOOK(PIdolDetailPopupViewModel_Create, "PIdolDetailPopupViewModel_Create at %p");
-		ADD_HOOK(EventModel_ctor, "EventModel_ctor at %p");
+		ADD_HOOK(ScenarioContentViewModel_ctor, "ScenarioContentViewModel_ctor at %p");
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
-		ADD_HOOK(get_NeedsLocalization, "get_NeedsLocalization at %p");
 		ADD_HOOK(GetResolutionSize, "GetResolutionSize at %p");
 		ADD_HOOK(AssetBundle_LoadAsset, "AssetBundle_LoadAsset at %p");
 		ADD_HOOK(LiveMVOverlayView_UpdateLyrics, "LiveMVOverlayView_UpdateLyrics at %p");
@@ -2613,7 +2609,6 @@ namespace
 		ADD_HOOK(GetCostumeListReply_get_AccessoryList, "GetCostumeListReply_get_AccessoryList at %p");
 		ADD_HOOK(LiveMVUnitConfirmationModel_ctor, "LiveMVUnitConfirmationModel_ctor at %p");
 		ADD_HOOK(SwayString_SetupPoint, "SwayString_SetupPoint at %p");
-		// ADD_HOOK(PopupSystem_ShowPopup, "PopupSystem_ShowPopup at %p");
 		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
 		ADD_HOOK(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext, "LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext at %p");
 		ADD_HOOK(MvUnitSlotGenerator_NewMvUnitSlot, "MvUnitSlotGenerator_NewMvUnitSlot at %p");
