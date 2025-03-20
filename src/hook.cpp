@@ -1524,7 +1524,7 @@ namespace
 	std::map<int, void*> cacheAccessoryMap{};
 
 	void* LiveCostumeChangeModel_ctor_orig;
-	void LiveCostumeChangeModel_ctor_hook(void* _this, void* reply, void* idol, int costumeType) {  // 添加服装到 dressDic
+	void LiveCostumeChangeModel_ctor_hook(void* _this, void* reply, void* idol, int costumeType, bool forceDressOrdered) {  // 添加服装到 dressDic
 		/*
 		static auto iidol_klass = il2cpp_symbols::get_class_from_instance(idol);
 		static auto get_CharacterId_mtd = il2cpp_class_get_method_from_name(iidol_klass, "get_CharacterId", 0);
@@ -1533,7 +1533,7 @@ namespace
 			printf("LiveCostumeChangeModel_ctor idolId: %d, costumeType: %d\n", idolId, costumeType);
 		}
 		*/
-		reinterpret_cast<decltype(LiveCostumeChangeModel_ctor_hook)*>(LiveCostumeChangeModel_ctor_orig)(_this, reply, idol, costumeType);
+		reinterpret_cast<decltype(LiveCostumeChangeModel_ctor_hook)*>(LiveCostumeChangeModel_ctor_orig)(_this, reply, idol, costumeType, forceDressOrdered);
 
 		if (g_unlock_all_dress && (costumeType == 1)) {
 			static auto LiveCostumeChangeModel_klass = il2cpp_symbols::get_class("PRISM.Adapters.dll", "PRISM.Adapters", "LiveCostumeChangeModel");
@@ -2476,7 +2476,7 @@ namespace
 		);
 		auto LiveCostumeChangeModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Adapters.dll", "PRISM.Adapters",
-			"LiveCostumeChangeModel", ".ctor", 3
+			"LiveCostumeChangeModel", ".ctor", 4
 		);
 
 		auto AssembleCharacter_ApplyParam_mdl_addr = il2cpp_symbols::get_method_pointer(
@@ -2506,11 +2506,11 @@ namespace
 			"LiveMVUnit", "GetMemberChangeRequestData", 3
 		);
 
-		auto LiveMVUnitMemberChangePresenter_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Live", "LiveMVUnitMemberChangePresenter");
+		auto LiveMVUnitMemberChangePresenter_klass = il2cpp_symbols::get_class("PRISM.Adapters.dll", "PRISM.Adapters", "LiveMvUnitMemberChangePresenter");
 		auto LiveMVUnitMemberChangePresenter_c__DisplayClass7_0_klass
-			= il2cpp_symbols::find_nested_class_from_name(LiveMVUnitMemberChangePresenter_klass, "<>c__DisplayClass7_0");
+			= il2cpp_symbols::find_nested_class_from_name(LiveMVUnitMemberChangePresenter_klass, "<>c__DisplayClass5_0");
 		auto LiveMVUnitMemberChangePresenter_c__DisplayClass7_0_klass_initializeAsync_b__4_d_klass
-			= il2cpp_symbols::find_nested_class_from_name(LiveMVUnitMemberChangePresenter_c__DisplayClass7_0_klass, "<<_initializeAsync>b__4>d");
+			= il2cpp_symbols::find_nested_class_from_name(LiveMVUnitMemberChangePresenter_c__DisplayClass7_0_klass, "<<InitializeAsync>b__0>d");
 		auto LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_method =
 			il2cpp_class_get_method_from_name(LiveMVUnitMemberChangePresenter_c__DisplayClass7_0_klass_initializeAsync_b__4_d_klass, "MoveNext", 0);
 		uintptr_t LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_addr = NULL;
