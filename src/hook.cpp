@@ -1746,7 +1746,7 @@ namespace
 		static auto forceParam_field = il2cpp_class_get_field_from_name(SwayString_klass, "forceParam");
 
 		static auto SetTest = reinterpret_cast<void (*)(void*, int swayType, float bendStrength, float baseGravity, float inertiaMoment, float airResistance)>(
-			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetTest", 5)
+			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetupForEditor", 5)
 			);
 		static auto SetRate = reinterpret_cast<void (*)(void*, float)>(
 			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetRate", 1)
@@ -2479,11 +2479,11 @@ namespace
 			"LiveCostumeChangeModel", ".ctor", 4
 		);
 
-		auto AssembleCharacter_ApplyParam_mdl_addr = il2cpp_symbols::get_method_pointer(
+		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"AssembleCharacter", "ApplyParam", 6
 		);
-
+				/*
 		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::find_method("PRISM.Legacy.dll", "PRISM", "AssembleCharacter", [=](const MethodInfo* mtd) {
 			const std::string mtdName = mtd->name;
 
@@ -2494,7 +2494,7 @@ namespace
 			}
 
 			return false;
-			});
+			});*/
 
 		auto MainThreadDispatcher_LateUpdate_addr = il2cpp_symbols::get_method_pointer(
 			"UniRx.dll", "UniRx",
