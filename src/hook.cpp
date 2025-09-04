@@ -11,6 +11,34 @@
 #include <cpprest/filestream.h>
 #include <boost/beast/core/detail/base64.hpp>
 
+#define PRINT(var) std::cout << #var << " = " << var << std::endl;
+
+LONG WINAPI seh_filter(EXCEPTION_POINTERS* ep) {
+	DWORD code = ep->ExceptionRecord->ExceptionCode;
+	PVOID addr = ep->ExceptionRecord->ExceptionAddress;
+
+	std::cerr << "SEH Exception caught!" << std::endl;
+	std::cerr << "  Code: 0x" << std::hex << code << std::endl;
+	std::cerr << "  Address: " << addr << std::endl;
+
+	switch (code) {
+	case EXCEPTION_ACCESS_VIOLATION:
+		std::cerr << "  Type: Access Violation" << std::endl;
+		break;
+	case EXCEPTION_INT_DIVIDE_BY_ZERO:
+		std::cerr << "  Type: Divide by Zero" << std::endl;
+		break;
+	case EXCEPTION_STACK_OVERFLOW:
+		std::cerr << "  Type: Stack Overflow" << std::endl;
+		break;
+	default:
+		std::cerr << "  Type: Unknown SEH Exception (code=" << code << ")" << std::endl;
+		break;
+	}
+
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
 //using namespace std;
 
 std::function<void()> g_on_hook_ready;
@@ -39,6 +67,86 @@ std::map<int, std::string> swayTypes{
 	{0xc, "HairLong"},
 	{0xd, "Max"},
 };
+
+
+// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
+static void* klass_UnitIdol;
+static void* field_UnitIdol_charaId;
+static void* field_UnitIdol_clothId;
+static void* field_UnitIdol_hairId;
+static void* field_UnitIdol_accessoryIds;
+
+static void InitUnitIdol(void* unitIdolInstance) {
+	if (field_UnitIdol_accessoryIds == nullptr) {
+		klass_UnitIdol = il2cpp_symbols::get_class_from_instance(unitIdolInstance);
+		field_UnitIdol_charaId = il2cpp_class_get_field_from_name(klass_UnitIdol, "charaId");
+		field_UnitIdol_clothId = il2cpp_class_get_field_from_name(klass_UnitIdol, "clothId");
+		field_UnitIdol_hairId = il2cpp_class_get_field_from_name(klass_UnitIdol, "hairId");
+		field_UnitIdol_accessoryIds = il2cpp_class_get_field_from_name(klass_UnitIdol, "accessoryIds");
+	}
+}
+
+struct UnitIdol {
+	int CharaId = -1;
+	int ClothId = 0;
+	int HairId = 0;
+	int* AccessoryIds = nullptr;
+	int AccessoryIdsLength = 0;
+
+	void Print() const {
+		std::cout << "UnitIdol = { CharaId = " << CharaId
+			<< ", ClothId = " << ClothId
+			<< ", HairId = " << HairId
+			<< ", AccessoryIds = [";
+		bool first = true;
+		if (AccessoryIds != nullptr) {
+			for (int i = 0; i < AccessoryIdsLength; ++i) {
+				if (!first)
+					std::cout << ", ";
+				std::cout << AccessoryIds[i];
+				first = false;
+			}
+		}
+		std::cout << "] }" << std::endl;
+	}
+
+	void ReadFrom(void* managed) {
+		if (AccessoryIds != nullptr) {
+			delete[] AccessoryIds;
+		}
+		InitUnitIdol(managed);
+		void* accessoryIds;
+		il2cpp_field_get_value(managed, field_UnitIdol_charaId, &CharaId);
+		il2cpp_field_get_value(managed, field_UnitIdol_clothId, &ClothId);
+		il2cpp_field_get_value(managed, field_UnitIdol_hairId, &HairId);
+		il2cpp_field_get_value(managed, field_UnitIdol_accessoryIds, &accessoryIds);
+		AccessoryIdsLength = il2cpp_array_length(accessoryIds);
+		AccessoryIds = new int[AccessoryIdsLength];
+		for (int i = 0; i < AccessoryIdsLength; ++i) {
+			auto item = il2cpp_symbols::array_get_value(accessoryIds, i);
+			int32_t* rawPtr = static_cast<int32_t*>(il2cpp_object_unbox(item));
+			int32_t value = *rawPtr;
+			AccessoryIds[i] = value;
+		}
+	}
+
+	void ApplyTo(void* managed) {
+		InitUnitIdol(managed);
+		il2cpp_field_set_value(managed, field_UnitIdol_charaId, &CharaId);
+		il2cpp_field_set_value(managed, field_UnitIdol_clothId, &ClothId);
+		il2cpp_field_set_value(managed, field_UnitIdol_hairId, &HairId);
+		static auto klass_System_Int32 = il2cpp_class_from_name(il2cpp_get_corlib(), "System", "Int32");
+		auto accessoryIds = il2cpp_array_new(klass_System_Int32, AccessoryIdsLength);
+		auto length = il2cpp_array_length(accessoryIds);
+		for (int i = 0; i < AccessoryIdsLength; ++i) {
+			auto boxed = il2cpp_value_box(klass_System_Int32, &AccessoryIds[i]);
+			il2cpp_symbols::array_set_value(accessoryIds, boxed, i);
+		}
+		il2cpp_field_set_value_object(managed, field_UnitIdol_accessoryIds, accessoryIds);
+	}
+};
+std::map<int, UnitIdol> savedCostumes{};
+
 
 void loadGUIDataCache() {
 	try {
@@ -150,7 +258,7 @@ void CharaParam_t::Apply() {
 }
 
 void CharaParam_t::ApplyOnMainThread() {
-	mainThreadTasks.push_back([this](){
+	mainThreadTasks.push_back([this]() {
 		this->Apply();
 		if (!g_enable_chara_param_edit) return true;
 		return !(this->gui_real_time_apply || baseParam.gui_real_time_apply);
@@ -367,7 +475,7 @@ namespace
 			return false;
 			});
 			*/
-			
+
 	}
 
 	Il2CppString* bytesToIl2cppString(void* bytes) {
@@ -697,7 +805,7 @@ namespace
 	}
 
 	void* ScenarioContentViewModel_ctor_orig;
-	void ScenarioContentViewModel_ctor_hook(void* _this, void* scenarioID, Il2CppString* title, Il2CppString* summary, bool isLocked, 
+	void ScenarioContentViewModel_ctor_hook(void* _this, void* scenarioID, Il2CppString* title, Il2CppString* summary, bool isLocked,
 		bool isAdvPlayable, Il2CppString* alias, Il2CppString* characterName, int unlockLevel) {
 
 		if (g_unlock_PIdol_and_SChara_events) {
@@ -759,7 +867,7 @@ namespace
 
 			// if !littleEndian
 			std::reverse(reinterpret_cast<uint8_t*>(&value), reinterpret_cast<uint8_t*>(&value) + sizeof(T));
-			
+
 			return value;
 		}
 
@@ -802,7 +910,7 @@ namespace
 		// wprintf(L"encodedInfo: %ls, rootHash: %llu, size: %llu, checksum: %llu, seed: %llu\n", encodedInfo.c_str(), rootHash, size, checksum, seed);
 		return CatalogManifest_FromValues(rootHash, size, checksum, seed);
 	}
-	
+
 	void* entryAsManifest(void* entry) {
 		static auto CatalogManifest_FromValues = reinterpret_cast<void* (*)(UINT64 labelCrc, UINT64 size, UINT64 checksum, UINT64 seed)>(
 			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
@@ -822,7 +930,7 @@ namespace
 
 		return CatalogManifest_FromValues(LabelCrc, Size, Checksum, Seed);
 	}
-	
+
 
 	void* checkAndDownloadFile(Il2CppString* fileNameStr) {
 		try {
@@ -850,7 +958,7 @@ namespace
 					wprintf(L"File downloaded successfully: %ls\n", filePath.c_str());
 					}).wait();
 
-			return readFileAllBytes(filePath);
+				return readFileAllBytes(filePath);
 		}
 		catch (std::exception& e) {
 			printf("checkAndDownloadFile error: %s\n", e.what());
@@ -865,7 +973,7 @@ namespace
 	};
 
 	GameVersion getGameVersions() {
-		static auto getGameVersion = reinterpret_cast<Il2CppString* (*)()>(
+		static auto getGameVersion = reinterpret_cast<Il2CppString * (*)()>(
 			il2cpp_resolve_icall("UnityEngine.Application::get_version()")
 			);
 
@@ -874,7 +982,7 @@ namespace
 				"Global", "get_Instance", 0)
 			);
 
-		static auto get_CurrentResourceVersion = reinterpret_cast<Il2CppString* (*)(void*)>(
+		static auto get_CurrentResourceVersion = reinterpret_cast<Il2CppString * (*)(void*)>(
 			il2cpp_symbols::get_method_pointer("PRISM.ResourceManagement.dll", "PRISM",
 				"Global", "get_CurrentResourceVersion", 0)
 			);
@@ -947,12 +1055,12 @@ namespace
 		static auto ReadOnlySpan_char_klass = il2cpp_symbols::get_system_class_from_reflection_type_str(
 			"System.ReadOnlySpan`1[System.Char]");
 
-		static auto HashUtils_Crc64 = reinterpret_cast<UINT64 (*)(void*, UINT64)>(
+		static auto HashUtils_Crc64 = reinterpret_cast<UINT64(*)(void*, UINT64)>(
 			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
 				"HashUtils", "Crc64", 2)
 			);
 
-		static auto CatalogManifest_GetRealName = reinterpret_cast<Il2CppString* (*)(void*)>(
+		static auto CatalogManifest_GetRealName = reinterpret_cast<Il2CppString * (*)(void*)>(
 			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
 				"CatalogManifest", "GetRealName", 0)
 			);
@@ -977,7 +1085,7 @@ namespace
 				"CatalogBinaryEntry", "get_Label", 0)
 			);
 
-		static auto CatalogManifest_FromUniqueVersion = reinterpret_cast<void* (*)(Il2CppString* uniqueVersion, Il2CppString* bundleVersion)>(
+		static auto CatalogManifest_FromUniqueVersion = reinterpret_cast<void* (*)(Il2CppString * uniqueVersion, Il2CppString * bundleVersion)>(
 			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
 				"CatalogManifest", "FromUniqueVersion", 2)
 			);
@@ -990,7 +1098,7 @@ namespace
 				"Encoding", "get_UTF8", 0)
 			);
 
-		static auto Encoding_GetString = reinterpret_cast<Il2CppString* (*)(void*, void*, int, int)>(
+		static auto Encoding_GetString = reinterpret_cast<Il2CppString * (*)(void*, void*, int, int)>(
 			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Text",
 				"Encoding", "GetString", 3)
 			);
@@ -1002,9 +1110,9 @@ namespace
 		const auto atPos = resVersion.find(L'@');
 		const auto simpleVersion = resVersion.substr(0, atPos);
 		const auto encodedInfo = resVersion.substr(atPos + 1);
-		
+
 		auto ReadOnlySpan_char = il2cpp_object_new(ReadOnlySpan_char_klass);
-		
+
 		const auto cmpStr = il2cpp_symbols::NewWStr(std::format(L"{}:{}", gameVer, simpleVersion));
 		const auto rootHash = HashUtils_Crc64(string_op_Implicit(ReadOnlySpan_char, cmpStr), 0);
 
@@ -1040,7 +1148,7 @@ namespace
 					il2cpp_symbols::get_method_pointer("Newtonsoft.Json.dll", "Newtonsoft.Json",
 						"JsonConvert", "SerializeObject", 1)
 					);
-				
+
 				/*
 				wprintf(L"label:\n%ls\n\n", toJsonStr(info)->start_char);
 				static auto ArraySegment_Byte_klass = il2cpp_symbols::get_system_class_from_reflection_type_str(
@@ -1061,7 +1169,7 @@ namespace
 				}
 
 				static std::regex pattern("^s\\d+_\\d+_\\d+$");
-				
+
 				if (std::regex_match(labelStr, pattern)) {
 					// printf("labelStr: %s\n", labelStr.c_str());
 					if (dumpScenarioDataByJsonFileName(labelStr)) {
@@ -1141,7 +1249,7 @@ namespace
 		auto this_klass = il2cpp_symbols::get_class_from_instance(instanceUITextMeshProUGUI);
 		auto m_EnvMapMatrix_field = il2cpp_class_get_field_from_name(this_klass, "m_EnvMapMatrix");
 		auto Matrix4x4_value_field = il2cpp_symbols::get_field("UnityEngine.CoreModule.dll", "UnityEngine", "Matrix4x4", "m32");
-		
+
 		auto m_EnvMapMatrix = il2cpp_symbols::read_field(instanceUITextMeshProUGUI, m_EnvMapMatrix_field);
 
 		printf("%p, m_EnvMapMatrix_field: %p, m_EnvMapMatrix at %p\n", instanceUITextMeshProUGUI, m_EnvMapMatrix_field, m_EnvMapMatrix);
@@ -1240,7 +1348,7 @@ namespace
 		std::wstring_view pathStrView(pathStr);
 		//wprintf(L"DataFile_GetBytes: %ls\n", pathStr.c_str());
 
-		
+
 		std::filesystem::path localFileName;
 		if (SCLocal::getLocalFileName(pathStr, &localFileName)) {
 			return readFileAllBytes(localFileName);
@@ -1251,7 +1359,7 @@ namespace
 			if (pathStrView.ends_with(L".json")) {
 				auto basePath = std::filesystem::path("dumps") / "autoDumpJson";
 				std::filesystem::path fileName = basePath / SCLocal::getFilePathByName(pathStr, true, basePath);
-				
+
 				if (!std::filesystem::is_directory(basePath)) {
 					std::filesystem::create_directories(basePath);
 				}
@@ -1285,7 +1393,7 @@ namespace
 				g_start_resolution_h = height;
 				g_start_resolution_fullScreen = fullscreen;
 			}
-			return reinterpret_cast<decltype(SetResolution_hook)*>(SetResolution_orig)(g_start_resolution_w, 
+			return reinterpret_cast<decltype(SetResolution_hook)*>(SetResolution_orig)(g_start_resolution_w,
 				g_start_resolution_h, g_start_resolution_fullScreen);
 		}
 		return;
@@ -1432,11 +1540,11 @@ namespace
 		auto ret = reinterpret_cast<decltype(LiveCostumeChangeModel_GetDress_hook)*>(LiveCostumeChangeModel_GetDress_orig)(_this, id);
 		if (!g_unlock_all_dress) return ret;
 		if (!ret) {
-			printf("LiveCostumeChangeModel_GetDress returns NULL ResId: %d, this at %p\n", id, _this); 
-			return ret; 
+			printf("LiveCostumeChangeModel_GetDress returns NULL ResId: %d, this at %p\n", id, _this);
+			return ret;
 		}
-		static auto ret_klass = il2cpp_symbols::get_class_from_instance(ret); 
-		static auto resourceId_field = il2cpp_class_get_field_from_name(ret_klass, "resourceId_"); 
+		static auto ret_klass = il2cpp_symbols::get_class_from_instance(ret);
+		static auto resourceId_field = il2cpp_class_get_field_from_name(ret_klass, "resourceId_");
 
 		const auto baseId = 100001;
 		const auto baseResId = 1;
@@ -1495,7 +1603,7 @@ namespace
 		const auto baseId = 600001;
 		const auto baseResId = 1;
 		replaceResourceId(LiveCostumeChangeModel_GetHairstyle_hook, LiveCostumeChangeModel_GetHairstyle_orig);
-		
+
 		static auto accessoryResourceIdList_field = il2cpp_class_get_field_from_name(ret_klass, "accessoryResourceIdList_");
 		const auto replaceaccessoryResourceIdList = il2cpp_symbols::read_field(ret, accessoryResourceIdList_field);
 		if (id == replaceDressId) {
@@ -1514,7 +1622,7 @@ namespace
 		else {
 			il2cpp_symbols::write_field(newRet, accessoryResourceIdList_field, replaceaccessoryResourceIdList);
 		}
-		
+
 		return newRet;
 	}
 
@@ -1563,8 +1671,75 @@ namespace
 			// addToDic(cacheHairMap, hairstyleDic);  // TODO PRISM.ResourceManagement.ResourceLoader._throwMissingKeyException
 			// addToDic(cacheAccessoryMap, accessoryDic);  // TODO PRISM.ResourceManagement.ResourceLoader._throwMissingKeyException
 		}
-		
 	}
+
+
+	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
+	void* CostumeChangeView_Reload_orig;
+	void* CostumeChangeView_Reload_hook(void* _this, void* viewModel) {
+		auto ret = reinterpret_cast<decltype(CostumeChangeView_Reload_hook)*>(CostumeChangeView_Reload_orig)(_this, viewModel);
+
+		__try
+		{
+			auto klass_CostumeChangeViewModel = il2cpp_symbols::get_class_from_instance(viewModel);
+			auto mtd_CostumeChangeViewModel_GetPreviewUnitIdol = il2cpp_class_get_method_from_name(klass_CostumeChangeViewModel, "GetPreviewUnitIdol", 0);
+			auto func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<void* (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
+
+			auto idol = func_CostumeChangeViewModel_GetPreviewUnitIdol(viewModel, mtd_CostumeChangeViewModel_GetPreviewUnitIdol);
+
+			UnitIdol data;
+			data.ReadFrom(idol);
+			data.Print();
+			if (data.CharaId >= 0)
+				savedCostumes[data.CharaId] = data;
+		}
+		__except (seh_filter(GetExceptionInformation()))
+		{
+			printf("SEH exception detected in 'CostumeChangeView_Reload_hook'.\n");
+		}
+
+		return ret;
+	}
+
+	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
+	void* LiveMVStartData_ctor_orig;
+	void* LiveMVStartData_ctor_hook(void* _this, void* musicMaster, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int backgroundMode, int renderingDynamicRange, int soundEffectMode) {
+		std::cout << "> LiveMVStartData_ctor_hook:" << std::endl;
+		auto ret = reinterpret_cast<decltype(LiveMVStartData_ctor_hook)*>(LiveMVStartData_ctor_orig)(_this, musicMaster, onStageIdols, cameraIndex, isVocalSeparatedOn, backgroundMode, renderingDynamicRange, soundEffectMode);
+
+		// PRISM.UnitIdolWithMstCostume[] onStageIdols
+		__try
+		{
+			auto length = il2cpp_array_length(onStageIdols);
+			auto klass_System_Array = il2cpp_class_from_name(il2cpp_get_corlib(), "System", "Array");
+			auto mtd_Array_GetItem = il2cpp_class_get_method_from_name(klass_System_Array, "GetValue", 1);
+			auto func_Array_GetItem = reinterpret_cast<void* (*)(void* _this, int index, void* mtd)>(mtd_Array_GetItem->methodPointer);
+			for (int i = 0; i < length; i++)
+			{
+				auto item = func_Array_GetItem(onStageIdols, i, mtd_Array_GetItem);
+				auto klass_UnitIdolWithMstCostume = il2cpp_symbols::get_class_from_instance(item);
+				auto klass_UnitIdol = il2cpp_class_get_parent(klass_UnitIdolWithMstCostume);
+				auto field_UnitIdol_charaId = il2cpp_class_get_field_from_name(klass_UnitIdol, "charaId");
+
+				int charaId;
+				il2cpp_field_get_value(item, field_UnitIdol_charaId, &charaId);
+
+				auto it = savedCostumes.find(charaId);
+				if (it != savedCostumes.end()) {
+					std::cout << "CharaId " << it->first << " has been modified." << std::endl;
+					it->second.ApplyTo(item);
+
+				}
+			}
+		}
+		__except (seh_filter(GetExceptionInformation()))
+		{
+			printf("SEH exception detected in `LiveMVStartData_ctor_hook`.\n");
+		}
+
+		return ret;
+	}
+
 
 	int getCharacterParamAliveCount(const std::string& objName) {
 		int aliveCount = 0;
@@ -1711,6 +1886,7 @@ namespace
 		return ret;
 	}
 
+	// The first registered auto getter
 	void* GetCostumeListReply_get_HairstyleList_orig;
 	void* GetCostumeListReply_get_HairstyleList_hook(void* _this) {  // 添加服装到缓存表
 		auto ret = reinterpret_cast<decltype(GetCostumeListReply_get_HairstyleList_hook)*>(GetCostumeListReply_get_HairstyleList_orig)(_this);
@@ -1787,7 +1963,7 @@ namespace
 				const auto deformResistance = il2cpp_symbols::read_field<float>(param, deformResistance_field);
 
 				printf("SwayString original: swayType: %d, swaySubType: %d, rate: %f, bendStrength: %f, baseGravity: %f, "
-					"inertiaMoment: %f, airResistance: %f, deformResistance: %f\n", 
+					"inertiaMoment: %f, airResistance: %f, deformResistance: %f\n",
 					swayType, swaySubType, rate, bendStrength, baseGravity, inertiaMoment, airResistance, deformResistance);
 
 				il2cpp_symbols::write_field(param, bendStrength_field, bendStrength + currConfig.P_bendStrength);
@@ -1952,7 +2128,7 @@ namespace
 		auto unitIdol = il2cpp_field_get_value_object(unitIdol_field, _this);
 		auto convertList = il2cpp_field_get_value_object(convertList_field, _this);
 
-		wprintf(L"TextLog_AddLog: speakerFlag: %d, textID: %ls, text: %ls\ndicConvertID:\n%ls\n\nspeakerTable:\n%ls\n\nlistTextLogData:\n%ls\n\nunitIdol:\n%ls\n\nconvertList:\n%ls\n\n", 
+		wprintf(L"TextLog_AddLog: speakerFlag: %d, textID: %ls, text: %ls\ndicConvertID:\n%ls\n\nspeakerTable:\n%ls\n\nlistTextLogData:\n%ls\n\nunitIdol:\n%ls\n\nconvertList:\n%ls\n\n",
 			speakerFlag, textID->start_char, text->start_char,
 			toJsonStr(dicConvertID)->start_char,
 			toJsonStr(speakerTable)->start_char,
@@ -2053,7 +2229,7 @@ namespace
 
 	void* Unity_set_farClipPlane_orig;
 	void Unity_set_farClipPlane_hook(void* _this, float value) {
-		if(_this == baseCamera) {
+		if (_this == baseCamera) {
 			if (g_enable_free_camera) {
 				value = 2500.0f;
 			}
@@ -2245,7 +2421,7 @@ namespace
 
 	bool pathed = false;
 	bool npPatched = false;
-	
+
 	void patchNP(HMODULE module) {
 		if (npPatched) return;
 		npPatched = true;
@@ -2294,9 +2470,9 @@ namespace
 		il2cpp_symbols::init(il2cpp_module);
 
 #pragma region HOOK_ADDRESSES
-		
+
 		environment_get_stacktrace = reinterpret_cast<decltype(environment_get_stacktrace)>(
-			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System", 
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System",
 				"Environment", "get_StackTrace", 0)
 			);
 
@@ -2337,7 +2513,7 @@ namespace
 			"Unity.TextMeshPro.dll", "TMPro",
 			"TMP_Text", "get_font", 0
 		));
-		
+
 		const auto TMP_Text_set_text_addr = il2cpp_symbols::get_method_pointer(
 			"Unity.TextMeshPro.dll", "TMPro",
 			"TMP_Text", "set_text", 1
@@ -2382,7 +2558,7 @@ namespace
 		//	"PIdolDetailPopupViewModel", "Create", 10
 		//);
 		auto ScenarioContentViewModel_ctor_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Adapters.dll", "PRISM.Adapters", 
+			"PRISM.Adapters.dll", "PRISM.Adapters",
 			"ScenarioContentViewModel", ".ctor", 8
 		);
 
@@ -2483,7 +2659,7 @@ namespace
 			"PRISM.Legacy.dll", "PRISM",
 			"AssembleCharacter", "ApplyParam", 6
 		);
-				/*
+		/*
 		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::find_method("PRISM.Legacy.dll", "PRISM", "AssembleCharacter", [=](const MethodInfo* mtd) {
 			const std::string mtdName = mtd->name;
 
@@ -2552,7 +2728,7 @@ namespace
 		auto DMMGameGuard_Setup_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"DMMGameGuard", "Setup", 0
-		);		
+		);
 		auto DMMGameGuard_SetCheckMode_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"DMMGameGuard", "SetCheckMode", 1
@@ -2597,6 +2773,16 @@ namespace
 		auto SwayString_SetupPoint_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"SwayString", "SetupPoint", 0
+		);
+
+		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
+		auto CostumeChangeView_Reload_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Interactions", "PRISM.Interactions.CostumeChange",
+			"CostumeChangeView", "Reload", 1
+		);
+		auto LiveMVStartData_ctor_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy", "PRISM.Live",
+			"LiveMVStartData", ".ctor", 7
 		);
 
 #pragma endregion
@@ -2660,11 +2846,15 @@ namespace
 		ADD_HOOK(set_vsync_count, "set_vsync_count at %p");
 		ADD_HOOK(Unity_Quit, "Unity_Quit at %p");
 
+		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
+		ADD_HOOK(CostumeChangeView_Reload, "CostumeChangeView_Reload at %p");
+		ADD_HOOK(LiveMVStartData_ctor, "LiveMVStartData_ctor at %p");
+
 		LoadExtraAssetBundle();
 		on_hotKey_0 = []() {
 			startSCGUI();
 			// needPrintStack = !needPrintStack;
-		};
+			};
 		SCCamera::initCameraSettings();
 		g_on_hook_ready();
 
@@ -2693,7 +2883,7 @@ bool init_hook()
 	g_on_close = []() {
 		uninit_hook();
 		TerminateProcess(GetCurrentProcess(), 0);
-	};
+		};
 
 	mh_inited = true;
 
