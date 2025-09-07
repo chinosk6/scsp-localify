@@ -208,9 +208,6 @@ namespace il2cpp_symbols
 		static auto klass_System_Array = il2cpp_class_from_name(il2cpp_get_corlib(), "System", "Array");
 		static auto mtd_Array_SetValue = il2cpp_class_get_method_from_name(klass_System_Array, "SetValue", 2);
 		static auto func_Array_SetValue = reinterpret_cast<void* (*)(void* _this, void* value, int index, void* mtd)>(mtd_Array_SetValue->methodPointer);
-		std::cout << "klass_System_Array = " << klass_System_Array << std::endl;
-		std::cout << "mtd_Array_SetValue = " << mtd_Array_SetValue << std::endl;
-		std::cout << "func_Array_SetValue = " << func_Array_SetValue << std::endl;
 		func_Array_SetValue(array, value, index, mtd_Array_SetValue);
 	}
 }

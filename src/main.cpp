@@ -42,6 +42,7 @@ bool g_allow_use_tryon_costume = false;
 bool g_allow_same_idol = false;
 bool g_unlock_all_dress = false;
 bool g_unlock_all_headwear = false;
+bool g_save_and_replace_costume_changes = false;
 bool g_enable_chara_param_edit = false;
 bool g_unlock_PIdol_and_SChara_events = false;
 int g_start_resolution_w = -1;
@@ -178,11 +179,8 @@ namespace
 			if (document.HasMember("allowSameIdol")) {
 				g_allow_same_idol = document["allowSameIdol"].GetBool();
 			}
-			if (document.HasMember("unlockAllDress")) {
-				g_unlock_all_dress = document["unlockAllDress"].GetBool();
-			}
-			if (document.HasMember("unlockAllHeadwear")) {
-				g_unlock_all_headwear = document["unlockAllHeadwear"].GetBool() && g_unlock_all_dress;
+			if (document.HasMember("saveAndReplaceCostumeChanges")) {
+				g_save_and_replace_costume_changes = document["saveAndReplaceCostumeChanges"].GetBool();
 			}
 			if (document.HasMember("unlockPIdolAndSCharaEvents")) {
 				g_unlock_PIdol_and_SChara_events = document["unlockPIdolAndSCharaEvents"].GetBool();

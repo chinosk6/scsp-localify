@@ -47,7 +47,7 @@
 
 class CharaParam_t {
 public:
-	CharaParam_t(float height, float bust, float head, float arm, float hand) : 
+	CharaParam_t(float height, float bust, float head, float arm, float hand) :
 		height(height), bust(bust), head(head), arm(arm), hand(hand) {
 		objPtr = NULL;
 		updateInitParam();
@@ -123,10 +123,10 @@ private:
 
 class CharaSwayStringParam_t {
 public:
-	CharaSwayStringParam_t(float rate, float P_bendStrength, float P_baseGravity, 
-		float P_inertiaMoment, float P_airResistance, float P_deformResistance): 
-		rate(rate), P_bendStrength(P_bendStrength), P_baseGravity(P_baseGravity), 
-		P_inertiaMoment(P_inertiaMoment), P_airResistance(P_airResistance), P_deformResistance(P_deformResistance){
+	CharaSwayStringParam_t(float rate, float P_bendStrength, float P_baseGravity,
+		float P_inertiaMoment, float P_airResistance, float P_deformResistance) :
+		rate(rate), P_bendStrength(P_bendStrength), P_baseGravity(P_baseGravity),
+		P_inertiaMoment(P_inertiaMoment), P_airResistance(P_airResistance), P_deformResistance(P_deformResistance) {
 
 	}
 
@@ -150,8 +150,41 @@ public:
 
 };
 
+
+struct UnitIdol {
+	static void* klass_UnitIdol;
+	static void* field_UnitIdol_charaId;
+	static void* field_UnitIdol_clothId;
+	static void* field_UnitIdol_hairId;
+	static void* field_UnitIdol_accessoryIds;
+
+	static void InitUnitIdol(void* unitIdolInstance) {
+		if (field_UnitIdol_accessoryIds == nullptr) {
+			klass_UnitIdol = il2cpp_symbols::get_class_from_instance(unitIdolInstance);
+			field_UnitIdol_charaId = il2cpp_class_get_field_from_name(klass_UnitIdol, "charaId");
+			field_UnitIdol_clothId = il2cpp_class_get_field_from_name(klass_UnitIdol, "clothId");
+			field_UnitIdol_hairId = il2cpp_class_get_field_from_name(klass_UnitIdol, "hairId");
+			field_UnitIdol_accessoryIds = il2cpp_class_get_field_from_name(klass_UnitIdol, "accessoryIds");
+		}
+	}
+
+	int CharaId = -1;
+	int ClothId = 0;
+	int HairId = 0;
+	int* AccessoryIds = nullptr;
+	int AccessoryIdsLength = 0;
+
+	void ReadFrom(void* managed);
+	void ApplyTo(void* managed);
+
+	void Print(std::ostream& os) const;
+	std::string ToString() const;
+};
+
+
 extern std::map<int, std::string> swayTypes;
 extern std::map<int, CharaSwayStringParam_t> charaSwayStringOffset;
+extern std::map<int, UnitIdol> savedCostumes;
 
 extern std::function<void()> g_reload_all_data;
 extern bool g_enable_plugin;
@@ -172,6 +205,7 @@ extern bool g_allow_use_tryon_costume;
 extern bool g_allow_same_idol;
 extern bool g_unlock_all_dress;
 extern bool g_unlock_all_headwear;
+extern bool g_save_and_replace_costume_changes;
 extern bool g_enable_chara_param_edit;
 extern float g_font_size_offset;
 extern float g_3d_resolution_scale;

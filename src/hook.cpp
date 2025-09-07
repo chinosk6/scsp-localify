@@ -68,83 +68,6 @@ std::map<int, std::string> swayTypes{
 	{0xd, "Max"},
 };
 
-
-// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
-static void* klass_UnitIdol;
-static void* field_UnitIdol_charaId;
-static void* field_UnitIdol_clothId;
-static void* field_UnitIdol_hairId;
-static void* field_UnitIdol_accessoryIds;
-
-static void InitUnitIdol(void* unitIdolInstance) {
-	if (field_UnitIdol_accessoryIds == nullptr) {
-		klass_UnitIdol = il2cpp_symbols::get_class_from_instance(unitIdolInstance);
-		field_UnitIdol_charaId = il2cpp_class_get_field_from_name(klass_UnitIdol, "charaId");
-		field_UnitIdol_clothId = il2cpp_class_get_field_from_name(klass_UnitIdol, "clothId");
-		field_UnitIdol_hairId = il2cpp_class_get_field_from_name(klass_UnitIdol, "hairId");
-		field_UnitIdol_accessoryIds = il2cpp_class_get_field_from_name(klass_UnitIdol, "accessoryIds");
-	}
-}
-
-struct UnitIdol {
-	int CharaId = -1;
-	int ClothId = 0;
-	int HairId = 0;
-	int* AccessoryIds = nullptr;
-	int AccessoryIdsLength = 0;
-
-	void Print() const {
-		std::cout << "UnitIdol = { CharaId = " << CharaId
-			<< ", ClothId = " << ClothId
-			<< ", HairId = " << HairId
-			<< ", AccessoryIds = [";
-		bool first = true;
-		if (AccessoryIds != nullptr) {
-			for (int i = 0; i < AccessoryIdsLength; ++i) {
-				if (!first)
-					std::cout << ", ";
-				std::cout << AccessoryIds[i];
-				first = false;
-			}
-		}
-		std::cout << "] }" << std::endl;
-	}
-
-	void ReadFrom(void* managed) {
-		if (AccessoryIds != nullptr) {
-			delete[] AccessoryIds;
-		}
-		InitUnitIdol(managed);
-		void* accessoryIds;
-		il2cpp_field_get_value(managed, field_UnitIdol_charaId, &CharaId);
-		il2cpp_field_get_value(managed, field_UnitIdol_clothId, &ClothId);
-		il2cpp_field_get_value(managed, field_UnitIdol_hairId, &HairId);
-		il2cpp_field_get_value(managed, field_UnitIdol_accessoryIds, &accessoryIds);
-		AccessoryIdsLength = il2cpp_array_length(accessoryIds);
-		AccessoryIds = new int[AccessoryIdsLength];
-		for (int i = 0; i < AccessoryIdsLength; ++i) {
-			auto item = il2cpp_symbols::array_get_value(accessoryIds, i);
-			int32_t* rawPtr = static_cast<int32_t*>(il2cpp_object_unbox(item));
-			int32_t value = *rawPtr;
-			AccessoryIds[i] = value;
-		}
-	}
-
-	void ApplyTo(void* managed) {
-		InitUnitIdol(managed);
-		il2cpp_field_set_value(managed, field_UnitIdol_charaId, &CharaId);
-		il2cpp_field_set_value(managed, field_UnitIdol_clothId, &ClothId);
-		il2cpp_field_set_value(managed, field_UnitIdol_hairId, &HairId);
-		static auto klass_System_Int32 = il2cpp_class_from_name(il2cpp_get_corlib(), "System", "Int32");
-		auto accessoryIds = il2cpp_array_new(klass_System_Int32, AccessoryIdsLength);
-		auto length = il2cpp_array_length(accessoryIds);
-		for (int i = 0; i < AccessoryIdsLength; ++i) {
-			auto boxed = il2cpp_value_box(klass_System_Int32, &AccessoryIds[i]);
-			il2cpp_symbols::array_set_value(accessoryIds, boxed, i);
-		}
-		il2cpp_field_set_value_object(managed, field_UnitIdol_accessoryIds, accessoryIds);
-	}
-};
 std::map<int, UnitIdol> savedCostumes{};
 
 
@@ -1679,23 +1602,31 @@ namespace
 	void* CostumeChangeView_Reload_hook(void* _this, void* viewModel) {
 		auto ret = reinterpret_cast<decltype(CostumeChangeView_Reload_hook)*>(CostumeChangeView_Reload_orig)(_this, viewModel);
 
-		__try
-		{
-			auto klass_CostumeChangeViewModel = il2cpp_symbols::get_class_from_instance(viewModel);
-			auto mtd_CostumeChangeViewModel_GetPreviewUnitIdol = il2cpp_class_get_method_from_name(klass_CostumeChangeViewModel, "GetPreviewUnitIdol", 0);
-			auto func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<void* (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
+		static void* klass_CostumeChangeViewModel;
+		static MethodInfo* mtd_CostumeChangeViewModel_GetPreviewUnitIdol;
+		static void* (*func_CostumeChangeViewModel_GetPreviewUnitIdol)(void* _this, void* mtd);
 
-			auto idol = func_CostumeChangeViewModel_GetPreviewUnitIdol(viewModel, mtd_CostumeChangeViewModel_GetPreviewUnitIdol);
+		if (g_save_and_replace_costume_changes) {
+			__try {
+				if (klass_CostumeChangeViewModel == nullptr) {
+					klass_CostumeChangeViewModel = il2cpp_symbols::get_class_from_instance(viewModel);
+					mtd_CostumeChangeViewModel_GetPreviewUnitIdol = il2cpp_class_get_method_from_name(klass_CostumeChangeViewModel, "GetPreviewUnitIdol", 0);
+					func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<void* (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
+				}
 
-			UnitIdol data;
-			data.ReadFrom(idol);
-			data.Print();
-			if (data.CharaId >= 0)
-				savedCostumes[data.CharaId] = data;
-		}
-		__except (seh_filter(GetExceptionInformation()))
-		{
-			printf("SEH exception detected in 'CostumeChangeView_Reload_hook'.\n");
+				auto idol = func_CostumeChangeViewModel_GetPreviewUnitIdol(viewModel, mtd_CostumeChangeViewModel_GetPreviewUnitIdol);
+
+				UnitIdol data;
+				data.ReadFrom(idol);
+				std::cout << "Saved UnitIdel = ";
+				data.Print(std::cout);
+
+				if (data.CharaId >= 0)
+					savedCostumes[data.CharaId] = data;
+			}
+			__except (seh_filter(GetExceptionInformation())) {
+				printf("SEH exception detected in 'CostumeChangeView_Reload_hook'.\n");
+			}
 		}
 
 		return ret;
@@ -1704,37 +1635,27 @@ namespace
 	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
 	void* LiveMVStartData_ctor_orig;
 	void* LiveMVStartData_ctor_hook(void* _this, void* musicMaster, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int backgroundMode, int renderingDynamicRange, int soundEffectMode) {
-		std::cout << "> LiveMVStartData_ctor_hook:" << std::endl;
 		auto ret = reinterpret_cast<decltype(LiveMVStartData_ctor_hook)*>(LiveMVStartData_ctor_orig)(_this, musicMaster, onStageIdols, cameraIndex, isVocalSeparatedOn, backgroundMode, renderingDynamicRange, soundEffectMode);
 
-		// PRISM.UnitIdolWithMstCostume[] onStageIdols
-		__try
-		{
-			auto length = il2cpp_array_length(onStageIdols);
-			auto klass_System_Array = il2cpp_class_from_name(il2cpp_get_corlib(), "System", "Array");
-			auto mtd_Array_GetItem = il2cpp_class_get_method_from_name(klass_System_Array, "GetValue", 1);
-			auto func_Array_GetItem = reinterpret_cast<void* (*)(void* _this, int index, void* mtd)>(mtd_Array_GetItem->methodPointer);
-			for (int i = 0; i < length; i++)
-			{
-				auto item = func_Array_GetItem(onStageIdols, i, mtd_Array_GetItem);
-				auto klass_UnitIdolWithMstCostume = il2cpp_symbols::get_class_from_instance(item);
-				auto klass_UnitIdol = il2cpp_class_get_parent(klass_UnitIdolWithMstCostume);
-				auto field_UnitIdol_charaId = il2cpp_class_get_field_from_name(klass_UnitIdol, "charaId");
+		if (g_save_and_replace_costume_changes) {
+			__try {
+				auto length = il2cpp_array_length(onStageIdols);
+				for (int i = 0; i < length; i++) {
+					auto item = il2cpp_symbols::array_get_value(onStageIdols, i);
 
-				int charaId;
-				il2cpp_field_get_value(item, field_UnitIdol_charaId, &charaId);
+					UnitIdol idol;
+					idol.ReadFrom(item);
 
-				auto it = savedCostumes.find(charaId);
-				if (it != savedCostumes.end()) {
-					std::cout << "CharaId " << it->first << " has been modified." << std::endl;
-					it->second.ApplyTo(item);
-
+					auto it = savedCostumes.find(idol.CharaId);
+					if (it != savedCostumes.end()) {
+						it->second.ApplyTo(item);
+						std::cout << "CharaId " << it->first << " has been modified." << std::endl;
+					}
 				}
 			}
-		}
-		__except (seh_filter(GetExceptionInformation()))
-		{
-			printf("SEH exception detected in `LiveMVStartData_ctor_hook`.\n");
+			__except (seh_filter(GetExceptionInformation())) {
+				printf("SEH exception detected in `LiveMVStartData_ctor_hook`.\n");
+			}
 		}
 
 		return ret;

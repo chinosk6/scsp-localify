@@ -27,7 +27,6 @@ iM@S SCSP localify plugin.
 - Switching Windows Without Pausing
 - Free Camera
 - Live MV Related **(Modify in GUI)**
-  - Unlock Costumes
   - Freedom to Choose Costumes, Wear Other Characters' Clothes
   - Allow Same Idol Appearance
 - Real-time Modification of Character Body Parameters, Adjust Height, Head, Chest, Arm, and Palm Size **(Modify in GUI)**
