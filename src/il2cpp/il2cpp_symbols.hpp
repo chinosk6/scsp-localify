@@ -313,6 +313,8 @@ typedef void* (*il2cpp_value_box_t)(void* klass, void* data);
 typedef void* (*il2cpp_object_unbox_t)(void* obj);
 typedef uint32_t(*il2cpp_array_length_t)(void* arr);
 typedef void* (*il2cpp_class_get_parent_t)(void* klass);
+typedef const char* (*il2cpp_method_get_name_t)(const MethodInfo* method);
+typedef void* (*il2cpp_method_get_class_t)(const MethodInfo* method);
 
 // function defines
 extern il2cpp_string_new_utf16_t il2cpp_string_new_utf16;
@@ -354,6 +356,8 @@ extern il2cpp_value_box_t il2cpp_value_box;
 extern il2cpp_object_unbox_t il2cpp_object_unbox;
 extern il2cpp_array_length_t il2cpp_array_length;
 extern il2cpp_class_get_parent_t il2cpp_class_get_parent;
+extern il2cpp_method_get_name_t il2cpp_method_get_name;
+extern il2cpp_method_get_class_t il2cpp_method_get_class;
 
 char* il2cpp_array_addr_with_size(void* arr, int32_t size, uintptr_t idx);
 

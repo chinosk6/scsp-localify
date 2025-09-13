@@ -1635,6 +1635,12 @@ namespace
 	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
 	void* LiveMVStartData_ctor_orig;
 	void* LiveMVStartData_ctor_hook(void* _this, void* musicMaster, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int backgroundMode, int renderingDynamicRange, int soundEffectMode) {
+
+#if __TOOL_HOOK_NETWORKING__
+		tools::output_networking_calls = true;
+		printf("start LiveMVStartData..ctor\n");
+#endif
+
 		auto ret = reinterpret_cast<decltype(LiveMVStartData_ctor_hook)*>(LiveMVStartData_ctor_orig)(_this, musicMaster, onStageIdols, cameraIndex, isVocalSeparatedOn, backgroundMode, renderingDynamicRange, soundEffectMode);
 
 		if (g_save_and_replace_costume_changes) {
@@ -1657,6 +1663,10 @@ namespace
 				printf("SEH exception detected in `LiveMVStartData_ctor_hook`.\n");
 			}
 		}
+
+#if __TOOL_HOOK_NETWORKING__
+		printf("after LiveMVStartData..ctor\n");
+#endif
 
 		return ret;
 	}
@@ -2770,6 +2780,8 @@ namespace
 		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
 		ADD_HOOK(CostumeChangeView_Reload, "CostumeChangeView_Reload at %p");
 		ADD_HOOK(LiveMVStartData_ctor, "LiveMVStartData_ctor at %p");
+
+		tools::AddNetworkingHooks();
 
 		LoadExtraAssetBundle();
 		on_hotKey_0 = []() {

@@ -63,3 +63,6 @@ std::string UnitIdol::ToString() const {
 	Print(oss);
 	return oss.str();
 }
+
+
+bool tools::output_networking_calls = false;

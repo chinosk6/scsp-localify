@@ -39,6 +39,8 @@ il2cpp_value_box_t il2cpp_value_box;
 il2cpp_object_unbox_t il2cpp_object_unbox;
 il2cpp_array_length_t il2cpp_array_length;
 il2cpp_class_get_parent_t il2cpp_class_get_parent;
+il2cpp_method_get_name_t il2cpp_method_get_name;
+il2cpp_method_get_class_t il2cpp_method_get_class;
 
 char* il2cpp_array_addr_with_size(void* array, int32_t size, uintptr_t idx)
 {
@@ -92,6 +94,8 @@ namespace il2cpp_symbols
 		RESOLVE_IMPORT(il2cpp_object_unbox);
 		RESOLVE_IMPORT(il2cpp_array_length);
 		RESOLVE_IMPORT(il2cpp_class_get_parent);
+		RESOLVE_IMPORT(il2cpp_method_get_name);
+		RESOLVE_IMPORT(il2cpp_method_get_class);
 
 		il2cpp_domain = il2cpp_domain_get();
 	}
