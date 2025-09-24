@@ -897,8 +897,11 @@ namespace
 
 	GameVersion getGameVersions() {
 		static auto getGameVersion = reinterpret_cast<Il2CppString * (*)()>(
-			il2cpp_resolve_icall("UnityEngine.Application::get_version()")
-			);
+			il2cpp_symbols::get_method_pointer(
+				"UnityEngine.CoreModule.dll", "UnityEngine",
+				"Application", "get_version", 0
+			)
+		);
 
 		static auto Global_get_instance = reinterpret_cast<void* (*)()>(
 			il2cpp_symbols::get_method_pointer("PRISM.ResourceManagement.dll", "PRISM",
