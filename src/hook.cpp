@@ -429,8 +429,8 @@ namespace
 		// assert(!ExtraAssetBundleHandle && ExtraAssetBundleAssetPaths.empty());
 
 		static auto AssetBundle_GetAllAssetNames = reinterpret_cast<void* (*)(void*)>(
-			il2cpp_resolve_icall("UnityEngine.AssetBundle::GetAllAssetNames()")
-			);
+			il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.AssetBundle::GetAllAssetNames()")
+		);
 
 		for (const auto& i : g_extra_assetbundle_paths) {
 			if (CustomAssetBundleHandleMap.contains(i)) continue;
@@ -1689,7 +1689,12 @@ namespace
 
 	void AssembleCharacter_ApplyParam_hook(void* mdl, float height, float bust, float head, float arm, float hand) {
 		if (g_enable_chara_param_edit) {
-			static auto get_ObjectName = reinterpret_cast<Il2CppString * (*)(void*)>(il2cpp_resolve_icall("UnityEngine.Object::GetName(UnityEngine.Object)"));
+			static auto get_ObjectName = reinterpret_cast<Il2CppString * (*)(void*)>(
+				il2cpp_symbols::get_method_pointer(
+					"UnityEngine.CoreModule.dll", "UnityEngine",
+					"Object", "GetName", 0
+				)
+			);
 			const auto objNameIlStr = get_ObjectName(mdl);
 			const std::string objName = objNameIlStr ? utility::conversions::to_utf8string(std::wstring(objNameIlStr->start_char)) : std::format("Unnamed Obj {:p}", mdl);
 			std::string showObjName;
@@ -1951,44 +1956,51 @@ namespace
 	}
 
 	bool checkMusicDataSatisfy(void* _this, void* unit, int pos = -1) {
-		static auto musicData_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Live", "MusicData");
-		static auto master_klass = il2cpp_symbols::get_class("PRISM.Definitions.dll", "PRISM.Definitions", "MstSong");
+		static auto musicData_klass = il2cpp_symbols_logged::get_class("PRISM.Legacy.dll", "PRISM.Live", "MusicData");
+		static auto master_klass = il2cpp_symbols_logged::get_class("PRISM.Definitions.dll", "PRISM.Definitions", "MstSong");
 
-		static auto masterData_field = il2cpp_class_get_field_from_name(musicData_klass, "<Master>k__BackingField");
-		static auto isSongParts_field = il2cpp_class_get_field_from_name(master_klass, "<IsSongParts>k__BackingField");
+		static auto masterData_field = il2cpp_symbols_logged::il2cpp_class_get_field_from_name(musicData_klass, "<Master>k__BackingField");
+		static auto isSongParts_field = il2cpp_symbols_logged::il2cpp_class_get_field_from_name(master_klass, "<IsSongParts>k__BackingField");
 
 		const auto masterData = il2cpp_symbols::read_field(_this, masterData_field);
 		const auto isSongParts = il2cpp_symbols::read_field<bool>(masterData, isSongParts_field);
 		if (!isSongParts) return false;
 
-		// static auto LiveUnit_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Live", "LiveUnit");
-		static auto LiveUnit_get_Idols = reinterpret_cast<void* (*)(void*)>(
-			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "LiveUnit", "get_Idols", 0)
-			);
+		static auto klass_LiveUnit = il2cpp_symbols::get_class_from_instance(unit);
+		static auto mtd_LiveUnit_get_Idols = il2cpp_class_get_method_from_name(klass_LiveUnit, "get_Idols", 0);
+		static auto func_LiveUnit_get_Idols = reinterpret_cast<void* (*)(void*, MethodInfo*)>(mtd_LiveUnit_get_Idols->methodPointer);
 
 		static auto MusicData_IsOriginalMember = reinterpret_cast<bool (*)(void*, int)>(
-			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "MusicData", "IsOriginalMember", 1)
-			);
+			il2cpp_symbols_logged::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "MusicData", "IsOriginalMember", 1)
+		);
 
-
-		auto idols = LiveUnit_get_Idols(unit);
+		auto idols = func_LiveUnit_get_Idols(unit, mtd_LiveUnit_get_Idols);
 		bool ret = true;
 		int currentSlot = 0;
 		il2cpp_symbols::iterate_IEnumerable(idols, [&](void* idol) {
-			const auto idol_klass = il2cpp_symbols::get_class_from_instance(idol);
-			const auto characterId_field = il2cpp_class_get_field_from_name(idol_klass, "<CharacterId>k__BackingField");
-			const auto characterId = il2cpp_symbols::read_field<int>(idol, characterId_field);
-			const auto isOrigMember = MusicData_IsOriginalMember(_this, characterId);
-			if (!isOrigMember) {
-				if (pos == -1) {
-					ret = false;
+			__try {
+				const auto idol_klass = il2cpp_symbols::get_class_from_instance(idol);
+				const auto characterId_field = il2cpp_class_get_field_from_name(idol_klass, "<CharacterId>k__BackingField");
+				//const auto characterId = il2cpp_symbols::read_field<int>(idol, characterId_field);
+				const auto get_CharacterId = reinterpret_cast<int (*)(void*)>(
+					il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "LiveIdol", "get_CharacterId", 0)
+				);
+				const auto characterId = get_CharacterId(idol);
+				const auto isOrigMember = MusicData_IsOriginalMember(_this, characterId);
+				if (!isOrigMember) {
+					if (pos == -1) {
+						ret = false;
+					}
+					else {
+						if (currentSlot == pos) ret = false;
+					}
 				}
-				else {
-					if (currentSlot == pos) ret = false;
-				}
+				currentSlot++;
 			}
-			currentSlot++;
-			});
+			__except (seh_filter(GetExceptionInformation())) {
+				printf("SEH exception detected in `checkMusicDataSatisfy|iterate_IEnumerable`.\n");
+			}
+		});
 
 		return ret;
 	}
@@ -2431,8 +2443,8 @@ namespace
 				"Object", "IsNativeObjectAlive", 1)
 			);
 		AssetBundle_LoadAsset = reinterpret_cast<decltype(AssetBundle_LoadAsset)>(
-			il2cpp_resolve_icall("UnityEngine.AssetBundle::LoadAsset_Internal(System.String,System.Type)")
-			);
+			il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.AssetBundle::LoadAsset_Internal(System.String,System.Type)")
+		);
 		const auto FontClass = il2cpp_symbols::get_class("UnityEngine.TextRenderingModule.dll", "UnityEngine", "Font");
 		Font_Type = il2cpp_type_get_object(il2cpp_class_get_type(FontClass));
 		TMP_FontAsset_CreateFontAsset = reinterpret_cast<decltype(TMP_FontAsset_CreateFontAsset)>(il2cpp_symbols::get_method_pointer(
@@ -2519,20 +2531,20 @@ namespace
 		);
 
 		const auto AssetBundle_LoadAsset_addr =
-			il2cpp_resolve_icall("UnityEngine.AssetBundle::LoadAsset_Internal(System.String,System.Type)");
+			il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.AssetBundle::LoadAsset_Internal(System.String,System.Type)");
 
-		auto Unity_get_pos_injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::get_position_Injected(UnityEngine.Vector3&)");
-		auto Unity_set_pos_injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::set_position_Injected(UnityEngine.Vector3&)");
+		auto Unity_get_pos_injected_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Transform::get_position_Injected(UnityEngine.Vector3&)");
+		auto Unity_set_pos_injected_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Transform::set_position_Injected(UnityEngine.Vector3&)");
 
-		auto Unity_get_fieldOfView_addr = il2cpp_resolve_icall("UnityEngine.Camera::get_fieldOfView()");
-		auto Unity_set_fieldOfView_addr = il2cpp_resolve_icall("UnityEngine.Camera::set_fieldOfView(System.Single)");
-		auto Unity_LookAt_Injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::Internal_LookAt_Injected(UnityEngine.Vector3&,UnityEngine.Vector3&)");
-		auto Unity_set_nearClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::set_nearClipPlane(System.Single)");
-		auto Unity_get_nearClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::get_nearClipPlane()");
-		auto Unity_get_farClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::get_farClipPlane()");
-		auto Unity_set_farClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::set_farClipPlane(System.Single)");
-		auto Unity_get_rotation_Injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::get_rotation_Injected(UnityEngine.Quaternion&)");
-		auto Unity_set_rotation_Injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::set_rotation_Injected(UnityEngine.Quaternion&)");
+		auto Unity_get_fieldOfView_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::get_fieldOfView()");
+		auto Unity_set_fieldOfView_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::set_fieldOfView(System.Single)");
+		auto Unity_LookAt_Injected_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Transform::Internal_LookAt_Injected(UnityEngine.Vector3&,UnityEngine.Vector3&)");
+		auto Unity_set_nearClipPlane_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::set_nearClipPlane(System.Single)");
+		auto Unity_get_nearClipPlane_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::get_nearClipPlane()");
+		auto Unity_get_farClipPlane_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::get_farClipPlane()");
+		auto Unity_set_farClipPlane_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::set_farClipPlane(System.Single)");
+		auto Unity_get_rotation_Injected_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Transform::get_rotation_Injected(UnityEngine.Quaternion&)");
+		auto Unity_set_rotation_Injected_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Transform::set_rotation_Injected(UnityEngine.Quaternion&)");
 
 		auto InvokeMoveNext_addr = il2cpp_symbols::get_method_pointer(
 			"UnityEngine.CoreModule.dll", "UnityEngine",
@@ -2673,9 +2685,9 @@ namespace
 			"DMMGameGuard", "CloseNPGameMon", 0
 		));*/
 
-		auto set_fps_addr = il2cpp_resolve_icall("UnityEngine.Application::set_targetFrameRate(System.Int32)");
-		auto set_vsync_count_addr = il2cpp_resolve_icall("UnityEngine.QualitySettings::set_vSyncCount(System.Int32)");
-		auto Unity_Quit_addr = il2cpp_resolve_icall("UnityEngine.Application::Quit(System.Int32)");
+		auto set_fps_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Application::set_targetFrameRate(System.Int32)");
+		auto set_vsync_count_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.QualitySettings::set_vSyncCount(System.Int32)");
+		auto Unity_Quit_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Application::Quit(System.Int32)");
 
 
 		auto assemblyLoad = reinterpret_cast<void* (*)(Il2CppString*)>(
