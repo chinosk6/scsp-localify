@@ -1,6 +1,6 @@
 name: ci
-on: 
-  push: 
+on:
+  push:
     paths:
       - '**.lua'
       - '**.cpp'
@@ -14,9 +14,9 @@ on:
       - 'deps/**'
       - 'src/**'
       - 'utils/**'
-      - 'ci.yml'
+      - '.github/workflows/ci.yml'
   pull_request:
-      paths:
+    paths:
       - '**.lua'
       - '**.cpp'
       - '**.c'
@@ -29,23 +29,29 @@ on:
       - 'deps/**'
       - 'src/**'
       - 'utils/**'
-      - 'ci.yml'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: 'Build configuration'
+        required: false
+        default: 'Release'
+
 jobs:
   build:
-    runs-on: windows-2019
-
+    runs-on: windows-2022
     steps:
-      - name: checkout
-        uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: install-dependencies
         run: |
-          pip3 install --upgrade conan==1.59.0 requests
-          conan profile new default --detect
-          conan config init
-      - name: configure-msbuild-env
-        uses: microsoft/setup-msbuild@v1.0.2
+          python -m pip install --upgrade pip
+          python -m pip install "conan>=2,<3" requests
+          conan profile detect --force
+      - name: Configure MSBuild environment
+        uses: microsoft/setup-msbuild@v2
       - name: build
         run: |
           ./generate.bat
