@@ -866,8 +866,11 @@ namespace
 
 	GameVersion getGameVersions() {
 		static auto getGameVersion = reinterpret_cast<Il2CppString* (*)()>(
-			il2cpp_resolve_icall("UnityEngine.Application::get_version()")
-			);
+			il2cpp_symbols::get_method_pointer(
+				"UnityEngine.CoreModule.dll", "UnityEngine",
+				"Application", "get_version", 0
+			)
+		);
 
 		static auto Global_get_instance = reinterpret_cast<void* (*)()>(
 			il2cpp_symbols::get_method_pointer("PRISM.ResourceManagement.dll", "PRISM",
@@ -1580,7 +1583,12 @@ namespace
 
 	void AssembleCharacter_ApplyParam_hook(void* mdl, float height, float bust, float head, float arm, float hand) {
 		if (g_enable_chara_param_edit) {
-			static auto get_ObjectName = reinterpret_cast<Il2CppString * (*)(void*)>(il2cpp_resolve_icall("UnityEngine.Object::GetName(UnityEngine.Object)"));
+			static auto get_ObjectName = reinterpret_cast<Il2CppString * (*)(void*)>(
+				il2cpp_symbols::get_method_pointer(
+					"UnityEngine.CoreModule.dll", "UnityEngine",
+					"Object", "GetName", 0
+				)
+			);
 			const auto objNameIlStr = get_ObjectName(mdl);
 			const std::string objName = objNameIlStr ? utility::conversions::to_utf8string(std::wstring(objNameIlStr->start_char)) : std::format("Unnamed Obj {:p}", mdl);
 			std::string showObjName;
@@ -1745,8 +1753,8 @@ namespace
 		static auto swaySubType_field = il2cpp_class_get_field_from_name(SwayString_klass, "swaySubType");
 		static auto forceParam_field = il2cpp_class_get_field_from_name(SwayString_klass, "forceParam");
 
-		static auto SetTest = reinterpret_cast<void (*)(void*, int swayType, float bendStrength, float baseGravity, float inertiaMoment, float airResistance)>(
-			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetTest", 5)
+		static auto SetupForEditor = reinterpret_cast<void (*)(void*, int swayType, float bendStrength, float baseGravity, float inertiaMoment, float airResistance)>(
+			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetupForEditor", 5)
 			);
 		static auto SetRate = reinterpret_cast<void (*)(void*, float)>(
 			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetRate", 1)
@@ -1851,23 +1859,22 @@ namespace
 		const auto isSongParts = il2cpp_symbols::read_field<bool>(masterData, isSongParts_field);
 		if (!isSongParts) return false;
 
-		// static auto LiveUnit_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Live", "LiveUnit");
-		static auto LiveUnit_get_Idols = reinterpret_cast<void* (*)(void*)>(
-			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "LiveUnit", "get_Idols", 0)
-			);
+		static auto klass_LiveUnit = il2cpp_symbols::get_class_from_instance(unit);
+		static auto mtd_LiveUnit_get_Idols = il2cpp_class_get_method_from_name(klass_LiveUnit, "get_Idols", 0);
+		static auto func_LiveUnit_get_Idols = reinterpret_cast<void* (*)(void*, MethodInfo*)>(mtd_LiveUnit_get_Idols->methodPointer);
 
 		static auto MusicData_IsOriginalMember = reinterpret_cast<bool (*)(void*, int)>(
 			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "MusicData", "IsOriginalMember", 1)
-			);
+		);
 
-
-		auto idols = LiveUnit_get_Idols(unit);
+		auto idols = func_LiveUnit_get_Idols(unit, mtd_LiveUnit_get_Idols);
 		bool ret = true;
 		int currentSlot = 0;
 		il2cpp_symbols::iterate_IEnumerable(idols, [&](void* idol) {
-			const auto idol_klass = il2cpp_symbols::get_class_from_instance(idol);
-			const auto characterId_field = il2cpp_class_get_field_from_name(idol_klass, "<CharacterId>k__BackingField");
-			const auto characterId = il2cpp_symbols::read_field<int>(idol, characterId_field);
+			const auto get_CharacterId = reinterpret_cast<int (*)(void*)>(
+				il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "LiveIdol", "get_CharacterId", 0)
+			);
+			const auto characterId = get_CharacterId(idol);
 			const auto isOrigMember = MusicData_IsOriginalMember(_this, characterId);
 			if (!isOrigMember) {
 				if (pos == -1) {
@@ -2479,22 +2486,10 @@ namespace
 			"LiveCostumeChangeModel", ".ctor", 4
 		);
 
-		auto AssembleCharacter_ApplyParam_mdl_addr = il2cpp_symbols::get_method_pointer(
+		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"AssembleCharacter", "ApplyParam", 6
 		);
-
-		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::find_method("PRISM.Legacy.dll", "PRISM", "AssembleCharacter", [=](const MethodInfo* mtd) {
-			const std::string mtdName = mtd->name;
-
-			if ((mtdName == "ApplyParam") && (mtd->parameters_count == 6)) {
-				if (mtd->methodPointer != AssembleCharacter_ApplyParam_mdl_addr) {
-					return true;
-				}
-			}
-
-			return false;
-			});
 
 		auto MainThreadDispatcher_LateUpdate_addr = il2cpp_symbols::get_method_pointer(
 			"UniRx.dll", "UniRx",
