@@ -231,6 +231,7 @@ DEFINE_GRPC_HOOK(MissionGaugeRewardStatus);
 DEFINE_GRPC_HOOK(MissionStatus);
 DEFINE_GRPC_HOOK(MissionCompletedStatus);
 DEFINE_GRPC_HOOK(NotifyMissionCompletedStatus);
+DEFINE_GRPC_HOOK(UpdateMissionStatus);
 DEFINE_GRPC_HOOK(TwestaArticleStatus);
 DEFINE_GRPC_HOOK(TwestaArticleCommentStatus);
 DEFINE_GRPC_HOOK(ChainChoiceStatus);
@@ -1272,6 +1273,7 @@ void tools::AddNetworkingHooks() {
     ADD_GRPC_HOOK(PRISM.Module.Networking.Stub.Status, MissionStatus);
     ADD_GRPC_HOOK(PRISM.Module.Networking.Stub.Status, MissionCompletedStatus);
     ADD_GRPC_HOOK(PRISM.Module.Networking.Stub.Status, NotifyMissionCompletedStatus);
+    ADD_GRPC_HOOK(PRISM.Module.Networking.Stub.Status, UpdateMissionStatus);
     ADD_GRPC_HOOK(PRISM.Module.Networking.Stub.Status, TwestaArticleStatus);
     ADD_GRPC_HOOK(PRISM.Module.Networking.Stub.Status, TwestaArticleCommentStatus);
     ADD_GRPC_HOOK(PRISM.Module.Networking.Stub.Status, ChainChoiceStatus);

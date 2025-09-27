@@ -151,6 +151,7 @@ public:
 };
 
 
+namespace managed { struct UnitIdol {}; }
 struct UnitIdol {
 	static void* klass_UnitIdol;
 	static void* field_UnitIdol_charaId;
@@ -174,9 +175,11 @@ struct UnitIdol {
 	int* AccessoryIds = nullptr;
 	int AccessoryIdsLength = 0;
 
-	void ReadFrom(void* managed);
-	void ApplyTo(void* managed);
+	void ReadFrom(managed::UnitIdol* managed);
+	void ApplyTo(managed::UnitIdol* managed);
 
+	void Clear();
+	bool IsEmpty() const;
 	void Print(std::ostream& os) const;
 	std::string ToString() const;
 };
@@ -185,6 +188,9 @@ struct UnitIdol {
 extern std::map<int, std::string> swayTypes;
 extern std::map<int, CharaSwayStringParam_t> charaSwayStringOffset;
 extern std::map<int, UnitIdol> savedCostumes;
+extern UnitIdol lastSavedCostume;
+extern UnitIdol overridenMvUnitIdols[8];
+const int overridenMvUnitIdols_length = 8;
 
 extern std::function<void()> g_reload_all_data;
 extern bool g_enable_plugin;
@@ -206,6 +212,8 @@ extern bool g_allow_same_idol;
 extern bool g_unlock_all_dress;
 extern bool g_unlock_all_headwear;
 extern bool g_save_and_replace_costume_changes;
+extern bool g_overrie_mv_unit_idols;
+extern bool g_override_isVocalSeparatedOn;
 extern bool g_enable_chara_param_edit;
 extern float g_font_size_offset;
 extern float g_3d_resolution_scale;

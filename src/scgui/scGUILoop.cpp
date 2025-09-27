@@ -173,6 +173,32 @@ namespace SCGUILoop {
 		ImGui::End();
 	}
 
+	void overrideMvUnitIdolLoop() {
+		if (ImGui::Begin("Override MvUnit Idols")) {
+			for (int i = 0; i < overridenMvUnitIdols_length; ++i) {
+				char label[32];
+
+				std::snprintf(label, sizeof(label), "%s##%s%d", "Remove", "omui", i);
+				if (ImGui::Button(label)) {
+					overridenMvUnitIdols[i].Clear();
+				}
+				ImGui::SameLine();
+				std::snprintf(label, sizeof(label), "%s%d##%s", "Slot ", i, "omui");
+				if (ImGui::Button(label)) {
+					if (lastSavedCostume.IsEmpty()) {
+						printf("No costume data saved yet.");
+					}
+					else {
+						overridenMvUnitIdols[i] = lastSavedCostume;
+					}
+				}
+				ImGui::SameLine();
+				ImGui::Text(overridenMvUnitIdols[i].ToString().c_str());
+			}
+		}
+		ImGui::End();
+	}
+
 	void mainLoop() {
 		if (ImGui::Begin("SC Plugin Config")) {
 			if (ImGui::Button("Reload Config And Translate Data")) {
@@ -183,20 +209,28 @@ namespace SCGUILoop {
 			ImGui::Checkbox("Save & Replace costume changes", &g_save_and_replace_costume_changes);
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "保存服装编辑信息并在MV播放时替换。\nSave costumes changing data and Replace when MV starts.");
+			
+			if (g_save_and_replace_costume_changes) {
+				ImGui::Indent(30);
+				ImGui::Checkbox("Override MV unit idols", &g_overrie_mv_unit_idols);
+				ImGui::SameLine();
+				HELP_TOOLTIP("(?)", "在操作窗口中保存用于替换MV播放时的角色信息。\nSave idols' data in control panel to replace them when playing MV.");
+				ImGui::Unindent(30);
+			}
 
-			ImGui::Checkbox("Live Allow Same Idol (Dangerous)", &g_allow_same_idol);
+			ImGui::Checkbox("Enable VocalSeparatedOn forcibly", &g_override_isVocalSeparatedOn);
+			ImGui::SameLine();
+			HELP_TOOLTIP("(?)", "若最终播放MV时的歌曲或所选角色不支持分段演唱则会导致卡死或崩溃。\nGame will freeze or crash if finally selected song or idols don't support separated vocal.");
+
+			ImGui::Checkbox("[Legacy] Live Allow Same Idol (Dangerous)", &g_allow_same_idol);
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "影分身术！\n允许在 Live 中选择同一人。\n（此模式的编组数据会上传，请小心你的号）")
 
-				ImGui::Checkbox("Live Allow Use Try On Costume (Dangerous)", &g_allow_use_tryon_costume);
-			ImGui::SameLine();
-			HELP_TOOLTIP("(?)", "偶像的事，怎么能叫抢呢（\n切换到试穿模式换装后，切回普通模式，仍旧锁定试穿模式的衣服\n（此模式的编组数据会上传，请小心你的号）")
-
-				ImGui::Checkbox("Enable Character Parameter Editor", &g_enable_chara_param_edit);
+			ImGui::Checkbox("Enable Character Parameter Editor", &g_enable_chara_param_edit);
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "启用角色身体参数编辑器")
 
-				ImGui::Checkbox("Unlock PIdol And SChara Events", &g_unlock_PIdol_and_SChara_events);
+			ImGui::Checkbox("Unlock PIdol And SChara Events", &g_unlock_PIdol_and_SChara_events);
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "解锁 角色 - 一览 中的P卡和S卡事件\nUnlock Idol Event (アイドルイベント) and Support Event (サポートイベント)")
 
@@ -268,5 +302,6 @@ namespace SCGUILoop {
 		ImGui::End();
 		if (g_enable_chara_param_edit) charaParamEditLoop();
 		if (g_save_and_replace_costume_changes) savedCostumeDataLoop();
+		if (g_save_and_replace_costume_changes && g_overrie_mv_unit_idols) overrideMvUnitIdolLoop();
 	}
 }

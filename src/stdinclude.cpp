@@ -6,7 +6,7 @@ void* UnitIdol::field_UnitIdol_clothId = nullptr;
 void* UnitIdol::field_UnitIdol_hairId = nullptr;
 void* UnitIdol::field_UnitIdol_accessoryIds = nullptr;
 
-void UnitIdol::ReadFrom(void* managed) {
+void UnitIdol::ReadFrom(managed::UnitIdol* managed) {
 	if (AccessoryIds != nullptr) {
 		delete[] AccessoryIds;
 	}
@@ -26,7 +26,7 @@ void UnitIdol::ReadFrom(void* managed) {
 	}
 }
 
-void UnitIdol::ApplyTo(void* managed) {
+void UnitIdol::ApplyTo(managed::UnitIdol* managed) {
 	InitUnitIdol(managed);
 	il2cpp_field_set_value(managed, field_UnitIdol_charaId, &CharaId);
 	il2cpp_field_set_value(managed, field_UnitIdol_clothId, &ClothId);
@@ -39,6 +39,19 @@ void UnitIdol::ApplyTo(void* managed) {
 		il2cpp_symbols::array_set_value(accessoryIds, boxed, i);
 	}
 	il2cpp_field_set_value_object(managed, field_UnitIdol_accessoryIds, accessoryIds);
+}
+
+void UnitIdol::Clear() {
+	CharaId = -1;
+	ClothId = 0;
+	HairId = 0;
+	delete[] AccessoryIds;
+	AccessoryIds = nullptr;
+	AccessoryIdsLength = 0;
+}
+
+bool UnitIdol::IsEmpty() const {
+	return this->CharaId < 0;
 }
 
 void UnitIdol::Print(std::ostream& os) const {

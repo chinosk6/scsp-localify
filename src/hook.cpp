@@ -69,6 +69,8 @@ std::map<int, std::string> swayTypes{
 };
 
 std::map<int, UnitIdol> savedCostumes{};
+UnitIdol lastSavedCostume;
+UnitIdol overridenMvUnitIdols[8];
 
 
 void loadGUIDataCache() {
@@ -430,7 +432,7 @@ namespace
 
 		static auto AssetBundle_GetAllAssetNames = reinterpret_cast<void* (*)(void*)>(
 			il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.AssetBundle::GetAllAssetNames()")
-		);
+			);
 
 		for (const auto& i : g_extra_assetbundle_paths) {
 			if (CustomAssetBundleHandleMap.contains(i)) continue;
@@ -901,7 +903,7 @@ namespace
 				"UnityEngine.CoreModule.dll", "UnityEngine",
 				"Application", "get_version", 0
 			)
-		);
+			);
 
 		static auto Global_get_instance = reinterpret_cast<void* (*)()>(
 			il2cpp_symbols::get_method_pointer("PRISM.ResourceManagement.dll", "PRISM",
@@ -1607,14 +1609,14 @@ namespace
 
 		static void* klass_CostumeChangeViewModel;
 		static MethodInfo* mtd_CostumeChangeViewModel_GetPreviewUnitIdol;
-		static void* (*func_CostumeChangeViewModel_GetPreviewUnitIdol)(void* _this, void* mtd);
+		static managed::UnitIdol* (*func_CostumeChangeViewModel_GetPreviewUnitIdol)(void* _this, void* mtd);
 
 		if (g_save_and_replace_costume_changes) {
 			__try {
 				if (klass_CostumeChangeViewModel == nullptr) {
 					klass_CostumeChangeViewModel = il2cpp_symbols::get_class_from_instance(viewModel);
 					mtd_CostumeChangeViewModel_GetPreviewUnitIdol = il2cpp_class_get_method_from_name(klass_CostumeChangeViewModel, "GetPreviewUnitIdol", 0);
-					func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<void* (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
+					func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<managed::UnitIdol* (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
 				}
 
 				auto idol = func_CostumeChangeViewModel_GetPreviewUnitIdol(viewModel, mtd_CostumeChangeViewModel_GetPreviewUnitIdol);
@@ -1626,6 +1628,8 @@ namespace
 
 				if (data.CharaId >= 0)
 					savedCostumes[data.CharaId] = data;
+
+				lastSavedCostume = data;
 			}
 			__except (seh_filter(GetExceptionInformation())) {
 				printf("SEH exception detected in 'CostumeChangeView_Reload_hook'.\n");
@@ -1644,13 +1648,18 @@ namespace
 		printf("start LiveMVStartData..ctor\n");
 #endif
 
+		if (g_override_isVocalSeparatedOn) {
+			isVocalSeparatedOn = true;
+			printf("isVocalSeparatedOn is overriden to true.\n");
+		}
+
 		auto ret = reinterpret_cast<decltype(LiveMVStartData_ctor_hook)*>(LiveMVStartData_ctor_orig)(_this, musicMaster, onStageIdols, cameraIndex, isVocalSeparatedOn, backgroundMode, renderingDynamicRange, soundEffectMode);
 
-		if (g_save_and_replace_costume_changes) {
-			__try {
-				auto length = il2cpp_array_length(onStageIdols);
-				for (int i = 0; i < length; i++) {
-					auto item = il2cpp_symbols::array_get_value(onStageIdols, i);
+		__try {
+			auto idolsLength = il2cpp_array_length(onStageIdols);
+			if (g_save_and_replace_costume_changes) {
+				for (int i = 0; i < idolsLength; i++) {
+					auto item = (managed::UnitIdol*)il2cpp_symbols::array_get_value(onStageIdols, i);
 
 					UnitIdol idol;
 					idol.ReadFrom(item);
@@ -1662,9 +1671,23 @@ namespace
 					}
 				}
 			}
-			__except (seh_filter(GetExceptionInformation())) {
-				printf("SEH exception detected in `LiveMVStartData_ctor_hook`.\n");
+			if (g_save_and_replace_costume_changes && g_overrie_mv_unit_idols) {
+				auto loopMax = idolsLength;
+				if (idolsLength > overridenMvUnitIdols_length) {
+					printf("[WARNING]: `onStageIdols.Length` = %d, greater than expected `overridenMvUnitIdols_length`.\n", idolsLength);
+					loopMax = overridenMvUnitIdols_length;
+				}
+				for (int i = 0; i < idolsLength; ++i) {
+					if (!overridenMvUnitIdols[i].IsEmpty()) {
+						auto item = (managed::UnitIdol*)il2cpp_symbols::array_get_value(onStageIdols, i);
+						overridenMvUnitIdols[i].ApplyTo(item);
+						printf("MV unit idol [%d] is overriden.\n", i);
+					}
+				}
 			}
+		}
+		__except (seh_filter(GetExceptionInformation())) {
+			printf("SEH exception detected in `LiveMVStartData_ctor_hook`.\n");
 		}
 
 #if __TOOL_HOOK_NETWORKING__
@@ -1694,7 +1717,7 @@ namespace
 					"UnityEngine.CoreModule.dll", "UnityEngine",
 					"Object", "GetName", 0
 				)
-			);
+				);
 			const auto objNameIlStr = get_ObjectName(mdl);
 			const std::string objName = objNameIlStr ? utility::conversions::to_utf8string(std::wstring(objNameIlStr->start_char)) : std::format("Unnamed Obj {:p}", mdl);
 			std::string showObjName;
@@ -1972,7 +1995,7 @@ namespace
 
 		static auto MusicData_IsOriginalMember = reinterpret_cast<bool (*)(void*, int)>(
 			il2cpp_symbols_logged::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "MusicData", "IsOriginalMember", 1)
-		);
+			);
 
 		auto idols = func_LiveUnit_get_Idols(unit, mtd_LiveUnit_get_Idols);
 		bool ret = true;
@@ -1984,7 +2007,7 @@ namespace
 				//const auto characterId = il2cpp_symbols::read_field<int>(idol, characterId_field);
 				const auto get_CharacterId = reinterpret_cast<int (*)(void*)>(
 					il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "LiveIdol", "get_CharacterId", 0)
-				);
+					);
 				const auto characterId = get_CharacterId(idol);
 				const auto isOrigMember = MusicData_IsOriginalMember(_this, characterId);
 				if (!isOrigMember) {
@@ -2000,7 +2023,7 @@ namespace
 			__except (seh_filter(GetExceptionInformation())) {
 				printf("SEH exception detected in `checkMusicDataSatisfy|iterate_IEnumerable`.\n");
 			}
-		});
+			});
 
 		return ret;
 	}
@@ -2444,7 +2467,7 @@ namespace
 			);
 		AssetBundle_LoadAsset = reinterpret_cast<decltype(AssetBundle_LoadAsset)>(
 			il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.AssetBundle::LoadAsset_Internal(System.String,System.Type)")
-		);
+			);
 		const auto FontClass = il2cpp_symbols::get_class("UnityEngine.TextRenderingModule.dll", "UnityEngine", "Font");
 		Font_Type = il2cpp_type_get_object(il2cpp_class_get_type(FontClass));
 		TMP_FontAsset_CreateFontAsset = reinterpret_cast<decltype(TMP_FontAsset_CreateFontAsset)>(il2cpp_symbols::get_method_pointer(
