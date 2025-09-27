@@ -482,5 +482,6 @@ namespace il2cpp_symbols_logged {
 	void* il2cpp_resolve_icall(const char* name);
 	void* get_class(const char* assemblyName, const char* namespaze, const char* klassName);
 	FieldInfo* il2cpp_class_get_field_from_name(void* klass, const char* name);
+	MethodInfo* get_method(const char* assemblyName, const char* namespaze, const char* klassName, const char* name, int argsCount);
 	uintptr_t get_method_pointer(const char* assemblyName, const char* namespaze, const char* klassName, const char* name, int argsCount);
 }

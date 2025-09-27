@@ -2466,7 +2466,7 @@ namespace
 				"Object", "IsNativeObjectAlive", 1)
 			);
 		AssetBundle_LoadAsset = reinterpret_cast<decltype(AssetBundle_LoadAsset)>(
-			il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.AssetBundle::LoadAsset_Internal(System.String,System.Type)")
+			il2cpp_symbols_logged::get_method_pointer("UnityEngine.AssetBundleModule.dll", "UnityEngine", "AssetBundle", "LoadAsset_Internal", 2)
 			);
 		const auto FontClass = il2cpp_symbols::get_class("UnityEngine.TextRenderingModule.dll", "UnityEngine", "Font");
 		Font_Type = il2cpp_type_get_object(il2cpp_class_get_type(FontClass));
@@ -2494,7 +2494,7 @@ namespace
 
 		auto ScenarioManager_Init_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Scenario",
-			"ScenarioManager", "Init", 1
+			"ScenarioManager", "_initializeAsync", 1
 		);
 		auto DataFile_GetBytes_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
@@ -2553,21 +2553,20 @@ namespace
 			"CameraController", "get_BaseCamera", 0
 		);
 
-		const auto AssetBundle_LoadAsset_addr =
-			il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.AssetBundle::LoadAsset_Internal(System.String,System.Type)");
+		const auto AssetBundle_LoadAsset_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.AssetBundleModule.dll", "UnityEngine", "AssetBundle", "LoadAsset_Internal", 2);
 
-		auto Unity_get_pos_injected_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Transform::get_position_Injected(UnityEngine.Vector3&)");
-		auto Unity_set_pos_injected_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Transform::set_position_Injected(UnityEngine.Vector3&)");
+		auto Unity_get_pos_injected_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "get_position_Injected", 2);
+		auto Unity_set_pos_injected_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "set_position_Injected", 2);
 
-		auto Unity_get_fieldOfView_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::get_fieldOfView()");
-		auto Unity_set_fieldOfView_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::set_fieldOfView(System.Single)");
-		auto Unity_LookAt_Injected_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Transform::Internal_LookAt_Injected(UnityEngine.Vector3&,UnityEngine.Vector3&)");
-		auto Unity_set_nearClipPlane_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::set_nearClipPlane(System.Single)");
-		auto Unity_get_nearClipPlane_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::get_nearClipPlane()");
-		auto Unity_get_farClipPlane_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::get_farClipPlane()");
-		auto Unity_set_farClipPlane_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Camera::set_farClipPlane(System.Single)");
-		auto Unity_get_rotation_Injected_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Transform::get_rotation_Injected(UnityEngine.Quaternion&)");
-		auto Unity_set_rotation_Injected_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Transform::set_rotation_Injected(UnityEngine.Quaternion&)");
+		auto Unity_get_fieldOfView_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "get_fieldOfView", 0);
+		auto Unity_set_fieldOfView_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "set_fieldOfView", 1);
+		auto Unity_LookAt_Injected_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "Internal_LookAt_Injected", 3);
+		auto Unity_set_nearClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "set_nearClipPlane", 1);
+		auto Unity_get_nearClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "get_nearClipPlane", 0);
+		auto Unity_get_farClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "get_farClipPlane", 0);
+		auto Unity_set_farClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "set_farClipPlane", 1);
+		auto Unity_get_rotation_Injected_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "get_rotation_Injected", 2);
+		auto Unity_set_rotation_Injected_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "set_rotation_Injected", 2);
 
 		auto InvokeMoveNext_addr = il2cpp_symbols::get_method_pointer(
 			"UnityEngine.CoreModule.dll", "UnityEngine",
