@@ -1648,6 +1648,10 @@ namespace
 		printf("start LiveMVStartData..ctor\n");
 #endif
 
+		// keep `g_enable_free_camera` is true when starting MV will make the game crash
+		// no exact reason found yet, as neither `Object_IsNativeObjectAlive` nor __try helped
+		g_enable_free_camera = false;
+
 		if (g_override_isVocalSeparatedOn) {
 			isVocalSeparatedOn = true;
 			printf("isVocalSeparatedOn is overriden to true.\n");
@@ -2110,26 +2114,28 @@ namespace
 	void* baseCameraTransform = nullptr;
 	void* baseCamera = nullptr;
 
-	void* Unity_set_pos_injected_orig;
-	void Unity_set_pos_injected_hook(void* _this, Vector3_t* ret) {
-		return reinterpret_cast<decltype(Unity_set_pos_injected_hook)*>(Unity_set_pos_injected_orig)(_this, ret);
+	void* Unity_set_position_orig;
+	void Unity_set_position_hook(void* _this, Vector3_t value) {
+		return reinterpret_cast<decltype(Unity_set_position_hook)*>(Unity_set_position_orig)(_this, value);
 	}
 
-	void* Unity_get_pos_injected_orig;
-	void Unity_get_pos_injected_hook(void* _this, Vector3_t* data) {
-		reinterpret_cast<decltype(Unity_get_pos_injected_hook)*>(Unity_get_pos_injected_orig)(_this, data);
+	void* Unity_get_position_orig;
+	Vector3_t Unity_get_position_hook(void* _this) {
+		auto data = reinterpret_cast<decltype(Unity_get_position_hook)*>(Unity_get_position_orig)(_this);
 
 		if (_this == baseCameraTransform) {
 			if (guiStarting) {
-				SCGUIData::sysCamPos.x = data->x;
-				SCGUIData::sysCamPos.y = data->y;
-				SCGUIData::sysCamPos.z = data->z;
+				SCGUIData::sysCamPos.x = data.x;
+				SCGUIData::sysCamPos.y = data.y;
+				SCGUIData::sysCamPos.z = data.z;
 			}
 			if (g_enable_free_camera) {
-				SCCamera::baseCamera.updateOtherPos(data);
-				Unity_set_pos_injected_hook(_this, data);
+				SCCamera::baseCamera.updateOtherPos(&data);
+				Unity_set_position_hook(_this, data);
 			}
 		}
+
+		return data;
 	}
 
 	void* Unity_set_fieldOfView_orig;
@@ -2153,17 +2159,17 @@ namespace
 		return origFov;
 	}
 
-	void* Unity_LookAt_Injected_orig;
-	void Unity_LookAt_Injected_hook(void* _this, Vector3_t* worldPosition, Vector3_t* worldUp) {
+	void* Unity_InternalLookAt_orig;
+	void Unity_InternalLookAt_hook(void* _this, Vector3_t worldPosition, Vector3_t worldUp) {
 		if (_this == baseCameraTransform) {
 			if (g_enable_free_camera) {
 				auto pos = SCCamera::baseCamera.getLookAt();
-				worldPosition->x = pos.x;
-				worldPosition->y = pos.y;
-				worldPosition->z = pos.z;
+				worldPosition.x = pos.x;
+				worldPosition.y = pos.y;
+				worldPosition.z = pos.z;
 			}
 		}
-		return reinterpret_cast<decltype(Unity_LookAt_Injected_hook)*>(Unity_LookAt_Injected_orig)(_this, worldPosition, worldUp);
+		return reinterpret_cast<decltype(Unity_InternalLookAt_hook)*>(Unity_InternalLookAt_orig)(_this, worldPosition, worldUp);
 	}
 	void* Unity_set_nearClipPlane_orig;
 	void Unity_set_nearClipPlane_hook(void* _this, float single) {
@@ -2206,28 +2212,28 @@ namespace
 		reinterpret_cast<decltype(Unity_set_farClipPlane_hook)*>(Unity_set_farClipPlane_orig)(_this, value);
 	}
 
-	void* Unity_set_rotation_Injected_orig;
-	void Unity_set_rotation_Injected_hook(void* _this, Quaternion_t* value) {
-		return reinterpret_cast<decltype(Unity_set_rotation_Injected_hook)*>(Unity_set_rotation_Injected_orig)(_this, value);
+	void* Unity_set_rotation_orig;
+	void Unity_set_rotation_hook(void* _this, Quaternion_t value) {
+		return reinterpret_cast<decltype(Unity_set_rotation_hook)*>(Unity_set_rotation_orig)(_this, value);
 	}
-	void* Unity_get_rotation_Injected_orig;
-	void Unity_get_rotation_Injected_hook(void* _this, Quaternion_t* ret) {
-		reinterpret_cast<decltype(Unity_get_rotation_Injected_hook)*>(Unity_get_rotation_Injected_orig)(_this, ret);
+	void* Unity_get_rotation_orig;
+	Quaternion_t Unity_get_rotation_hook(void* _this) {
+		auto ret = reinterpret_cast<decltype(Unity_get_rotation_hook)*>(Unity_get_rotation_orig)(_this);
 
 		if (_this == baseCameraTransform) {
 			if (guiStarting) {
-				SCGUIData::sysCamRot.w = ret->w;
-				SCGUIData::sysCamRot.x = ret->x;
-				SCGUIData::sysCamRot.y = ret->y;
-				SCGUIData::sysCamRot.z = ret->z;
+				SCGUIData::sysCamRot.w = ret.w;
+				SCGUIData::sysCamRot.x = ret.x;
+				SCGUIData::sysCamRot.y = ret.y;
+				SCGUIData::sysCamRot.z = ret.z;
 				SCGUIData::updateSysCamLookAt();
 			}
 			if (g_enable_free_camera) {
-				ret->w = 0;
-				ret->x = 0;
-				ret->y = 0;
-				ret->z = 0;
-				Unity_set_rotation_Injected_hook(_this, ret);
+				ret.w = 0;
+				ret.x = 0;
+				ret.y = 0;
+				ret.z = 0;
+				Unity_set_rotation_hook(_this, ret);
 
 				static auto Vector3_klass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Vector3");
 				Vector3_t* pos = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
@@ -2235,9 +2241,11 @@ namespace
 				up->x = 0;
 				up->y = 1;
 				up->z = 0;
-				Unity_LookAt_Injected_hook(_this, pos, up);
+				Unity_InternalLookAt_hook(_this, *pos, *up);
 			}
 		}
+
+		return ret;
 	}
 
 
@@ -2246,19 +2254,18 @@ namespace
 		// printf("get_baseCamera\n");
 		auto ret = reinterpret_cast<decltype(get_baseCamera_hook)*>(get_baseCamera_orig)(_this);  // UnityEngine.Camera
 
-		if (g_enable_free_camera || guiStarting) {
-			static auto GetComponent = reinterpret_cast<void* (*)(void*, Il2CppReflectionType*)>(
-				il2cpp_symbols::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine",
-					"Component", "GetComponent", 1));
+		// always save the camera as users may enable the gui option after the init
+		static auto GetComponent = reinterpret_cast<void* (*)(void*, Il2CppReflectionType*)>(
+			il2cpp_symbols::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine",
+				"Component", "GetComponent", 1));
 
-			static auto transClass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Transform");
-			static auto transType = il2cpp_type_get_object(il2cpp_class_get_type(transClass));
+		static auto transClass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Transform");
+		static auto transType = il2cpp_type_get_object(il2cpp_class_get_type(transClass));
 
-			auto transform = GetComponent(ret, transType);  // UnityEngine.Transform
-			if (transform) {
-				baseCameraTransform = transform;
-				baseCamera = ret;
-			}
+		auto transform = GetComponent(ret, transType);  // UnityEngine.Transform
+		if (transform) {
+			baseCameraTransform = transform;
+			baseCamera = ret;
 		}
 
 		return ret;
@@ -2555,18 +2562,18 @@ namespace
 
 		const auto AssetBundle_LoadAsset_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.AssetBundleModule.dll", "UnityEngine", "AssetBundle", "LoadAsset_Internal", 2);
 
-		auto Unity_get_pos_injected_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "get_position_Injected", 2);
-		auto Unity_set_pos_injected_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "set_position_Injected", 2);
+		auto Unity_get_position_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "get_position", 0);
+		auto Unity_set_position_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "set_position", 1);
 
 		auto Unity_get_fieldOfView_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "get_fieldOfView", 0);
 		auto Unity_set_fieldOfView_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "set_fieldOfView", 1);
-		auto Unity_LookAt_Injected_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "Internal_LookAt_Injected", 3);
+		auto Unity_InternalLookAt_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "Internal_LookAt", 2);
 		auto Unity_set_nearClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "set_nearClipPlane", 1);
 		auto Unity_get_nearClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "get_nearClipPlane", 0);
 		auto Unity_get_farClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "get_farClipPlane", 0);
 		auto Unity_set_farClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "set_farClipPlane", 1);
-		auto Unity_get_rotation_Injected_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "get_rotation_Injected", 2);
-		auto Unity_set_rotation_Injected_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "set_rotation_Injected", 2);
+		auto Unity_get_rotation_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "get_rotation", 0);
+		auto Unity_set_rotation_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "set_rotation", 1);
 
 		auto InvokeMoveNext_addr = il2cpp_symbols::get_method_pointer(
 			"UnityEngine.CoreModule.dll", "UnityEngine",
@@ -2763,17 +2770,17 @@ namespace
 		ADD_HOOK(LiveMVOverlayView_UpdateLyrics, "LiveMVOverlayView_UpdateLyrics at %p");
 		ADD_HOOK(TimelineController_SetLyric, "TimelineController_SetLyric at %p");
 		ADD_HOOK(get_baseCamera, "get_baseCamera at %p");
-		ADD_HOOK(Unity_set_pos_injected, "Unity_set_pos_injected at %p");
-		ADD_HOOK(Unity_get_pos_injected, "Unity_get_pos_injected at %p");
+		ADD_HOOK(Unity_get_position, "Unity_get_position at %p");
+		ADD_HOOK(Unity_set_position, "Unity_set_position at %p");
 		ADD_HOOK(Unity_get_fieldOfView, "Unity_get_fieldOfView at %p");
 		ADD_HOOK(Unity_set_fieldOfView, "Unity_set_fieldOfView at %p");
-		ADD_HOOK(Unity_LookAt_Injected, "Unity_LookAt_Injected at %p");
+		ADD_HOOK(Unity_InternalLookAt, "Unity_InternalLookAt at %p");
 		ADD_HOOK(Unity_set_nearClipPlane, "Unity_set_nearClipPlane at %p");
 		ADD_HOOK(Unity_get_nearClipPlane, "Unity_get_nearClipPlane at %p");
 		ADD_HOOK(Unity_get_farClipPlane, "Unity_get_farClipPlane at %p");
 		ADD_HOOK(Unity_set_farClipPlane, "Unity_set_farClipPlane at %p");
-		ADD_HOOK(Unity_get_rotation_Injected, "Unity_get_rotation_Injected at %p");
-		ADD_HOOK(Unity_set_rotation_Injected, "Unity_set_rotation_Injected at %p");
+		ADD_HOOK(Unity_get_rotation, "Unity_get_rotation at %p");
+		ADD_HOOK(Unity_set_rotation, "Unity_set_rotation at %p");
 
 		ADD_HOOK(TMP_Text_set_text, "TMP_Text_set_text at %p");
 		ADD_HOOK(UITextMeshProUGUI_Awake, "UITextMeshProUGUI_Awake at %p");
