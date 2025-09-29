@@ -82,6 +82,7 @@ iM@S SCSP localify plugin.
 
 - Set `enable` under `baseFreeCamera` in `scsp-config.json` to `true`.
 - Scope of application: All 3D scenes. Including but not limited to homepage, story, Live.
+> An unknown bug exists; this option will be disabled automatically when MV starts, but it can be re-enabled without affecting its feature.
 
 
 
@@ -99,6 +100,13 @@ iM@S SCSP localify plugin.
 - Adjust Field of View (FOV)
   - Keyboard: `Q`, `E`
   - Or mouse scroll wheel
+
+
+
+# Live MV Instructions
+
+- When `Save & Replace costume changes` is checked, all costume changes will be recorded, locked costumes can also be recorded by clicking the Try-On button in the game, or casual costumes can be selected in the DressOrder interface, and all the changes will be applied automatically when MV starts; unwanted records can be removed using the `Remove` button in the "Saved Costume Data" sub-window to cancel them.
+- When `Save & Replace costume changes` is checked and `Override MV unit idols` is checked, the last costume data can be saved by clicking the `Slot X` buttons in the "Override MvUnit Idols" sub-window; different slots can be used to record the same idol to achieve multiple appearances of the same idol with different costumes, and unrecorded slots will inherit the original data of the idols in the selected live unit.
 
 
 
