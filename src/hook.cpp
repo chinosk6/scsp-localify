@@ -11,6 +11,34 @@
 #include <cpprest/filestream.h>
 #include <boost/beast/core/detail/base64.hpp>
 
+#define PRINT(var) std::cout << #var << " = " << var << std::endl;
+
+LONG WINAPI seh_filter(EXCEPTION_POINTERS* ep) {
+	DWORD code = ep->ExceptionRecord->ExceptionCode;
+	PVOID addr = ep->ExceptionRecord->ExceptionAddress;
+
+	std::cerr << "SEH Exception caught!" << std::endl;
+	std::cerr << "  Code: 0x" << std::hex << code << std::endl;
+	std::cerr << "  Address: " << addr << std::endl;
+
+	switch (code) {
+	case EXCEPTION_ACCESS_VIOLATION:
+		std::cerr << "  Type: Access Violation" << std::endl;
+		break;
+	case EXCEPTION_INT_DIVIDE_BY_ZERO:
+		std::cerr << "  Type: Divide by Zero" << std::endl;
+		break;
+	case EXCEPTION_STACK_OVERFLOW:
+		std::cerr << "  Type: Stack Overflow" << std::endl;
+		break;
+	default:
+		std::cerr << "  Type: Unknown SEH Exception (code=" << code << ")" << std::endl;
+		break;
+	}
+
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
 //using namespace std;
 
 std::function<void()> g_on_hook_ready;
@@ -39,6 +67,11 @@ std::map<int, std::string> swayTypes{
 	{0xc, "HairLong"},
 	{0xd, "Max"},
 };
+
+std::map<int, UnitIdol> savedCostumes{};
+UnitIdol lastSavedCostume;
+UnitIdol overridenMvUnitIdols[8];
+
 
 void loadGUIDataCache() {
 	try {
@@ -150,7 +183,7 @@ void CharaParam_t::Apply() {
 }
 
 void CharaParam_t::ApplyOnMainThread() {
-	mainThreadTasks.push_back([this](){
+	mainThreadTasks.push_back([this]() {
 		this->Apply();
 		if (!g_enable_chara_param_edit) return true;
 		return !(this->gui_real_time_apply || baseParam.gui_real_time_apply);
@@ -367,7 +400,7 @@ namespace
 			return false;
 			});
 			*/
-			
+
 	}
 
 	Il2CppString* bytesToIl2cppString(void* bytes) {
@@ -398,7 +431,7 @@ namespace
 		// assert(!ExtraAssetBundleHandle && ExtraAssetBundleAssetPaths.empty());
 
 		static auto AssetBundle_GetAllAssetNames = reinterpret_cast<void* (*)(void*)>(
-			il2cpp_resolve_icall("UnityEngine.AssetBundle::GetAllAssetNames()")
+			il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.AssetBundle::GetAllAssetNames()")
 			);
 
 		for (const auto& i : g_extra_assetbundle_paths) {
@@ -697,7 +730,7 @@ namespace
 	}
 
 	void* ScenarioContentViewModel_ctor_orig;
-	void ScenarioContentViewModel_ctor_hook(void* _this, void* scenarioID, Il2CppString* title, Il2CppString* summary, bool isLocked, 
+	void ScenarioContentViewModel_ctor_hook(void* _this, void* scenarioID, Il2CppString* title, Il2CppString* summary, bool isLocked,
 		bool isAdvPlayable, Il2CppString* alias, Il2CppString* characterName, int unlockLevel) {
 
 		if (g_unlock_PIdol_and_SChara_events) {
@@ -759,7 +792,7 @@ namespace
 
 			// if !littleEndian
 			std::reverse(reinterpret_cast<uint8_t*>(&value), reinterpret_cast<uint8_t*>(&value) + sizeof(T));
-			
+
 			return value;
 		}
 
@@ -802,7 +835,7 @@ namespace
 		// wprintf(L"encodedInfo: %ls, rootHash: %llu, size: %llu, checksum: %llu, seed: %llu\n", encodedInfo.c_str(), rootHash, size, checksum, seed);
 		return CatalogManifest_FromValues(rootHash, size, checksum, seed);
 	}
-	
+
 	void* entryAsManifest(void* entry) {
 		static auto CatalogManifest_FromValues = reinterpret_cast<void* (*)(UINT64 labelCrc, UINT64 size, UINT64 checksum, UINT64 seed)>(
 			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
@@ -822,7 +855,7 @@ namespace
 
 		return CatalogManifest_FromValues(LabelCrc, Size, Checksum, Seed);
 	}
-	
+
 
 	void* checkAndDownloadFile(Il2CppString* fileNameStr) {
 		try {
@@ -850,7 +883,7 @@ namespace
 					wprintf(L"File downloaded successfully: %ls\n", filePath.c_str());
 					}).wait();
 
-			return readFileAllBytes(filePath);
+				return readFileAllBytes(filePath);
 		}
 		catch (std::exception& e) {
 			printf("checkAndDownloadFile error: %s\n", e.what());
@@ -865,8 +898,11 @@ namespace
 	};
 
 	GameVersion getGameVersions() {
-		static auto getGameVersion = reinterpret_cast<Il2CppString* (*)()>(
-			il2cpp_resolve_icall("UnityEngine.Application::get_version()")
+		static auto getGameVersion = reinterpret_cast<Il2CppString * (*)()>(
+			il2cpp_symbols::get_method_pointer(
+				"UnityEngine.CoreModule.dll", "UnityEngine",
+				"Application", "get_version", 0
+			)
 			);
 
 		static auto Global_get_instance = reinterpret_cast<void* (*)()>(
@@ -874,7 +910,7 @@ namespace
 				"Global", "get_Instance", 0)
 			);
 
-		static auto get_CurrentResourceVersion = reinterpret_cast<Il2CppString* (*)(void*)>(
+		static auto get_CurrentResourceVersion = reinterpret_cast<Il2CppString * (*)(void*)>(
 			il2cpp_symbols::get_method_pointer("PRISM.ResourceManagement.dll", "PRISM",
 				"Global", "get_CurrentResourceVersion", 0)
 			);
@@ -947,12 +983,12 @@ namespace
 		static auto ReadOnlySpan_char_klass = il2cpp_symbols::get_system_class_from_reflection_type_str(
 			"System.ReadOnlySpan`1[System.Char]");
 
-		static auto HashUtils_Crc64 = reinterpret_cast<UINT64 (*)(void*, UINT64)>(
+		static auto HashUtils_Crc64 = reinterpret_cast<UINT64(*)(void*, UINT64)>(
 			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
 				"HashUtils", "Crc64", 2)
 			);
 
-		static auto CatalogManifest_GetRealName = reinterpret_cast<Il2CppString* (*)(void*)>(
+		static auto CatalogManifest_GetRealName = reinterpret_cast<Il2CppString * (*)(void*)>(
 			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
 				"CatalogManifest", "GetRealName", 0)
 			);
@@ -977,7 +1013,7 @@ namespace
 				"CatalogBinaryEntry", "get_Label", 0)
 			);
 
-		static auto CatalogManifest_FromUniqueVersion = reinterpret_cast<void* (*)(Il2CppString* uniqueVersion, Il2CppString* bundleVersion)>(
+		static auto CatalogManifest_FromUniqueVersion = reinterpret_cast<void* (*)(Il2CppString * uniqueVersion, Il2CppString * bundleVersion)>(
 			il2cpp_symbols::get_method_pointer("Limelight.Shared.dll", "Limelight",
 				"CatalogManifest", "FromUniqueVersion", 2)
 			);
@@ -990,7 +1026,7 @@ namespace
 				"Encoding", "get_UTF8", 0)
 			);
 
-		static auto Encoding_GetString = reinterpret_cast<Il2CppString* (*)(void*, void*, int, int)>(
+		static auto Encoding_GetString = reinterpret_cast<Il2CppString * (*)(void*, void*, int, int)>(
 			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System.Text",
 				"Encoding", "GetString", 3)
 			);
@@ -1002,9 +1038,9 @@ namespace
 		const auto atPos = resVersion.find(L'@');
 		const auto simpleVersion = resVersion.substr(0, atPos);
 		const auto encodedInfo = resVersion.substr(atPos + 1);
-		
+
 		auto ReadOnlySpan_char = il2cpp_object_new(ReadOnlySpan_char_klass);
-		
+
 		const auto cmpStr = il2cpp_symbols::NewWStr(std::format(L"{}:{}", gameVer, simpleVersion));
 		const auto rootHash = HashUtils_Crc64(string_op_Implicit(ReadOnlySpan_char, cmpStr), 0);
 
@@ -1040,7 +1076,7 @@ namespace
 					il2cpp_symbols::get_method_pointer("Newtonsoft.Json.dll", "Newtonsoft.Json",
 						"JsonConvert", "SerializeObject", 1)
 					);
-				
+
 				/*
 				wprintf(L"label:\n%ls\n\n", toJsonStr(info)->start_char);
 				static auto ArraySegment_Byte_klass = il2cpp_symbols::get_system_class_from_reflection_type_str(
@@ -1061,7 +1097,7 @@ namespace
 				}
 
 				static std::regex pattern("^s\\d+_\\d+_\\d+$");
-				
+
 				if (std::regex_match(labelStr, pattern)) {
 					// printf("labelStr: %s\n", labelStr.c_str());
 					if (dumpScenarioDataByJsonFileName(labelStr)) {
@@ -1141,7 +1177,7 @@ namespace
 		auto this_klass = il2cpp_symbols::get_class_from_instance(instanceUITextMeshProUGUI);
 		auto m_EnvMapMatrix_field = il2cpp_class_get_field_from_name(this_klass, "m_EnvMapMatrix");
 		auto Matrix4x4_value_field = il2cpp_symbols::get_field("UnityEngine.CoreModule.dll", "UnityEngine", "Matrix4x4", "m32");
-		
+
 		auto m_EnvMapMatrix = il2cpp_symbols::read_field(instanceUITextMeshProUGUI, m_EnvMapMatrix_field);
 
 		printf("%p, m_EnvMapMatrix_field: %p, m_EnvMapMatrix at %p\n", instanceUITextMeshProUGUI, m_EnvMapMatrix_field, m_EnvMapMatrix);
@@ -1240,7 +1276,7 @@ namespace
 		std::wstring_view pathStrView(pathStr);
 		//wprintf(L"DataFile_GetBytes: %ls\n", pathStr.c_str());
 
-		
+
 		std::filesystem::path localFileName;
 		if (SCLocal::getLocalFileName(pathStr, &localFileName)) {
 			return readFileAllBytes(localFileName);
@@ -1251,7 +1287,7 @@ namespace
 			if (pathStrView.ends_with(L".json")) {
 				auto basePath = std::filesystem::path("dumps") / "autoDumpJson";
 				std::filesystem::path fileName = basePath / SCLocal::getFilePathByName(pathStr, true, basePath);
-				
+
 				if (!std::filesystem::is_directory(basePath)) {
 					std::filesystem::create_directories(basePath);
 				}
@@ -1285,7 +1321,7 @@ namespace
 				g_start_resolution_h = height;
 				g_start_resolution_fullScreen = fullscreen;
 			}
-			return reinterpret_cast<decltype(SetResolution_hook)*>(SetResolution_orig)(g_start_resolution_w, 
+			return reinterpret_cast<decltype(SetResolution_hook)*>(SetResolution_orig)(g_start_resolution_w,
 				g_start_resolution_h, g_start_resolution_fullScreen);
 		}
 		return;
@@ -1432,11 +1468,11 @@ namespace
 		auto ret = reinterpret_cast<decltype(LiveCostumeChangeModel_GetDress_hook)*>(LiveCostumeChangeModel_GetDress_orig)(_this, id);
 		if (!g_unlock_all_dress) return ret;
 		if (!ret) {
-			printf("LiveCostumeChangeModel_GetDress returns NULL ResId: %d, this at %p\n", id, _this); 
-			return ret; 
+			printf("LiveCostumeChangeModel_GetDress returns NULL ResId: %d, this at %p\n", id, _this);
+			return ret;
 		}
-		static auto ret_klass = il2cpp_symbols::get_class_from_instance(ret); 
-		static auto resourceId_field = il2cpp_class_get_field_from_name(ret_klass, "resourceId_"); 
+		static auto ret_klass = il2cpp_symbols::get_class_from_instance(ret);
+		static auto resourceId_field = il2cpp_class_get_field_from_name(ret_klass, "resourceId_");
 
 		const auto baseId = 100001;
 		const auto baseResId = 1;
@@ -1495,7 +1531,7 @@ namespace
 		const auto baseId = 600001;
 		const auto baseResId = 1;
 		replaceResourceId(LiveCostumeChangeModel_GetHairstyle_hook, LiveCostumeChangeModel_GetHairstyle_orig);
-		
+
 		static auto accessoryResourceIdList_field = il2cpp_class_get_field_from_name(ret_klass, "accessoryResourceIdList_");
 		const auto replaceaccessoryResourceIdList = il2cpp_symbols::read_field(ret, accessoryResourceIdList_field);
 		if (id == replaceDressId) {
@@ -1514,7 +1550,7 @@ namespace
 		else {
 			il2cpp_symbols::write_field(newRet, accessoryResourceIdList_field, replaceaccessoryResourceIdList);
 		}
-		
+
 		return newRet;
 	}
 
@@ -1563,8 +1599,108 @@ namespace
 			// addToDic(cacheHairMap, hairstyleDic);  // TODO PRISM.ResourceManagement.ResourceLoader._throwMissingKeyException
 			// addToDic(cacheAccessoryMap, accessoryDic);  // TODO PRISM.ResourceManagement.ResourceLoader._throwMissingKeyException
 		}
-		
 	}
+
+
+	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
+	void* CostumeChangeView_Reload_orig;
+	void* CostumeChangeView_Reload_hook(void* _this, void* viewModel) {
+		auto ret = reinterpret_cast<decltype(CostumeChangeView_Reload_hook)*>(CostumeChangeView_Reload_orig)(_this, viewModel);
+
+		static void* klass_CostumeChangeViewModel;
+		static MethodInfo* mtd_CostumeChangeViewModel_GetPreviewUnitIdol;
+		static managed::UnitIdol* (*func_CostumeChangeViewModel_GetPreviewUnitIdol)(void* _this, void* mtd);
+
+		if (g_save_and_replace_costume_changes) {
+			__try {
+				if (klass_CostumeChangeViewModel == nullptr) {
+					klass_CostumeChangeViewModel = il2cpp_symbols::get_class_from_instance(viewModel);
+					mtd_CostumeChangeViewModel_GetPreviewUnitIdol = il2cpp_class_get_method_from_name(klass_CostumeChangeViewModel, "GetPreviewUnitIdol", 0);
+					func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<managed::UnitIdol* (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
+				}
+
+				auto idol = func_CostumeChangeViewModel_GetPreviewUnitIdol(viewModel, mtd_CostumeChangeViewModel_GetPreviewUnitIdol);
+
+				UnitIdol data;
+				data.ReadFrom(idol);
+				std::cout << "Saved UnitIdel = ";
+				data.Print(std::cout);
+
+				if (data.CharaId >= 0)
+					savedCostumes[data.CharaId] = data;
+
+				lastSavedCostume = data;
+			}
+			__except (seh_filter(GetExceptionInformation())) {
+				printf("SEH exception detected in 'CostumeChangeView_Reload_hook'.\n");
+			}
+		}
+
+		return ret;
+	}
+
+	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
+	void* LiveMVStartData_ctor_orig;
+	void* LiveMVStartData_ctor_hook(void* _this, void* musicMaster, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int backgroundMode, int renderingDynamicRange, int soundEffectMode) {
+
+#if __TOOL_HOOK_NETWORKING__
+		tools::output_networking_calls = true;
+		printf("start LiveMVStartData..ctor\n");
+#endif
+
+		// keep `g_enable_free_camera` is true when starting MV will make the game crash
+		// no exact reason found yet, as neither `Object_IsNativeObjectAlive` nor __try helped
+		g_enable_free_camera = false;
+
+		if (g_override_isVocalSeparatedOn) {
+			isVocalSeparatedOn = true;
+			printf("isVocalSeparatedOn is overriden to true.\n");
+		}
+
+		auto ret = reinterpret_cast<decltype(LiveMVStartData_ctor_hook)*>(LiveMVStartData_ctor_orig)(_this, musicMaster, onStageIdols, cameraIndex, isVocalSeparatedOn, backgroundMode, renderingDynamicRange, soundEffectMode);
+
+		__try {
+			auto idolsLength = il2cpp_array_length(onStageIdols);
+			if (g_save_and_replace_costume_changes) {
+				for (int i = 0; i < idolsLength; i++) {
+					auto item = (managed::UnitIdol*)il2cpp_symbols::array_get_value(onStageIdols, i);
+
+					UnitIdol idol;
+					idol.ReadFrom(item);
+
+					auto it = savedCostumes.find(idol.CharaId);
+					if (it != savedCostumes.end()) {
+						it->second.ApplyTo(item);
+						std::cout << "CharaId " << it->first << " has been modified." << std::endl;
+					}
+				}
+			}
+			if (g_save_and_replace_costume_changes && g_overrie_mv_unit_idols) {
+				auto loopMax = idolsLength;
+				if (idolsLength > overridenMvUnitIdols_length) {
+					printf("[WARNING]: `onStageIdols.Length` = %d, greater than expected `overridenMvUnitIdols_length`.\n", idolsLength);
+					loopMax = overridenMvUnitIdols_length;
+				}
+				for (int i = 0; i < idolsLength; ++i) {
+					if (!overridenMvUnitIdols[i].IsEmpty()) {
+						auto item = (managed::UnitIdol*)il2cpp_symbols::array_get_value(onStageIdols, i);
+						overridenMvUnitIdols[i].ApplyTo(item);
+						printf("MV unit idol [%d] is overriden.\n", i);
+					}
+				}
+			}
+		}
+		__except (seh_filter(GetExceptionInformation())) {
+			printf("SEH exception detected in `LiveMVStartData_ctor_hook`.\n");
+		}
+
+#if __TOOL_HOOK_NETWORKING__
+		printf("after LiveMVStartData..ctor\n");
+#endif
+
+		return ret;
+	}
+
 
 	int getCharacterParamAliveCount(const std::string& objName) {
 		int aliveCount = 0;
@@ -1580,7 +1716,12 @@ namespace
 
 	void AssembleCharacter_ApplyParam_hook(void* mdl, float height, float bust, float head, float arm, float hand) {
 		if (g_enable_chara_param_edit) {
-			static auto get_ObjectName = reinterpret_cast<Il2CppString * (*)(void*)>(il2cpp_resolve_icall("UnityEngine.Object::GetName(UnityEngine.Object)"));
+			static auto get_ObjectName = reinterpret_cast<Il2CppString * (*)(void*)>(
+				il2cpp_symbols::get_method_pointer(
+					"UnityEngine.CoreModule.dll", "UnityEngine",
+					"Object", "GetName", 0
+				)
+				);
 			const auto objNameIlStr = get_ObjectName(mdl);
 			const std::string objName = objNameIlStr ? utility::conversions::to_utf8string(std::wstring(objNameIlStr->start_char)) : std::format("Unnamed Obj {:p}", mdl);
 			std::string showObjName;
@@ -1711,6 +1852,7 @@ namespace
 		return ret;
 	}
 
+	// The first registered auto getter
 	void* GetCostumeListReply_get_HairstyleList_orig;
 	void* GetCostumeListReply_get_HairstyleList_hook(void* _this) {  // 添加服装到缓存表
 		auto ret = reinterpret_cast<decltype(GetCostumeListReply_get_HairstyleList_hook)*>(GetCostumeListReply_get_HairstyleList_orig)(_this);
@@ -1746,7 +1888,7 @@ namespace
 		static auto forceParam_field = il2cpp_class_get_field_from_name(SwayString_klass, "forceParam");
 
 		static auto SetTest = reinterpret_cast<void (*)(void*, int swayType, float bendStrength, float baseGravity, float inertiaMoment, float airResistance)>(
-			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetTest", 5)
+			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetupForEditor", 5)
 			);
 		static auto SetRate = reinterpret_cast<void (*)(void*, float)>(
 			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM", "SwayString", "SetRate", 1)
@@ -1787,7 +1929,7 @@ namespace
 				const auto deformResistance = il2cpp_symbols::read_field<float>(param, deformResistance_field);
 
 				printf("SwayString original: swayType: %d, swaySubType: %d, rate: %f, bendStrength: %f, baseGravity: %f, "
-					"inertiaMoment: %f, airResistance: %f, deformResistance: %f\n", 
+					"inertiaMoment: %f, airResistance: %f, deformResistance: %f\n",
 					swayType, swaySubType, rate, bendStrength, baseGravity, inertiaMoment, airResistance, deformResistance);
 
 				il2cpp_symbols::write_field(param, bendStrength_field, bendStrength + currConfig.P_bendStrength);
@@ -1841,43 +1983,50 @@ namespace
 	}
 
 	bool checkMusicDataSatisfy(void* _this, void* unit, int pos = -1) {
-		static auto musicData_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Live", "MusicData");
-		static auto master_klass = il2cpp_symbols::get_class("PRISM.Definitions.dll", "PRISM.Definitions", "MstSong");
+		static auto musicData_klass = il2cpp_symbols_logged::get_class("PRISM.Legacy.dll", "PRISM.Live", "MusicData");
+		static auto master_klass = il2cpp_symbols_logged::get_class("PRISM.Definitions.dll", "PRISM.Definitions", "MstSong");
 
-		static auto masterData_field = il2cpp_class_get_field_from_name(musicData_klass, "<Master>k__BackingField");
-		static auto isSongParts_field = il2cpp_class_get_field_from_name(master_klass, "<IsSongParts>k__BackingField");
+		static auto masterData_field = il2cpp_symbols_logged::il2cpp_class_get_field_from_name(musicData_klass, "<Master>k__BackingField");
+		static auto isSongParts_field = il2cpp_symbols_logged::il2cpp_class_get_field_from_name(master_klass, "<IsSongParts>k__BackingField");
 
 		const auto masterData = il2cpp_symbols::read_field(_this, masterData_field);
 		const auto isSongParts = il2cpp_symbols::read_field<bool>(masterData, isSongParts_field);
 		if (!isSongParts) return false;
 
-		// static auto LiveUnit_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Live", "LiveUnit");
-		static auto LiveUnit_get_Idols = reinterpret_cast<void* (*)(void*)>(
-			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "LiveUnit", "get_Idols", 0)
-			);
+		static auto klass_LiveUnit = il2cpp_symbols::get_class_from_instance(unit);
+		static auto mtd_LiveUnit_get_Idols = il2cpp_class_get_method_from_name(klass_LiveUnit, "get_Idols", 0);
+		static auto func_LiveUnit_get_Idols = reinterpret_cast<void* (*)(void*, MethodInfo*)>(mtd_LiveUnit_get_Idols->methodPointer);
 
 		static auto MusicData_IsOriginalMember = reinterpret_cast<bool (*)(void*, int)>(
-			il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "MusicData", "IsOriginalMember", 1)
+			il2cpp_symbols_logged::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "MusicData", "IsOriginalMember", 1)
 			);
 
-
-		auto idols = LiveUnit_get_Idols(unit);
+		auto idols = func_LiveUnit_get_Idols(unit, mtd_LiveUnit_get_Idols);
 		bool ret = true;
 		int currentSlot = 0;
 		il2cpp_symbols::iterate_IEnumerable(idols, [&](void* idol) {
-			const auto idol_klass = il2cpp_symbols::get_class_from_instance(idol);
-			const auto characterId_field = il2cpp_class_get_field_from_name(idol_klass, "<CharacterId>k__BackingField");
-			const auto characterId = il2cpp_symbols::read_field<int>(idol, characterId_field);
-			const auto isOrigMember = MusicData_IsOriginalMember(_this, characterId);
-			if (!isOrigMember) {
-				if (pos == -1) {
-					ret = false;
+			__try {
+				const auto idol_klass = il2cpp_symbols::get_class_from_instance(idol);
+				const auto characterId_field = il2cpp_class_get_field_from_name(idol_klass, "<CharacterId>k__BackingField");
+				//const auto characterId = il2cpp_symbols::read_field<int>(idol, characterId_field);
+				const auto get_CharacterId = reinterpret_cast<int (*)(void*)>(
+					il2cpp_symbols::get_method_pointer("PRISM.Legacy.dll", "PRISM.Live", "LiveIdol", "get_CharacterId", 0)
+					);
+				const auto characterId = get_CharacterId(idol);
+				const auto isOrigMember = MusicData_IsOriginalMember(_this, characterId);
+				if (!isOrigMember) {
+					if (pos == -1) {
+						ret = false;
+					}
+					else {
+						if (currentSlot == pos) ret = false;
+					}
 				}
-				else {
-					if (currentSlot == pos) ret = false;
-				}
+				currentSlot++;
 			}
-			currentSlot++;
+			__except (seh_filter(GetExceptionInformation())) {
+				printf("SEH exception detected in `checkMusicDataSatisfy|iterate_IEnumerable`.\n");
+			}
 			});
 
 		return ret;
@@ -1952,7 +2101,7 @@ namespace
 		auto unitIdol = il2cpp_field_get_value_object(unitIdol_field, _this);
 		auto convertList = il2cpp_field_get_value_object(convertList_field, _this);
 
-		wprintf(L"TextLog_AddLog: speakerFlag: %d, textID: %ls, text: %ls\ndicConvertID:\n%ls\n\nspeakerTable:\n%ls\n\nlistTextLogData:\n%ls\n\nunitIdol:\n%ls\n\nconvertList:\n%ls\n\n", 
+		wprintf(L"TextLog_AddLog: speakerFlag: %d, textID: %ls, text: %ls\ndicConvertID:\n%ls\n\nspeakerTable:\n%ls\n\nlistTextLogData:\n%ls\n\nunitIdol:\n%ls\n\nconvertList:\n%ls\n\n",
 			speakerFlag, textID->start_char, text->start_char,
 			toJsonStr(dicConvertID)->start_char,
 			toJsonStr(speakerTable)->start_char,
@@ -1965,26 +2114,28 @@ namespace
 	void* baseCameraTransform = nullptr;
 	void* baseCamera = nullptr;
 
-	void* Unity_set_pos_injected_orig;
-	void Unity_set_pos_injected_hook(void* _this, Vector3_t* ret) {
-		return reinterpret_cast<decltype(Unity_set_pos_injected_hook)*>(Unity_set_pos_injected_orig)(_this, ret);
+	void* Unity_set_position_orig;
+	void Unity_set_position_hook(void* _this, Vector3_t value) {
+		return reinterpret_cast<decltype(Unity_set_position_hook)*>(Unity_set_position_orig)(_this, value);
 	}
 
-	void* Unity_get_pos_injected_orig;
-	void Unity_get_pos_injected_hook(void* _this, Vector3_t* data) {
-		reinterpret_cast<decltype(Unity_get_pos_injected_hook)*>(Unity_get_pos_injected_orig)(_this, data);
+	void* Unity_get_position_orig;
+	Vector3_t Unity_get_position_hook(void* _this) {
+		auto data = reinterpret_cast<decltype(Unity_get_position_hook)*>(Unity_get_position_orig)(_this);
 
 		if (_this == baseCameraTransform) {
 			if (guiStarting) {
-				SCGUIData::sysCamPos.x = data->x;
-				SCGUIData::sysCamPos.y = data->y;
-				SCGUIData::sysCamPos.z = data->z;
+				SCGUIData::sysCamPos.x = data.x;
+				SCGUIData::sysCamPos.y = data.y;
+				SCGUIData::sysCamPos.z = data.z;
 			}
 			if (g_enable_free_camera) {
-				SCCamera::baseCamera.updateOtherPos(data);
-				Unity_set_pos_injected_hook(_this, data);
+				SCCamera::baseCamera.updateOtherPos(&data);
+				Unity_set_position_hook(_this, data);
 			}
 		}
+
+		return data;
 	}
 
 	void* Unity_set_fieldOfView_orig;
@@ -2008,17 +2159,17 @@ namespace
 		return origFov;
 	}
 
-	void* Unity_LookAt_Injected_orig;
-	void Unity_LookAt_Injected_hook(void* _this, Vector3_t* worldPosition, Vector3_t* worldUp) {
+	void* Unity_InternalLookAt_orig;
+	void Unity_InternalLookAt_hook(void* _this, Vector3_t worldPosition, Vector3_t worldUp) {
 		if (_this == baseCameraTransform) {
 			if (g_enable_free_camera) {
 				auto pos = SCCamera::baseCamera.getLookAt();
-				worldPosition->x = pos.x;
-				worldPosition->y = pos.y;
-				worldPosition->z = pos.z;
+				worldPosition.x = pos.x;
+				worldPosition.y = pos.y;
+				worldPosition.z = pos.z;
 			}
 		}
-		return reinterpret_cast<decltype(Unity_LookAt_Injected_hook)*>(Unity_LookAt_Injected_orig)(_this, worldPosition, worldUp);
+		return reinterpret_cast<decltype(Unity_InternalLookAt_hook)*>(Unity_InternalLookAt_orig)(_this, worldPosition, worldUp);
 	}
 	void* Unity_set_nearClipPlane_orig;
 	void Unity_set_nearClipPlane_hook(void* _this, float single) {
@@ -2053,7 +2204,7 @@ namespace
 
 	void* Unity_set_farClipPlane_orig;
 	void Unity_set_farClipPlane_hook(void* _this, float value) {
-		if(_this == baseCamera) {
+		if (_this == baseCamera) {
 			if (g_enable_free_camera) {
 				value = 2500.0f;
 			}
@@ -2061,28 +2212,28 @@ namespace
 		reinterpret_cast<decltype(Unity_set_farClipPlane_hook)*>(Unity_set_farClipPlane_orig)(_this, value);
 	}
 
-	void* Unity_set_rotation_Injected_orig;
-	void Unity_set_rotation_Injected_hook(void* _this, Quaternion_t* value) {
-		return reinterpret_cast<decltype(Unity_set_rotation_Injected_hook)*>(Unity_set_rotation_Injected_orig)(_this, value);
+	void* Unity_set_rotation_orig;
+	void Unity_set_rotation_hook(void* _this, Quaternion_t value) {
+		return reinterpret_cast<decltype(Unity_set_rotation_hook)*>(Unity_set_rotation_orig)(_this, value);
 	}
-	void* Unity_get_rotation_Injected_orig;
-	void Unity_get_rotation_Injected_hook(void* _this, Quaternion_t* ret) {
-		reinterpret_cast<decltype(Unity_get_rotation_Injected_hook)*>(Unity_get_rotation_Injected_orig)(_this, ret);
+	void* Unity_get_rotation_orig;
+	Quaternion_t Unity_get_rotation_hook(void* _this) {
+		auto ret = reinterpret_cast<decltype(Unity_get_rotation_hook)*>(Unity_get_rotation_orig)(_this);
 
 		if (_this == baseCameraTransform) {
 			if (guiStarting) {
-				SCGUIData::sysCamRot.w = ret->w;
-				SCGUIData::sysCamRot.x = ret->x;
-				SCGUIData::sysCamRot.y = ret->y;
-				SCGUIData::sysCamRot.z = ret->z;
+				SCGUIData::sysCamRot.w = ret.w;
+				SCGUIData::sysCamRot.x = ret.x;
+				SCGUIData::sysCamRot.y = ret.y;
+				SCGUIData::sysCamRot.z = ret.z;
 				SCGUIData::updateSysCamLookAt();
 			}
 			if (g_enable_free_camera) {
-				ret->w = 0;
-				ret->x = 0;
-				ret->y = 0;
-				ret->z = 0;
-				Unity_set_rotation_Injected_hook(_this, ret);
+				ret.w = 0;
+				ret.x = 0;
+				ret.y = 0;
+				ret.z = 0;
+				Unity_set_rotation_hook(_this, ret);
 
 				static auto Vector3_klass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Vector3");
 				Vector3_t* pos = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
@@ -2090,9 +2241,11 @@ namespace
 				up->x = 0;
 				up->y = 1;
 				up->z = 0;
-				Unity_LookAt_Injected_hook(_this, pos, up);
+				Unity_InternalLookAt_hook(_this, *pos, *up);
 			}
 		}
+
+		return ret;
 	}
 
 
@@ -2101,19 +2254,18 @@ namespace
 		// printf("get_baseCamera\n");
 		auto ret = reinterpret_cast<decltype(get_baseCamera_hook)*>(get_baseCamera_orig)(_this);  // UnityEngine.Camera
 
-		if (g_enable_free_camera || guiStarting) {
-			static auto GetComponent = reinterpret_cast<void* (*)(void*, Il2CppReflectionType*)>(
-				il2cpp_symbols::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine",
-					"Component", "GetComponent", 1));
+		// always save the camera as users may enable the gui option after the init
+		static auto GetComponent = reinterpret_cast<void* (*)(void*, Il2CppReflectionType*)>(
+			il2cpp_symbols::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine",
+				"Component", "GetComponent", 1));
 
-			static auto transClass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Transform");
-			static auto transType = il2cpp_type_get_object(il2cpp_class_get_type(transClass));
+		static auto transClass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Transform");
+		static auto transType = il2cpp_type_get_object(il2cpp_class_get_type(transClass));
 
-			auto transform = GetComponent(ret, transType);  // UnityEngine.Transform
-			if (transform) {
-				baseCameraTransform = transform;
-				baseCamera = ret;
-			}
+		auto transform = GetComponent(ret, transType);  // UnityEngine.Transform
+		if (transform) {
+			baseCameraTransform = transform;
+			baseCamera = ret;
 		}
 
 		return ret;
@@ -2245,7 +2397,7 @@ namespace
 
 	bool pathed = false;
 	bool npPatched = false;
-	
+
 	void patchNP(HMODULE module) {
 		if (npPatched) return;
 		npPatched = true;
@@ -2294,9 +2446,9 @@ namespace
 		il2cpp_symbols::init(il2cpp_module);
 
 #pragma region HOOK_ADDRESSES
-		
+
 		environment_get_stacktrace = reinterpret_cast<decltype(environment_get_stacktrace)>(
-			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System", 
+			il2cpp_symbols::get_method_pointer("mscorlib.dll", "System",
 				"Environment", "get_StackTrace", 0)
 			);
 
@@ -2321,7 +2473,7 @@ namespace
 				"Object", "IsNativeObjectAlive", 1)
 			);
 		AssetBundle_LoadAsset = reinterpret_cast<decltype(AssetBundle_LoadAsset)>(
-			il2cpp_resolve_icall("UnityEngine.AssetBundle::LoadAsset_Internal(System.String,System.Type)")
+			il2cpp_symbols_logged::get_method_pointer("UnityEngine.AssetBundleModule.dll", "UnityEngine", "AssetBundle", "LoadAsset_Internal", 2)
 			);
 		const auto FontClass = il2cpp_symbols::get_class("UnityEngine.TextRenderingModule.dll", "UnityEngine", "Font");
 		Font_Type = il2cpp_type_get_object(il2cpp_class_get_type(FontClass));
@@ -2337,7 +2489,7 @@ namespace
 			"Unity.TextMeshPro.dll", "TMPro",
 			"TMP_Text", "get_font", 0
 		));
-		
+
 		const auto TMP_Text_set_text_addr = il2cpp_symbols::get_method_pointer(
 			"Unity.TextMeshPro.dll", "TMPro",
 			"TMP_Text", "set_text", 1
@@ -2349,7 +2501,7 @@ namespace
 
 		auto ScenarioManager_Init_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Scenario",
-			"ScenarioManager", "Init", 1
+			"ScenarioManager", "_initializeAsync", 1
 		);
 		auto DataFile_GetBytes_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
@@ -2382,7 +2534,7 @@ namespace
 		//	"PIdolDetailPopupViewModel", "Create", 10
 		//);
 		auto ScenarioContentViewModel_ctor_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Adapters.dll", "PRISM.Adapters", 
+			"PRISM.Adapters.dll", "PRISM.Adapters",
 			"ScenarioContentViewModel", ".ctor", 8
 		);
 
@@ -2408,21 +2560,20 @@ namespace
 			"CameraController", "get_BaseCamera", 0
 		);
 
-		const auto AssetBundle_LoadAsset_addr =
-			il2cpp_resolve_icall("UnityEngine.AssetBundle::LoadAsset_Internal(System.String,System.Type)");
+		const auto AssetBundle_LoadAsset_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.AssetBundleModule.dll", "UnityEngine", "AssetBundle", "LoadAsset_Internal", 2);
 
-		auto Unity_get_pos_injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::get_position_Injected(UnityEngine.Vector3&)");
-		auto Unity_set_pos_injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::set_position_Injected(UnityEngine.Vector3&)");
+		auto Unity_get_position_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "get_position", 0);
+		auto Unity_set_position_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "set_position", 1);
 
-		auto Unity_get_fieldOfView_addr = il2cpp_resolve_icall("UnityEngine.Camera::get_fieldOfView()");
-		auto Unity_set_fieldOfView_addr = il2cpp_resolve_icall("UnityEngine.Camera::set_fieldOfView(System.Single)");
-		auto Unity_LookAt_Injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::Internal_LookAt_Injected(UnityEngine.Vector3&,UnityEngine.Vector3&)");
-		auto Unity_set_nearClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::set_nearClipPlane(System.Single)");
-		auto Unity_get_nearClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::get_nearClipPlane()");
-		auto Unity_get_farClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::get_farClipPlane()");
-		auto Unity_set_farClipPlane_addr = il2cpp_resolve_icall("UnityEngine.Camera::set_farClipPlane(System.Single)");
-		auto Unity_get_rotation_Injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::get_rotation_Injected(UnityEngine.Quaternion&)");
-		auto Unity_set_rotation_Injected_addr = il2cpp_resolve_icall("UnityEngine.Transform::set_rotation_Injected(UnityEngine.Quaternion&)");
+		auto Unity_get_fieldOfView_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "get_fieldOfView", 0);
+		auto Unity_set_fieldOfView_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "set_fieldOfView", 1);
+		auto Unity_InternalLookAt_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "Internal_LookAt", 2);
+		auto Unity_set_nearClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "set_nearClipPlane", 1);
+		auto Unity_get_nearClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "get_nearClipPlane", 0);
+		auto Unity_get_farClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "get_farClipPlane", 0);
+		auto Unity_set_farClipPlane_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Camera", "set_farClipPlane", 1);
+		auto Unity_get_rotation_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "get_rotation", 0);
+		auto Unity_set_rotation_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "set_rotation", 1);
 
 		auto InvokeMoveNext_addr = il2cpp_symbols::get_method_pointer(
 			"UnityEngine.CoreModule.dll", "UnityEngine",
@@ -2479,11 +2630,11 @@ namespace
 			"LiveCostumeChangeModel", ".ctor", 4
 		);
 
-		auto AssembleCharacter_ApplyParam_mdl_addr = il2cpp_symbols::get_method_pointer(
+		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"AssembleCharacter", "ApplyParam", 6
 		);
-
+		/*
 		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::find_method("PRISM.Legacy.dll", "PRISM", "AssembleCharacter", [=](const MethodInfo* mtd) {
 			const std::string mtdName = mtd->name;
 
@@ -2494,7 +2645,7 @@ namespace
 			}
 
 			return false;
-			});
+			});*/
 
 		auto MainThreadDispatcher_LateUpdate_addr = il2cpp_symbols::get_method_pointer(
 			"UniRx.dll", "UniRx",
@@ -2552,7 +2703,7 @@ namespace
 		auto DMMGameGuard_Setup_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"DMMGameGuard", "Setup", 0
-		);		
+		);
 		auto DMMGameGuard_SetCheckMode_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"DMMGameGuard", "SetCheckMode", 1
@@ -2563,9 +2714,9 @@ namespace
 			"DMMGameGuard", "CloseNPGameMon", 0
 		));*/
 
-		auto set_fps_addr = il2cpp_resolve_icall("UnityEngine.Application::set_targetFrameRate(System.Int32)");
-		auto set_vsync_count_addr = il2cpp_resolve_icall("UnityEngine.QualitySettings::set_vSyncCount(System.Int32)");
-		auto Unity_Quit_addr = il2cpp_resolve_icall("UnityEngine.Application::Quit(System.Int32)");
+		auto set_fps_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Application::set_targetFrameRate(System.Int32)");
+		auto set_vsync_count_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.QualitySettings::set_vSyncCount(System.Int32)");
+		auto Unity_Quit_addr = il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.Application::Quit(System.Int32)");
 
 
 		auto assemblyLoad = reinterpret_cast<void* (*)(Il2CppString*)>(
@@ -2599,6 +2750,16 @@ namespace
 			"SwayString", "SetupPoint", 0
 		);
 
+		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
+		auto CostumeChangeView_Reload_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Interactions", "PRISM.Interactions.CostumeChange",
+			"CostumeChangeView", "Reload", 1
+		);
+		auto LiveMVStartData_ctor_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy", "PRISM.Live",
+			"LiveMVStartData", ".ctor", 7
+		);
+
 #pragma endregion
 		ADD_HOOK(SetResolution, "SetResolution at %p");
 		// ADD_HOOK(PIdolDetailPopupViewModel_Create, "PIdolDetailPopupViewModel_Create at %p");
@@ -2609,17 +2770,17 @@ namespace
 		ADD_HOOK(LiveMVOverlayView_UpdateLyrics, "LiveMVOverlayView_UpdateLyrics at %p");
 		ADD_HOOK(TimelineController_SetLyric, "TimelineController_SetLyric at %p");
 		ADD_HOOK(get_baseCamera, "get_baseCamera at %p");
-		ADD_HOOK(Unity_set_pos_injected, "Unity_set_pos_injected at %p");
-		ADD_HOOK(Unity_get_pos_injected, "Unity_get_pos_injected at %p");
+		ADD_HOOK(Unity_get_position, "Unity_get_position at %p");
+		ADD_HOOK(Unity_set_position, "Unity_set_position at %p");
 		ADD_HOOK(Unity_get_fieldOfView, "Unity_get_fieldOfView at %p");
 		ADD_HOOK(Unity_set_fieldOfView, "Unity_set_fieldOfView at %p");
-		ADD_HOOK(Unity_LookAt_Injected, "Unity_LookAt_Injected at %p");
+		ADD_HOOK(Unity_InternalLookAt, "Unity_InternalLookAt at %p");
 		ADD_HOOK(Unity_set_nearClipPlane, "Unity_set_nearClipPlane at %p");
 		ADD_HOOK(Unity_get_nearClipPlane, "Unity_get_nearClipPlane at %p");
 		ADD_HOOK(Unity_get_farClipPlane, "Unity_get_farClipPlane at %p");
 		ADD_HOOK(Unity_set_farClipPlane, "Unity_set_farClipPlane at %p");
-		ADD_HOOK(Unity_get_rotation_Injected, "Unity_get_rotation_Injected at %p");
-		ADD_HOOK(Unity_set_rotation_Injected, "Unity_set_rotation_Injected at %p");
+		ADD_HOOK(Unity_get_rotation, "Unity_get_rotation at %p");
+		ADD_HOOK(Unity_set_rotation, "Unity_set_rotation at %p");
 
 		ADD_HOOK(TMP_Text_set_text, "TMP_Text_set_text at %p");
 		ADD_HOOK(UITextMeshProUGUI_Awake, "UITextMeshProUGUI_Awake at %p");
@@ -2660,11 +2821,17 @@ namespace
 		ADD_HOOK(set_vsync_count, "set_vsync_count at %p");
 		ADD_HOOK(Unity_Quit, "Unity_Quit at %p");
 
+		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
+		ADD_HOOK(CostumeChangeView_Reload, "CostumeChangeView_Reload at %p");
+		ADD_HOOK(LiveMVStartData_ctor, "LiveMVStartData_ctor at %p");
+
+		tools::AddNetworkingHooks();
+
 		LoadExtraAssetBundle();
 		on_hotKey_0 = []() {
 			startSCGUI();
 			// needPrintStack = !needPrintStack;
-		};
+			};
 		SCCamera::initCameraSettings();
 		g_on_hook_ready();
 
@@ -2693,7 +2860,7 @@ bool init_hook()
 	g_on_close = []() {
 		uninit_hook();
 		TerminateProcess(GetCurrentProcess(), 0);
-	};
+		};
 
 	mh_inited = true;
 

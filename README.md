@@ -28,7 +28,6 @@
 - 切换窗口不暂停
 - Free Camera 自由视角
 - Live MV 相关 **(在 GUI 中修改)**
-  - 解锁服装
   - 自由选择服装，可以穿别人的衣服
   - 允许相同偶像登场
 
@@ -139,3 +138,9 @@
 
 ### 歌词和另一部分 UI 文本 dump
 将 `scsp-config.json` 内 `dumpUntransLyrics` 和 `dumpUntransLocal2` 设置为 `true`，然后打开游戏。插件会实时将未翻译的部分 dump 到 Json 中。
+
+
+# 如何编译
+- 安装 `conan 2`、`cmake`
+- 运行 `generate.bat` 获取依赖包
+- 通过 `build/ImasSCSP-localify.sln` 使用 `Visual Studio 2022` 进行编译

@@ -254,7 +254,7 @@ typedef struct Il2CppArraySize
 	void* bounds;
 	uintptr_t max_length;
 	alignas(8)
-	void* vector[0];
+		void* vector[0];
 } Il2CppArraySize;
 
 struct Il2CppClassHead
@@ -294,7 +294,7 @@ typedef void (*il2cpp_class_for_each_t)(void(*klassReportFunc)(void* klass, void
 typedef void* (*il2cpp_class_get_nested_types_t)(void* klass, void** iter);
 typedef void* (*il2cpp_class_get_type_t)(void* klass);
 typedef Il2CppReflectionType* (*il2cpp_type_get_object_t)(const void* type);
-typedef uint32_t (*il2cpp_gchandle_new_t)(void* obj, bool pinned);
+typedef uint32_t(*il2cpp_gchandle_new_t)(void* obj, bool pinned);
 typedef void (*il2cpp_gchandle_free_t)(uint32_t gchandle);
 typedef void* (*il2cpp_gchandle_get_target_t)(uint32_t gchandle);
 typedef void* (*il2cpp_class_from_type_t)(const Il2CppType* type);
@@ -305,6 +305,16 @@ typedef void (*il2cpp_field_get_value_t)(void* obj, void* field, void* value);
 typedef void* (*il2cpp_field_get_value_object_t)(void* field, void* obj);
 typedef void* (*il2cpp_class_from_system_type_t)(Il2CppReflectionType* type);
 typedef void* (*il2cpp_get_corlib_t)();
+typedef const char* (*il2cpp_class_get_name_t)(void* klass);
+typedef void (*il2cpp_field_set_value_t)(void* obj, void* field, void* value);
+typedef void (*il2cpp_field_set_value_object_t)(void* obj, void* field, void* valueObj);
+typedef void (*il2cpp_field_static_set_value_t)(void* field, void* value);
+typedef void* (*il2cpp_value_box_t)(void* klass, void* data);
+typedef void* (*il2cpp_object_unbox_t)(void* obj);
+typedef uint32_t(*il2cpp_array_length_t)(void* arr);
+typedef void* (*il2cpp_class_get_parent_t)(void* klass);
+typedef const char* (*il2cpp_method_get_name_t)(const MethodInfo* method);
+typedef void* (*il2cpp_method_get_class_t)(const MethodInfo* method);
 
 // function defines
 extern il2cpp_string_new_utf16_t il2cpp_string_new_utf16;
@@ -338,6 +348,16 @@ extern il2cpp_field_get_value_t il2cpp_field_get_value;
 extern il2cpp_field_get_value_object_t il2cpp_field_get_value_object;
 extern il2cpp_class_from_system_type_t il2cpp_class_from_system_type;
 extern il2cpp_get_corlib_t il2cpp_get_corlib;
+extern il2cpp_class_get_name_t il2cpp_class_get_name;
+extern il2cpp_field_set_value_t il2cpp_field_set_value;
+extern il2cpp_field_set_value_object_t il2cpp_field_set_value_object;
+extern il2cpp_field_static_set_value_t il2cpp_field_static_set_value;
+extern il2cpp_value_box_t il2cpp_value_box;
+extern il2cpp_object_unbox_t il2cpp_object_unbox;
+extern il2cpp_array_length_t il2cpp_array_length;
+extern il2cpp_class_get_parent_t il2cpp_class_get_parent;
+extern il2cpp_method_get_name_t il2cpp_method_get_name;
+extern il2cpp_method_get_class_t il2cpp_method_get_class;
 
 char* il2cpp_array_addr_with_size(void* arr, int32_t size, uintptr_t idx);
 
@@ -354,7 +374,7 @@ namespace il2cpp_symbols
 {
 	void init(HMODULE game_module);
 	uintptr_t get_method_pointer(const char* assemblyName, const char* namespaze,
-								 const char* klassName, const char* name, int argsCount);
+		const char* klassName, const char* name, int argsCount);
 
 	void* get_class(const char* assemblyName, const char* namespaze, const char* klassName);
 
@@ -375,17 +395,17 @@ namespace il2cpp_symbols
 	void* find_nested_class_from_name(void* klass, const char* name);
 
 	MethodInfo* get_method(const char* assemblyName, const char* namespaze,
-						   const char* klassName, const char* name, int argsCount);
+		const char* klassName, const char* name, int argsCount);
 
 	uintptr_t find_method(const char* assemblyName, const char* namespaze,
-						  const char* klassName, std::function<bool(const MethodInfo*)> predict);
+		const char* klassName, std::function<bool(const MethodInfo*)> predict);
 
 	FieldInfo* get_field(const char* assemblyName, const char* namespaze,
-						 const char* klassName, const char* name);
+		const char* klassName, const char* name);
 
 	template <typename T>
 	TypedField<T> get_field(const char* assemblyName, const char* namespaze,
-							const char* klassName, const char* name)
+		const char* klassName, const char* name)
 	{
 		return { get_field(assemblyName, namespaze, klassName, name) };
 	}
@@ -441,7 +461,7 @@ namespace il2cpp_symbols
 		const auto getEnumeratorMethod = reinterpret_cast<void* (*)(const void*)>(il2cpp_class_get_method_from_name(klass, "GetEnumerator", 0)->methodPointer);
 		const auto enumerator = getEnumeratorMethod(obj);
 		const auto enumeratorClass = get_class_from_instance(enumerator);
-		const auto getCurrentMethod = reinterpret_cast<T (*)(void*)>(il2cpp_class_get_method_from_name(enumeratorClass, "get_Current", 0)->methodPointer);
+		const auto getCurrentMethod = reinterpret_cast<T(*)(void*)>(il2cpp_class_get_method_from_name(enumeratorClass, "get_Current", 0)->methodPointer);
 		const auto moveNextMethod = reinterpret_cast<bool(*)(void*)>(il2cpp_class_get_method_from_name(enumeratorClass, "MoveNext", 0)->methodPointer);
 
 		while (moveNextMethod(enumerator))
@@ -452,4 +472,16 @@ namespace il2cpp_symbols
 
 	Il2CppString* NewWStr(std::wstring_view str);
 	void* get_system_class_from_reflection_type_str(const char* typeStr, const char* assemblyName = "mscorlib");
+
+	void* array_get_value(void* array, int index);
+
+	void array_set_value(void* array, void* value, int index);
+}
+
+namespace il2cpp_symbols_logged {
+	void* il2cpp_resolve_icall(const char* name);
+	void* get_class(const char* assemblyName, const char* namespaze, const char* klassName);
+	FieldInfo* il2cpp_class_get_field_from_name(void* klass, const char* name);
+	MethodInfo* get_method(const char* assemblyName, const char* namespaze, const char* klassName, const char* name, int argsCount);
+	uintptr_t get_method_pointer(const char* assemblyName, const char* namespaze, const char* klassName, const char* name, int argsCount);
 }

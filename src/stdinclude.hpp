@@ -47,7 +47,7 @@
 
 class CharaParam_t {
 public:
-	CharaParam_t(float height, float bust, float head, float arm, float hand) : 
+	CharaParam_t(float height, float bust, float head, float arm, float hand) :
 		height(height), bust(bust), head(head), arm(arm), hand(hand) {
 		objPtr = NULL;
 		updateInitParam();
@@ -123,10 +123,10 @@ private:
 
 class CharaSwayStringParam_t {
 public:
-	CharaSwayStringParam_t(float rate, float P_bendStrength, float P_baseGravity, 
-		float P_inertiaMoment, float P_airResistance, float P_deformResistance): 
-		rate(rate), P_bendStrength(P_bendStrength), P_baseGravity(P_baseGravity), 
-		P_inertiaMoment(P_inertiaMoment), P_airResistance(P_airResistance), P_deformResistance(P_deformResistance){
+	CharaSwayStringParam_t(float rate, float P_bendStrength, float P_baseGravity,
+		float P_inertiaMoment, float P_airResistance, float P_deformResistance) :
+		rate(rate), P_bendStrength(P_bendStrength), P_baseGravity(P_baseGravity),
+		P_inertiaMoment(P_inertiaMoment), P_airResistance(P_airResistance), P_deformResistance(P_deformResistance) {
 
 	}
 
@@ -150,8 +150,47 @@ public:
 
 };
 
+
+namespace managed { struct UnitIdol {}; }
+struct UnitIdol {
+	static void* klass_UnitIdol;
+	static void* field_UnitIdol_charaId;
+	static void* field_UnitIdol_clothId;
+	static void* field_UnitIdol_hairId;
+	static void* field_UnitIdol_accessoryIds;
+
+	static void InitUnitIdol(void* unitIdolInstance) {
+		if (field_UnitIdol_accessoryIds == nullptr) {
+			klass_UnitIdol = il2cpp_symbols::get_class_from_instance(unitIdolInstance);
+			field_UnitIdol_charaId = il2cpp_class_get_field_from_name(klass_UnitIdol, "charaId");
+			field_UnitIdol_clothId = il2cpp_class_get_field_from_name(klass_UnitIdol, "clothId");
+			field_UnitIdol_hairId = il2cpp_class_get_field_from_name(klass_UnitIdol, "hairId");
+			field_UnitIdol_accessoryIds = il2cpp_class_get_field_from_name(klass_UnitIdol, "accessoryIds");
+		}
+	}
+
+	int CharaId = -1;
+	int ClothId = 0;
+	int HairId = 0;
+	int* AccessoryIds = nullptr;
+	int AccessoryIdsLength = 0;
+
+	void ReadFrom(managed::UnitIdol* managed);
+	void ApplyTo(managed::UnitIdol* managed);
+
+	void Clear();
+	bool IsEmpty() const;
+	void Print(std::ostream& os) const;
+	std::string ToString() const;
+};
+
+
 extern std::map<int, std::string> swayTypes;
 extern std::map<int, CharaSwayStringParam_t> charaSwayStringOffset;
+extern std::map<int, UnitIdol> savedCostumes;
+extern UnitIdol lastSavedCostume;
+extern UnitIdol overridenMvUnitIdols[8];
+const int overridenMvUnitIdols_length = 8;
 
 extern std::function<void()> g_reload_all_data;
 extern bool g_enable_plugin;
@@ -172,6 +211,9 @@ extern bool g_allow_use_tryon_costume;
 extern bool g_allow_same_idol;
 extern bool g_unlock_all_dress;
 extern bool g_unlock_all_headwear;
+extern bool g_save_and_replace_costume_changes;
+extern bool g_overrie_mv_unit_idols;
+extern bool g_override_isVocalSeparatedOn;
 extern bool g_enable_chara_param_edit;
 extern float g_font_size_offset;
 extern float g_3d_resolution_scale;
@@ -179,3 +221,8 @@ extern bool g_unlock_PIdol_and_SChara_events;
 extern int g_start_resolution_w;
 extern int g_start_resolution_h;
 extern bool g_start_resolution_fullScreen;
+
+namespace tools {
+	extern bool output_networking_calls;
+	extern void AddNetworkingHooks();
+}

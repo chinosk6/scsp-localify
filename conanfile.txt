@@ -1,10 +1,12 @@
 [requires]
+boost/1.83.0
 cpprestsdk/2.10.18
 minizip/1.2.11
 zlib/1.2.12
-msgpack/3.3.0
+msgpack-c/6.1.0
 sqlite3/3.39.2
 nlohmann_json/3.11.2
 
 [generators]
-premake
+PremakeDeps
+PremakeToolchain

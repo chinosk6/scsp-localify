@@ -27,7 +27,6 @@ iM@S SCSP localify plugin.
 - Switching Windows Without Pausing
 - Free Camera
 - Live MV Related **(Modify in GUI)**
-  - Unlock Costumes
   - Freedom to Choose Costumes, Wear Other Characters' Clothes
   - Allow Same Idol Appearance
 - Real-time Modification of Character Body Parameters, Adjust Height, Head, Chest, Arm, and Palm Size **(Modify in GUI)**
@@ -136,3 +135,9 @@ After logging into the game, go to the story reading interface, press `ctrl` + `
 
 ### Lyrics and Another Part of UI Text Dump
 Set `dumpUntransLyrics` and `dumpUntransLocal2` in `scsp-config.json` to `true`, then open the game. The plugin will continuously dump untranslated parts into Json in real time.
+
+
+# How to build
+- Install `conan 2`, `cmake`
+- Run `generate.bat` to resolve dependencies
+- Open `build/ImasSCSP-localify.sln` in `Visual Studio 2022` to build
