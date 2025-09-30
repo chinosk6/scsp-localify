@@ -294,9 +294,9 @@ typedef void (*il2cpp_class_for_each_t)(void(*klassReportFunc)(void* klass, void
 typedef void* (*il2cpp_class_get_nested_types_t)(void* klass, void** iter);
 typedef void* (*il2cpp_class_get_type_t)(void* klass);
 typedef Il2CppReflectionType* (*il2cpp_type_get_object_t)(const void* type);
-typedef uint32_t(*il2cpp_gchandle_new_t)(void* obj, bool pinned);
-typedef void (*il2cpp_gchandle_free_t)(uint32_t gchandle);
-typedef void* (*il2cpp_gchandle_get_target_t)(uint32_t gchandle);
+typedef void*(*il2cpp_gchandle_new_t)(void* obj, bool pinned);
+typedef void (*il2cpp_gchandle_free_t)(void* gchandle);
+typedef void* (*il2cpp_gchandle_get_target_t)(void* gchandle);
 typedef void* (*il2cpp_class_from_type_t)(const Il2CppType* type);
 typedef void (*il2cpp_runtime_class_init_t)(void* klass);
 typedef void* (*il2cpp_runtime_invoke_t)(MethodInfo* method, void* obj, void** params, Il2CppObject** exc);

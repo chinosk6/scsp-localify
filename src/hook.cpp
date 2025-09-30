@@ -416,108 +416,91 @@ namespace
 	};
 
 	typedef std::unordered_set<std::wstring, TransparentStringHash, std::equal_to<void>> AssetPathsType;
-	std::map<std::string, AssetPathsType> CustomAssetBundleAssetPaths;
-	std::unordered_map<std::string, uint32_t> CustomAssetBundleHandleMap{};
+	std::unordered_map<std::string, void*> CustomAssetBundleGcHandleMap{};
 	void* (*AssetBundle_LoadFromFile)(Il2CppString* path, UINT32 crc, UINT64 offset);
 
-	void LoadExtraAssetBundle()
-	{
-		if (g_extra_assetbundle_paths.empty())
-		{
-			return;
-		}
-		// CustomAssetBundleHandleMap.clear();
-		// CustomAssetBundleAssetPaths.clear();
-		// assert(!ExtraAssetBundleHandle && ExtraAssetBundleAssetPaths.empty());
-
-		static auto AssetBundle_GetAllAssetNames = reinterpret_cast<void* (*)(void*)>(
-			il2cpp_symbols_logged::il2cpp_resolve_icall("UnityEngine.AssetBundle::GetAllAssetNames()")
-			);
-
-		for (const auto& i : g_extra_assetbundle_paths) {
-			if (CustomAssetBundleHandleMap.contains(i)) continue;
-
-			const auto extraAssetBundle = AssetBundle_LoadFromFile(il2cpp_string_new(i.c_str()), 0, 0);
-			if (extraAssetBundle)
-			{
-				const auto allAssetPaths = AssetBundle_GetAllAssetNames(extraAssetBundle);
-				AssetPathsType assetPath{};
-				il2cpp_symbols::iterate_IEnumerable<Il2CppString*>(allAssetPaths, [&assetPath](Il2CppString* path)
-					{
-						// ExtraAssetBundleAssetPaths.emplace(path->start_char);
-						// printf("Asset loaded: %ls\n", path->start_char);
-						assetPath.emplace(path->start_char);
-					});
-				CustomAssetBundleAssetPaths.emplace(i, assetPath);
-				CustomAssetBundleHandleMap.emplace(i, il2cpp_gchandle_new(extraAssetBundle, false));
-			}
-			else
-			{
-				printf("Cannot load asset bundle: %s\n", i.c_str());
-			}
-		}
-	}
-
-	uint32_t GetBundleHandleByAssetName(std::wstring assetName) {
-		for (const auto& i : CustomAssetBundleAssetPaths) {
-			for (const auto& m : i.second) {
-				if (std::equal(m.begin(), m.end(), assetName.begin(), assetName.end(),
-					[](wchar_t c1, wchar_t c2) {
-						return std::tolower(c1, std::locale()) == std::tolower(c2, std::locale());
-					})) {
-					return CustomAssetBundleHandleMap.at(i.first);
-				}
-			}
-		}
-		return NULL;
-	}
-
-	uint32_t GetBundleHandleByAssetName(std::string assetName) {
-		return GetBundleHandleByAssetName(utility::conversions::to_string_t(assetName));
-	}
-
-	uint32_t ReplaceFontHandle;
+	void* ReplaceFontGcHandle;
 	bool (*Object_IsNativeObjectAlive)(void*);
 	void* (*AssetBundle_LoadAsset)(void* _this, Il2CppString* name, Il2CppReflectionType* type);
 	Il2CppReflectionType* Font_Type;
 
-	void* getReplaceFont() {
-		void* replaceFont{};
-		if (g_custom_font_path.empty()) return replaceFont;
-		const auto& bundleHandle = GetBundleHandleByAssetName(g_custom_font_path);
-		if (bundleHandle)
-		{
-			if (ReplaceFontHandle)
-			{
-				replaceFont = il2cpp_gchandle_get_target(ReplaceFontHandle);
-				// 加载场景时会被 Resources.UnloadUnusedAssets 干掉，且不受 DontDestroyOnLoad 影响，暂且判断是否存活，并在必要的时候重新加载
-				// TODO: 考虑挂载到 GameObject 上
-				// AssetBundle 不会被干掉
-				if (Object_IsNativeObjectAlive(replaceFont))
-				{
-					return replaceFont;
-				}
-				else
-				{
-					il2cpp_gchandle_free(std::exchange(ReplaceFontHandle, 0));
-				}
-			}
+	void* LoadExternAsset(std::string assetFullPath, Il2CppReflectionType* assetType) {
+		const std::string delimiter = "::";
+		size_t index = assetFullPath.rfind(delimiter);
+		std::string bundlePath, assetPath;
+		if (index == std::string::npos) {
+			bundlePath = "";
+			assetPath = assetFullPath;
+		}
+		else {
+			bundlePath = assetFullPath.substr(0, index);
+			assetPath = assetFullPath.substr(index + delimiter.length());
+		}
 
-			const auto extraAssetBundle = il2cpp_gchandle_get_target(bundleHandle);
-			replaceFont = AssetBundle_LoadAsset(extraAssetBundle, il2cpp_string_new(g_custom_font_path.c_str()), Font_Type);
-			if (replaceFont)
-			{
-				ReplaceFontHandle = il2cpp_gchandle_new(replaceFont, false);
-			}
-			else
-			{
-				std::wprintf(L"Cannot load asset font\n");
-			}
+		if (bundlePath.empty() || !std::filesystem::exists(bundlePath)) {
+			std::cout << "[ERROR] AssetBundle \"" << bundlePath << "\" doesn't exist." << std::endl;
+			return nullptr;
+		}
+
+		void* assetBundle;
+		auto it = CustomAssetBundleGcHandleMap.find(bundlePath);
+		if (it != CustomAssetBundleGcHandleMap.end()) {
+			auto gcHandle = it->second;
+			assetBundle = il2cpp_gchandle_get_target(gcHandle);
 		}
 		else
 		{
-			std::wprintf(L"Cannot find asset font\n");
+			static auto func_Path_GetFullPath = reinterpret_cast<Il2CppString * (*)(Il2CppString*)>(il2cpp_symbols_logged::get_method_pointer("mscorlib.dll", "System.IO", "Path", "GetFullPath", 1));
+			const auto extraAssetBundle = AssetBundle_LoadFromFile(func_Path_GetFullPath(il2cpp_string_new(bundlePath.c_str())), 0, 0);
+			if (extraAssetBundle) {
+				assetBundle = extraAssetBundle;
+				CustomAssetBundleGcHandleMap.emplace(bundlePath, il2cpp_gchandle_new(extraAssetBundle, false));
+			}
+			else {
+				std::cout << "[ERROR] Failed to load AssetBundle \"" << bundlePath << "\"." << std::endl;
+				return nullptr;
+			}
 		}
+
+		auto asset = AssetBundle_LoadAsset(assetBundle, il2cpp_string_new(assetPath.c_str()), assetType);
+		if (!asset) {
+			std::cout << "[ERROR] Failed to load asset \"" << assetFullPath << "\"." << std::endl;
+			return nullptr;
+		}
+		return asset;
+	}
+
+	void* getReplaceFont() {
+		void* replaceFont{};
+		if (g_custom_font_path.empty()) return replaceFont;
+
+		if (ReplaceFontGcHandle)
+		{
+			replaceFont = il2cpp_gchandle_get_target(ReplaceFontGcHandle);
+			
+			// 加载场景时会被 Resources.UnloadUnusedAssets 干掉，且不受 DontDestroyOnLoad 影响，暂且判断是否存活，并在必要的时候重新加载
+			// TODO: 考虑挂载到 GameObject 上
+			// AssetBundle 不会被干掉
+			if (Object_IsNativeObjectAlive(replaceFont))
+			{
+				return replaceFont;
+			}
+			else
+			{
+				il2cpp_gchandle_free(std::exchange(ReplaceFontGcHandle, nullptr));
+			}
+		}
+
+		replaceFont = LoadExternAsset(g_custom_font_path, Font_Type);
+		if (replaceFont)
+		{
+			ReplaceFontGcHandle = il2cpp_gchandle_new(replaceFont, false);
+		}
+		else
+		{
+			std::wprintf(L"Cannot load asset font\n");
+		}
+
 		return replaceFont;
 	}
 
@@ -2827,7 +2810,6 @@ namespace
 
 		tools::AddNetworkingHooks();
 
-		LoadExtraAssetBundle();
 		on_hotKey_0 = []() {
 			startSCGUI();
 			// needPrintStack = !needPrintStack;
