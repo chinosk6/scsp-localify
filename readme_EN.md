@@ -49,8 +49,8 @@ iM@S SCSP localify plugin.
 | dumpUntransLyrics     | Bool      | `false`                               | Dump untranslated lyrics                               |
 | dumpUntransLocal2     | Bool      | `false`                               | Dump untranslated text                                 |
 | autoDumpAllJson       | Bool      | `false`                               | Dump all loaded JSON files                             |
-| extraAssetBundlePaths | String[]  | `["scsp_localify/scsp-bundle"]`       | Custom asset bundle paths                              |
-| customFontPath        | String    | `assets/font/sbtphumminge-regular.ttf` | Custom font path in asset bundles<br>Used for replacing built-in fonts in the game |
+| ~~extraAssetBundlePaths~~ | ~~String[]~~  | ~~`["scsp_localify/scsp-bundle"]`~~       | ~~Custom asset bundle paths~~<br> **This option is obsolete** <br>Use format `asset_bundle_path::asset_path` to specify an exact asset to use. |
+| customFontPath        | String    | `scsp_localify/scsp-bundle::assets/font/sbtphumminge-regular.ttf` | Custom font path in asset bundles<br>Used for replacing built-in fonts in the game |
 | blockOutOfFocus       | Bool      | `true`                                | Intercept window out-of-focus events<br>Game won't pause when switching to other windows |
 | baseFreeCamera        | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera) | Free camera configuration                             |
 | unlockPIdolAndSCharaEvents | Bool | `false` | Unlock Idol Event (アイドルイベント) and Support Event (サポートイベント) in `Characters` - `Overview` |

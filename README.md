@@ -48,8 +48,8 @@
 | dumpUntransLyrics          | Bool                                     | `false`                                | dump 未翻译的歌词                                    |
 | dumpUntransLocal2          | Bool                                     | `false`                                | dump 未翻译的文本                                    |
 | autoDumpAllJson            | Bool                                     | `false`                                | dump 所有游戏加载的 JSON                             |
-| extraAssetBundlePaths      | String[]                                 | `["scsp_localify/scsp-bundle"]`        | 自定义数据包路径                                     |
-| customFontPath             | String                                   | `assets/font/sbtphumminge-regular.ttf` | 自定义数据包中字体路径<br>用于替换游戏内置字体       |
+| ~~extraAssetBundlePaths~~  | ~~String[]~~                             | ~~`["scsp_localify/scsp-bundle"]`~~    | ~~自定义数据包路径~~<br> **此设置已过时** <br>使用 `asset_bundle_path::asset_path` 格式对具体要使用的资源进行指定。      |
+| customFontPath             | String                                   | `scsp_localify/scsp-bundle::assets/font/sbtphumminge-regular.ttf` | 自定义数据包中字体路径<br>用于替换游戏内置字体       |
 | blockOutOfFocus            | Bool                                     | `true`                                 | 拦截窗口失焦事件<br>切换到其它窗口后不会触发游戏暂停 |
 | baseFreeCamera             | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera)      | 自由视角配置                                         |
 | unlockPIdolAndSCharaEvents | Bool                                     | `false`                                | 解锁 `角色` - `一览` 中的P卡和S卡事件                |

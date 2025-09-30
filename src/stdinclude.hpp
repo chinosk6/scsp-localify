@@ -202,7 +202,6 @@ extern bool g_dump_untrans_lyrics;
 extern bool g_dump_untrans_unlocal;
 extern std::string g_custom_font_path;
 extern std::filesystem::path g_localify_base;
-extern std::list<std::string> g_extra_assetbundle_paths;
 extern char hotKey;
 extern bool g_enable_free_camera;
 extern bool g_block_out_of_focus;
