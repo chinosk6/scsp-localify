@@ -182,6 +182,7 @@ struct UnitIdol {
 	bool IsEmpty() const;
 	void Print(std::ostream& os) const;
 	std::string ToString() const;
+	void LoadJson(const char* json);
 };
 
 

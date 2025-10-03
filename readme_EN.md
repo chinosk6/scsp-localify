@@ -29,6 +29,7 @@ iM@S SCSP localify plugin.
 - Live MV Related **(Modify in GUI)**
   - Freedom to Choose Costumes, Wear Other Characters' Clothes
   - Allow Same Idol Appearance
+  - Edit on-stage idols manually, allowing to select unlocked idols
 - Real-time Modification of Character Body Parameters, Adjust Height, Head, Chest, Arm, and Palm Size **(Modify in GUI)**
 
 
@@ -107,6 +108,7 @@ iM@S SCSP localify plugin.
 
 - When `Save & Replace costume changes` is checked, all costume changes will be recorded, locked costumes can also be recorded by clicking the Try-On button in the game, or casual costumes can be selected in the DressOrder interface, and all the changes will be applied automatically when MV starts; unwanted records can be removed using the `Remove` button in the "Saved Costume Data" sub-window to cancel them.
 - When `Save & Replace costume changes` is checked and `Override MV unit idols` is checked, the last costume data can be saved by clicking the `Slot X` buttons in the "Override MvUnit Idols" sub-window; different slots can be used to record the same idol to achieve multiple appearances of the same idol with different costumes, and unrecorded slots will inherit the original data of the idols in the selected live unit.
+- In "Override MvUnit Idols" sub-window, clicking data to edit JSON data manually. (Note: When editing `CharaId` manually, it's suggested to use `1` (the default) for `HairId` to avoid freezing)
 
 
 
