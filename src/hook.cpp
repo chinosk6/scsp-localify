@@ -1340,9 +1340,10 @@ namespace
 			auto focalLength = il2cpp_symbols::read_field<float>(depthOfFieldBehaviour, DepthOfFieldBehaviour_focalLength_field);
 			*/
 
-			il2cpp_symbols::write_field(depthOfFieldBehaviour, DepthOfFieldBehaviour_focusDistance_field, 1000.0f);
-			il2cpp_symbols::write_field(depthOfFieldBehaviour, DepthOfFieldBehaviour_aperture_field, 32.0f);
-			il2cpp_symbols::write_field(depthOfFieldBehaviour, DepthOfFieldBehaviour_focalLength_field, 1.0f);
+			// invalid values from game version v2.6.1 and crash at the original call; bypass temporarily
+			// il2cpp_symbols::write_field(depthOfFieldBehaviour, DepthOfFieldBehaviour_focusDistance_field, 1000.0f);
+			// il2cpp_symbols::write_field(depthOfFieldBehaviour, DepthOfFieldBehaviour_aperture_field, 32.0f);
+			// il2cpp_symbols::write_field(depthOfFieldBehaviour, DepthOfFieldBehaviour_focalLength_field, 1.0f);
 
 			// printf("DepthOfFieldClip_CreatePlayable, focusDistance: %f, aperture: %f, focalLength: %f\n", focusDistance, aperture, focalLength);
 		}
@@ -1630,10 +1631,6 @@ namespace
 		tools::output_networking_calls = true;
 		printf("start LiveMVStartData..ctor\n");
 #endif
-
-		// keep `g_enable_free_camera` is true when starting MV will make the game crash
-		// no exact reason found yet, as neither `Object_IsNativeObjectAlive` nor __try helped
-		g_enable_free_camera = false;
 
 		if (g_override_isVocalSeparatedOn) {
 			isVocalSeparatedOn = true;
@@ -2154,10 +2151,11 @@ namespace
 		}
 		return reinterpret_cast<decltype(Unity_InternalLookAt_hook)*>(Unity_InternalLookAt_orig)(_this, worldPosition, worldUp);
 	}
+
 	void* Unity_set_nearClipPlane_orig;
 	void Unity_set_nearClipPlane_hook(void* _this, float single) {
 		if (_this == baseCamera) {
-			if (g_enable_free_camera) {
+			if (g_enable_free_camera && g_reenable_clipPlane) {
 				single = 0.001f;
 			}
 		}
@@ -2168,7 +2166,7 @@ namespace
 	float Unity_get_nearClipPlane_hook(void* _this) {
 		auto ret = reinterpret_cast<decltype(Unity_get_nearClipPlane_hook)*>(Unity_get_nearClipPlane_orig)(_this);
 		if (_this == baseCamera) {
-			if (g_enable_free_camera) {
+			if (g_enable_free_camera && g_reenable_clipPlane) {
 				ret = 0.001f;
 			}
 		}
@@ -2178,7 +2176,7 @@ namespace
 	float Unity_get_farClipPlane_hook(void* _this) {
 		auto ret = reinterpret_cast<decltype(Unity_get_farClipPlane_hook)*>(Unity_get_farClipPlane_orig)(_this);
 		if (_this == baseCamera) {
-			if (g_enable_free_camera) {
+			if (g_enable_free_camera && g_reenable_clipPlane) {
 				ret = 2500.0f;
 			}
 		}
@@ -2188,7 +2186,7 @@ namespace
 	void* Unity_set_farClipPlane_orig;
 	void Unity_set_farClipPlane_hook(void* _this, float value) {
 		if (_this == baseCamera) {
-			if (g_enable_free_camera) {
+			if (g_enable_free_camera && g_reenable_clipPlane) {
 				value = 2500.0f;
 			}
 		}

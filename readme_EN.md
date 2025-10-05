@@ -83,7 +83,7 @@ iM@S SCSP localify plugin.
 
 - Set `enable` under `baseFreeCamera` in `scsp-config.json` to `true`.
 - Scope of application: All 3D scenes. Including but not limited to homepage, story, Live.
-> An unknown bug exists; this option will be disabled automatically when MV starts, but it can be re-enabled without affecting its feature.
+> With the unity engine updating in game v2.6.1, there're still unfixed bugs about free camera feature now.
 
 
 

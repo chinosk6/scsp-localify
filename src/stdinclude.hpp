@@ -221,6 +221,7 @@ extern bool g_unlock_PIdol_and_SChara_events;
 extern int g_start_resolution_w;
 extern int g_start_resolution_h;
 extern bool g_start_resolution_fullScreen;
+extern bool g_reenable_clipPlane;
 
 namespace tools {
 	extern bool output_networking_calls;

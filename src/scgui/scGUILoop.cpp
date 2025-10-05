@@ -210,7 +210,7 @@ namespace SCGUILoop {
 			ImGui::OpenPopup("InputManuallyOverrideMvUnitIdol");
 		}
 		if (ImGui::BeginPopupModal("InputManuallyOverrideMvUnitIdol", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-			ImGui::Text("Set override data manually:");
+			ImGui::Text("Set override data manually: (in JSON)");
 			ImGui::InputText("##NameInput", inputOverrideMvUnitIdol, IM_ARRAYSIZE(inputOverrideMvUnitIdol));
 
 			if (ImGui::Button("OK", ImVec2(120, 0))) {
@@ -324,8 +324,9 @@ namespace SCGUILoop {
 
 				if (ImGui::CollapsingHeader("Free Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
 					ImGui::Checkbox("Enable Free Camera", &g_enable_free_camera);
+					ImGui::Checkbox("[Legacy] Re-enable ClipPlane overriding", &g_reenable_clipPlane);
 					ImGui::SameLine();
-					HELP_TOOLTIP("(?)", "MV开始时会自动反选此选项以避免崩溃。(unknown bug)\nThis option will be cancelled when MV starts to avoid crashing.")
+					HELP_TOOLTIP("(?)", "Re-enable the modification of nearClipPlane & farClipPlane like old versions.");
 					INPUT_AND_SLIDER_FLOAT("Move Speed", &BaseCamera::moveStep, 0.0f, 0.5f);
 					INPUT_AND_SLIDER_FLOAT("Mouse Speed", &g_free_camera_mouse_speed, 0.0f, 100.0f);
 					INPUT_AND_SLIDER_FLOAT("Camera FOV", &SCCamera::baseCamera.fov, 0.0f, 360.0f);
