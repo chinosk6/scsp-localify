@@ -74,6 +74,7 @@ void UnitIdol::Print(std::ostream& os) const {
 
 std::string UnitIdol::ToString() const {
 	std::ostringstream oss;
+	oss.imbue(std::locale::classic());
 	Print(oss);
 	return oss.str();
 }
