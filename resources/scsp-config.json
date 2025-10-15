@@ -1,28 +1,25 @@
 {
-    "enableConsole": true,
-    "enableVSync": false,
-    "maxFps": 60,
-    "3DResolutionScale": 1.0,
-    "localifyBasePath": "scsp_localify",
-    "hotKey": "u",
-    "dumpUntransLyrics": false,
-    "dumpUntransLocal2": false,
-    "autoDumpAllJson": false,
-    "extraAssetBundlePaths": [
-        "scsp_localify/scsp-bundle"
-    ],
-    "customFontPath": "assets/font/sbtphumminge-regular.ttf",
-    "fontSizeOffset": -3,
-    "blockOutOfFocus": true,
-    "baseFreeCamera": {
-        "enable": false,
-        "moveStep": 50,
-        "mouseSpeed": 35
-    },
-    "unlockPIdolAndSCharaEvents": false,
-    "startResolution": {
-        "w": 1280,
-        "h": 720,
-        "isFull": false
-    }
+  "enableConsole": true,
+  "enableVSync": false,
+  "maxFps": 60,
+  "3DResolutionScale": 1.0,
+  "localifyBasePath": "scsp_localify",
+  "hotKey": "u",
+  "dumpUntransLyrics": false,
+  "dumpUntransLocal2": false,
+  "autoDumpAllJson": false,
+  "customFontPath": "scsp_localify/scsp-bundle::assets/font/sbtphumminge-regular.ttf",
+  "fontSizeOffset": -3,
+  "blockOutOfFocus": true,
+  "baseFreeCamera": {
+    "enable": false,
+    "moveStep": 50,
+    "mouseSpeed": 35
+  },
+  "unlockPIdolAndSCharaEvents": false,
+  "startResolution": {
+    "w": 1280,
+    "h": 720,
+    "isFull": false
+  }
 }
