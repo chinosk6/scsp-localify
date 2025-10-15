@@ -1586,6 +1586,14 @@ namespace
 	}
 
 
+	void* CostumeChangeViewModel_ctor_orig;
+	void CostumeChangeViewModel_ctor_hook(void* _this, int characterId, void* costumeService, bool isCostumeUnlimited) {
+		if (g_unlock_everything) {
+			isCostumeUnlimited = true;
+		}
+		return reinterpret_cast<decltype(CostumeChangeViewModel_ctor_hook)*>(CostumeChangeViewModel_ctor_orig)(_this, characterId, costumeService, isCostumeUnlimited);
+	}
+
 	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
 	void* CostumeChangeView_Reload_orig;
 	void* CostumeChangeView_Reload_hook(void* _this, void* viewModel) {
@@ -2731,6 +2739,11 @@ namespace
 			"SwayString", "SetupPoint", 0
 		);
 
+		auto CostumeChangeViewModel_ctor_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Adapters", "PRISM.Adapters.CostumeChange",
+			"CostumeChangeViewModel", ".ctor", 3
+		);
+
 		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
 		auto CostumeChangeView_Reload_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Interactions", "PRISM.Interactions.CostumeChange",
@@ -2802,6 +2815,7 @@ namespace
 		ADD_HOOK(set_vsync_count, "set_vsync_count at %p");
 		ADD_HOOK(Unity_Quit, "Unity_Quit at %p");
 
+		ADD_HOOK(CostumeChangeViewModel_ctor, "CostumeChangeViewModel_ctor at %p");
 		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
 		ADD_HOOK(CostumeChangeView_Reload, "CostumeChangeView_Reload at %p");
 		ADD_HOOK(LiveMVStartData_ctor, "LiveMVStartData_ctor at %p");

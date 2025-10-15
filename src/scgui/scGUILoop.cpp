@@ -249,6 +249,10 @@ namespace SCGUILoop {
 				ImGui::Checkbox("Override MV unit idols", &g_overrie_mv_unit_idols);
 				ImGui::SameLine();
 				HELP_TOOLTIP("(?)", "在操作窗口中保存用于替换MV播放时的角色信息。\nSave idols' data in control panel to replace them when playing MV.");
+
+				ImGui::Checkbox("Unlock everything", &g_unlock_everything);
+				ImGui::SameLine();
+				HELP_TOOLTIP("(?)", "在进入换装窗口前勾选有效。\nAvailable only checked before entering costume changing view.");
 				ImGui::Unindent(30);
 			}
 
