@@ -339,6 +339,12 @@ namespace SCGUILoop {
 				}
 			}
 
+			if (ImGui::CollapsingHeader("Devs", ImGuiTreeNodeFlags_None)) {
+#ifdef __TOOL_HOOK_NETWORKING__
+				ImGui::Checkbox("Output networking calls", &tools::output_networking_calls);
+#endif
+			}
+
 		}
 		ImGui::End();
 		if (g_enable_chara_param_edit) charaParamEditLoop();

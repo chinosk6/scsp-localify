@@ -1634,12 +1634,6 @@ namespace
 	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
 	void* LiveMVStartData_ctor_orig;
 	void* LiveMVStartData_ctor_hook(void* _this, void* musicMaster, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int backgroundMode, int renderingDynamicRange, int soundEffectMode) {
-
-#if __TOOL_HOOK_NETWORKING__
-		tools::output_networking_calls = true;
-		printf("start LiveMVStartData..ctor\n");
-#endif
-
 		if (g_override_isVocalSeparatedOn) {
 			isVocalSeparatedOn = true;
 			printf("isVocalSeparatedOn is overriden to true.\n");
@@ -1681,10 +1675,6 @@ namespace
 		__except (seh_filter(GetExceptionInformation())) {
 			printf("SEH exception detected in `LiveMVStartData_ctor_hook`.\n");
 		}
-
-#if __TOOL_HOOK_NETWORKING__
-		printf("after LiveMVStartData..ctor\n");
-#endif
 
 		return ret;
 	}
