@@ -273,6 +273,14 @@ struct Il2CppReflectionType
 
 static const size_t kIl2CppSizeOfArray = (offsetof(Il2CppArraySize, vector));
 
+#if _MSC_VER
+typedef wchar_t Il2CppChar;
+#elif __has_feature(cxx_unicode_literals)
+typedef char16_t Il2CppChar;
+#else
+typedef uint16_t Il2CppChar;
+#endif
+
 // function types
 typedef Il2CppString* (*il2cpp_string_new_utf16_t)(const wchar_t* str, unsigned int len);
 typedef Il2CppString* (*il2cpp_string_new_t)(const char* str);
@@ -294,9 +302,9 @@ typedef void (*il2cpp_class_for_each_t)(void(*klassReportFunc)(void* klass, void
 typedef void* (*il2cpp_class_get_nested_types_t)(void* klass, void** iter);
 typedef void* (*il2cpp_class_get_type_t)(void* klass);
 typedef Il2CppReflectionType* (*il2cpp_type_get_object_t)(const void* type);
-typedef uint32_t(*il2cpp_gchandle_new_t)(void* obj, bool pinned);
-typedef void (*il2cpp_gchandle_free_t)(uint32_t gchandle);
-typedef void* (*il2cpp_gchandle_get_target_t)(uint32_t gchandle);
+typedef void*(*il2cpp_gchandle_new_t)(void* obj, bool pinned);
+typedef void (*il2cpp_gchandle_free_t)(void* gchandle);
+typedef void* (*il2cpp_gchandle_get_target_t)(void* gchandle);
 typedef void* (*il2cpp_class_from_type_t)(const Il2CppType* type);
 typedef void (*il2cpp_runtime_class_init_t)(void* klass);
 typedef void* (*il2cpp_runtime_invoke_t)(MethodInfo* method, void* obj, void** params, Il2CppObject** exc);
@@ -315,6 +323,9 @@ typedef uint32_t(*il2cpp_array_length_t)(void* arr);
 typedef void* (*il2cpp_class_get_parent_t)(void* klass);
 typedef const char* (*il2cpp_method_get_name_t)(const MethodInfo* method);
 typedef void* (*il2cpp_method_get_class_t)(const MethodInfo* method);
+typedef Il2CppClassHead* (*il2cpp_object_get_class_t)(Il2CppObject* instance);
+typedef Il2CppChar* (*il2cpp_string_chars_t)(Il2CppString* str);
+typedef int32_t(*il2cpp_string_length_t) (Il2CppString* str);
 
 // function defines
 extern il2cpp_string_new_utf16_t il2cpp_string_new_utf16;
@@ -358,6 +369,9 @@ extern il2cpp_array_length_t il2cpp_array_length;
 extern il2cpp_class_get_parent_t il2cpp_class_get_parent;
 extern il2cpp_method_get_name_t il2cpp_method_get_name;
 extern il2cpp_method_get_class_t il2cpp_method_get_class;
+extern il2cpp_object_get_class_t il2cpp_object_get_class;
+extern il2cpp_string_chars_t il2cpp_string_chars;
+extern il2cpp_string_length_t il2cpp_string_length;
 
 char* il2cpp_array_addr_with_size(void* arr, int32_t size, uintptr_t idx);
 

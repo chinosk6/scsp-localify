@@ -34,6 +34,7 @@
 #include <rapidjson/writer.h>
 
 #include "il2cpp/il2cpp_symbols.hpp"
+#include "reflection.hpp"
 
 #include <nlohmann/json.hpp>
 #include <cpprest/uri.h>
@@ -182,6 +183,7 @@ struct UnitIdol {
 	bool IsEmpty() const;
 	void Print(std::ostream& os) const;
 	std::string ToString() const;
+	void LoadJson(const char* json);
 };
 
 
@@ -202,7 +204,6 @@ extern bool g_dump_untrans_lyrics;
 extern bool g_dump_untrans_unlocal;
 extern std::string g_custom_font_path;
 extern std::filesystem::path g_localify_base;
-extern std::list<std::string> g_extra_assetbundle_paths;
 extern char hotKey;
 extern bool g_enable_free_camera;
 extern bool g_block_out_of_focus;
@@ -211,6 +212,7 @@ extern bool g_allow_use_tryon_costume;
 extern bool g_allow_same_idol;
 extern bool g_unlock_all_dress;
 extern bool g_unlock_all_headwear;
+extern bool g_unlock_everything;
 extern bool g_save_and_replace_costume_changes;
 extern bool g_overrie_mv_unit_idols;
 extern bool g_override_isVocalSeparatedOn;
@@ -221,6 +223,7 @@ extern bool g_unlock_PIdol_and_SChara_events;
 extern int g_start_resolution_w;
 extern int g_start_resolution_h;
 extern bool g_start_resolution_fullScreen;
+extern bool g_reenable_clipPlane;
 
 namespace tools {
 	extern bool output_networking_calls;

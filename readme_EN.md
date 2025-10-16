@@ -29,6 +29,7 @@ iM@S SCSP localify plugin.
 - Live MV Related **(Modify in GUI)**
   - Freedom to Choose Costumes, Wear Other Characters' Clothes
   - Allow Same Idol Appearance
+  - Edit on-stage idols manually, allowing to select unlocked idols
 - Real-time Modification of Character Body Parameters, Adjust Height, Head, Chest, Arm, and Palm Size **(Modify in GUI)**
 
 
@@ -49,8 +50,8 @@ iM@S SCSP localify plugin.
 | dumpUntransLyrics     | Bool      | `false`                               | Dump untranslated lyrics                               |
 | dumpUntransLocal2     | Bool      | `false`                               | Dump untranslated text                                 |
 | autoDumpAllJson       | Bool      | `false`                               | Dump all loaded JSON files                             |
-| extraAssetBundlePaths | String[]  | `["scsp_localify/scsp-bundle"]`       | Custom asset bundle paths                              |
-| customFontPath        | String    | `assets/font/sbtphumminge-regular.ttf` | Custom font path in asset bundles<br>Used for replacing built-in fonts in the game |
+| ~~extraAssetBundlePaths~~ | ~~String[]~~  | ~~`["scsp_localify/scsp-bundle"]`~~       | ~~Custom asset bundle paths~~<br> **This option is obsolete** <br>Use format `asset_bundle_path::asset_path` to specify an exact asset to use. |
+| customFontPath        | String    | `scsp_localify/scsp-bundle::assets/font/sbtphumminge-regular.ttf` | Custom font path in asset bundles<br>Used for replacing built-in fonts in the game |
 | blockOutOfFocus       | Bool      | `true`                                | Intercept window out-of-focus events<br>Game won't pause when switching to other windows |
 | baseFreeCamera        | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera) | Free camera configuration                             |
 | unlockPIdolAndSCharaEvents | Bool | `false` | Unlock Idol Event (アイドルイベント) and Support Event (サポートイベント) in `Characters` - `Overview` |
@@ -82,7 +83,7 @@ iM@S SCSP localify plugin.
 
 - Set `enable` under `baseFreeCamera` in `scsp-config.json` to `true`.
 - Scope of application: All 3D scenes. Including but not limited to homepage, story, Live.
-> An unknown bug exists; this option will be disabled automatically when MV starts, but it can be re-enabled without affecting its feature.
+> With the unity engine updating in game v2.6.1, there're still unfixed bugs about free camera feature now.
 
 
 
@@ -107,6 +108,7 @@ iM@S SCSP localify plugin.
 
 - When `Save & Replace costume changes` is checked, all costume changes will be recorded, locked costumes can also be recorded by clicking the Try-On button in the game, or casual costumes can be selected in the DressOrder interface, and all the changes will be applied automatically when MV starts; unwanted records can be removed using the `Remove` button in the "Saved Costume Data" sub-window to cancel them.
 - When `Save & Replace costume changes` is checked and `Override MV unit idols` is checked, the last costume data can be saved by clicking the `Slot X` buttons in the "Override MvUnit Idols" sub-window; different slots can be used to record the same idol to achieve multiple appearances of the same idol with different costumes, and unrecorded slots will inherit the original data of the idols in the selected live unit.
+- In "Override MvUnit Idols" sub-window, clicking data to edit JSON data manually. (Note: When editing `CharaId` manually, it's suggested to use `1` (the default) for `HairId` to avoid freezing)
 
 
 

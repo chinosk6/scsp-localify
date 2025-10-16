@@ -29,6 +29,7 @@
 - Live MV 相关 **(在 GUI 中修改)**
   - 自由选择服装，可以穿别人的衣服
   - 允许相同偶像登场
+  - 手动编辑登场偶像，可以选择未解锁偶像
 - 角色身体参数实时修改，可修改 身高、头部、胸部、手臂、手掌 大小 **(在 GUI 中修改)**
 
 
@@ -48,8 +49,8 @@
 | dumpUntransLyrics          | Bool                                     | `false`                                | dump 未翻译的歌词                                    |
 | dumpUntransLocal2          | Bool                                     | `false`                                | dump 未翻译的文本                                    |
 | autoDumpAllJson            | Bool                                     | `false`                                | dump 所有游戏加载的 JSON                             |
-| extraAssetBundlePaths      | String[]                                 | `["scsp_localify/scsp-bundle"]`        | 自定义数据包路径                                     |
-| customFontPath             | String                                   | `assets/font/sbtphumminge-regular.ttf` | 自定义数据包中字体路径<br>用于替换游戏内置字体       |
+| ~~extraAssetBundlePaths~~  | ~~String[]~~                             | ~~`["scsp_localify/scsp-bundle"]`~~    | ~~自定义数据包路径~~<br> **此设置已过时** <br>使用 `asset_bundle_path::asset_path` 格式对具体要使用的资源进行指定。      |
+| customFontPath             | String                                   | `scsp_localify/scsp-bundle::assets/font/sbtphumminge-regular.ttf` | 自定义数据包中字体路径<br>用于替换游戏内置字体       |
 | blockOutOfFocus            | Bool                                     | `true`                                 | 拦截窗口失焦事件<br>切换到其它窗口后不会触发游戏暂停 |
 | baseFreeCamera             | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera)      | 自由视角配置                                         |
 | unlockPIdolAndSCharaEvents | Bool                                     | `false`                                | 解锁 `角色` - `一览` 中的P卡和S卡事件                |
@@ -81,7 +82,7 @@
 
 - 将 `scsp-config.json` 中 `baseFreeCamera` - `enable` 设置为 `true` 即可。
 - 生效范围：所有 3D 场景。包括但不限于主页、故事、Live
-> 当前存在未知BUG；在MV播放开始时暂时自动禁用该选项以避免游戏崩溃，但可以再次手动打开，不影响功能
+> 由于游戏v2.6.1的引擎升级，自由视角目前仍存在尚未完全修复的BUG
 
 
 
@@ -106,7 +107,7 @@
 
 - 在开启 `Save & Replace costume changes` 选项后打开后可以记录所有服装变化，打开游戏内的试用按钮后也可以记录未解锁的服装，或在DressOrder界面中选择私服，并在MV播放时自动应用所记录的服装信息；在子窗口 "Saved Costume Data" 中可以通过 `Remove` 按钮移除不需要的记录以取消
 - 在开启 `Save & Replace costume changes` 后再开启 `Override MV unit idols` 选项，在 "Override MvUnit Idols" 子窗口中通过 `Slot X` 按钮进行保存上一次修改时的服装信息，不同槽位可以记录同一个偶像以实现相同偶像登场并使用不同服装，无记录的位置将继承当前编队中的原始信息
-
+- "Override MvUnit Idols" 子窗口中可以通过点击数据直接编辑JSON数据进行手动修改（备注：当直接编辑`CharaId`时，建议使用`1`（默认）作为`HairId`的值以避免游戏卡住）
 
 
 # 如何汉化

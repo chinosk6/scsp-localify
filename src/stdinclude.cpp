@@ -1,4 +1,5 @@
 #include <stdinclude.hpp>
+#include <rapidjson/error/en.h>
 
 void* UnitIdol::field_UnitIdol_charaId = nullptr;
 void* UnitIdol::klass_UnitIdol = nullptr;
@@ -55,10 +56,10 @@ bool UnitIdol::IsEmpty() const {
 }
 
 void UnitIdol::Print(std::ostream& os) const {
-	os << "{ CharaId = " << CharaId
-		<< ", ClothId = " << ClothId
-		<< ", HairId = " << HairId
-		<< ", AccessoryIds = [";
+	os << "{ \"CharaId\": " << CharaId
+		<< ", \"HairId\": " << HairId
+		<< ", \"ClothId\": " << ClothId
+		<< ", \"AccessoryIds\": [";
 	bool first = true;
 	if (AccessoryIds != nullptr) {
 		for (int i = 0; i < AccessoryIdsLength; ++i) {
@@ -73,8 +74,37 @@ void UnitIdol::Print(std::ostream& os) const {
 
 std::string UnitIdol::ToString() const {
 	std::ostringstream oss;
+	oss.imbue(std::locale::classic());
 	Print(oss);
 	return oss.str();
+}
+
+#define JSON_READ_INT(name) if (doc.HasMember(#name) && doc[#name].IsInt()) { name = doc[#name].GetInt(); }
+
+void UnitIdol::LoadJson(const char* json) {
+	rapidjson::Document doc;
+	rapidjson::ParseResult result = doc.Parse(json);
+	if (!result) {
+		fprintf(stderr, "[ERROR] JSON parse error: %s (%zu)\n", rapidjson::GetParseError_En(result.Code()), result.Offset());
+		return;
+	}
+	JSON_READ_INT(CharaId);
+	JSON_READ_INT(HairId);
+	JSON_READ_INT(ClothId);
+	if (doc.HasMember("AccessoryIds") && doc["AccessoryIds"].IsArray()) {
+		const rapidjson::Value& arr = doc["AccessoryIds"];
+		delete[] AccessoryIds;
+		AccessoryIds = new int[AccessoryIdsLength = arr.Size()];
+		for (rapidjson::SizeType i = 0; i < AccessoryIdsLength; ++i) {
+			if (arr[i].IsInt()) {
+				AccessoryIds[i] = arr[i].GetInt();
+			}
+			else {
+				fprintf(stderr, "[WARNING] UnitIdol::LoadJson: AccessoryIds[%d] isn't an int.", i);
+			}
+		}
+	}
+	return;
 }
 
 

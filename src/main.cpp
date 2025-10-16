@@ -31,7 +31,6 @@ int g_max_fps = 60;
 int g_vsync_count = 0;
 float g_3d_resolution_scale = 1.0f;
 std::string g_custom_font_path = "";
-std::list<std::string> g_extra_assetbundle_paths{};
 char hotKey = 'u';
 float g_font_size_offset = -3.0f;
 
@@ -42,6 +41,7 @@ bool g_allow_use_tryon_costume = false;
 bool g_allow_same_idol = false;
 bool g_unlock_all_dress = false;
 bool g_unlock_all_headwear = false;
+bool g_unlock_everything = false;
 bool g_save_and_replace_costume_changes = false;
 bool g_overrie_mv_unit_idols = false;
 bool g_override_isVocalSeparatedOn = false;
@@ -50,6 +50,7 @@ bool g_unlock_PIdol_and_SChara_events = false;
 int g_start_resolution_w = -1;
 int g_start_resolution_h = -1;
 bool g_start_resolution_fullScreen = false;
+bool g_reenable_clipPlane = false;
 
 std::filesystem::path g_localify_base("scsp_localify");
 constexpr const char ConfigJson[] = "scsp-config.json";
@@ -81,7 +82,7 @@ namespace
 
 namespace
 {
-	std::vector<std::string> read_config()
+	std::vector<std::string> read_config(std::vector<std::string>& logs)
 	{
 		std::ifstream config_stream{ ConfigJson };
 		std::vector<std::string> dicts{};
@@ -132,25 +133,18 @@ namespace
 			if (document.HasMember("dumpUntransLocal2")) {
 				g_dump_untrans_unlocal = document["dumpUntransLocal2"].GetBool();
 			}
-			g_extra_assetbundle_paths.clear();
 			if (document.HasMember("extraAssetBundlePath")) {
-				const auto& extraAssetBundlePath = document["extraAssetBundlePath"];
-				if (extraAssetBundlePath.IsString())
-				{
-					g_extra_assetbundle_paths.push_back(extraAssetBundlePath.GetString());
-				}
+				logs.push_back("[WARNING] Option `extraAssetBundlePath` is obsolete. Use `asset_bundle_path::asset_path` to specify an asset.\n");
 			}
 			if (document.HasMember("extraAssetBundlePaths")) {
-				const auto& extraAssetBundlePaths = document["extraAssetBundlePaths"];
-				if (extraAssetBundlePaths.IsArray())
-				{
-					for (const auto& i : document["extraAssetBundlePaths"].GetArray()) {
-						g_extra_assetbundle_paths.push_back(i.GetString());
-					}
-				}
+				logs.push_back("[WARNING] Option `extraAssetBundlePaths` is obsolete. Use `asset_bundle_path::asset_path` to specify an asset.\n");
 			}
 			if (document.HasMember("customFontPath")) {
 				g_custom_font_path = document["customFontPath"].GetString();
+				if (g_custom_font_path.find("::") == std::string::npos) {
+					logs.push_back("[WARNING] Option `customFontPath` is set by old style; the font is assumed to be inside the default bundle. Use `asset_bundle_path::asset_path` to specify an asset.\n");
+					g_custom_font_path = "scsp_localify/scsp-bundle::" + g_custom_font_path;
+				}
 			}
 			if (document.HasMember("fontSizeOffset")) {
 				g_font_size_offset = document["fontSizeOffset"].GetFloat();
@@ -207,7 +201,11 @@ void reloadTransData() {
 }
 
 void reload_all_data() {
-	read_config();
+	std::vector<std::string> logs{};
+	read_config(logs);
+	for (const auto& log : logs) {
+		printf("%s", log.c_str());
+	}
 	reloadTransData();
 }
 
@@ -234,11 +232,16 @@ int __stdcall DllMain(HINSTANCE dllModule, DWORD reason, LPVOID)
 		);
 
 
-		auto dicts = read_config();
+		std::vector<std::string> logs{};
+		auto dicts = read_config(logs);
 
 		if (g_enable_console) {
 			create_debug_console();
 			printf("Command: %s\n", GetCommandLineA());
+		}
+
+		for (const auto& log : logs) {
+			printf("%s", log.c_str());
 		}
 
 		std::thread init_thread([dicts = std::move(dicts)] {

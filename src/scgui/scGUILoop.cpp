@@ -173,10 +173,12 @@ namespace SCGUILoop {
 		ImGui::End();
 	}
 
+	int editingOverrideMvUnitIdolSlot = -1;
+	char inputOverrideMvUnitIdol[1024] = ""; 
 	void overrideMvUnitIdolLoop() {
 		if (ImGui::Begin("Override MvUnit Idols")) {
 			for (int i = 0; i < overridenMvUnitIdols_length; ++i) {
-				char label[32];
+				char label[1024];
 
 				std::snprintf(label, sizeof(label), "%s##%s%d", "Remove", "omui", i);
 				if (ImGui::Button(label)) {
@@ -186,17 +188,49 @@ namespace SCGUILoop {
 				std::snprintf(label, sizeof(label), "%s%d##%s", "Slot ", i, "omui");
 				if (ImGui::Button(label)) {
 					if (lastSavedCostume.IsEmpty()) {
-						printf("No costume data saved yet.");
+						printf("No costume data saved yet.\n");
 					}
 					else {
 						overridenMvUnitIdols[i] = lastSavedCostume;
 					}
 				}
 				ImGui::SameLine();
-				ImGui::Text(overridenMvUnitIdols[i].ToString().c_str());
+				auto strIdolData = overridenMvUnitIdols[i].ToString();
+				std::snprintf(label, sizeof(label), "%s##%d", strIdolData.c_str(), i);
+				if (ImGui::Button(label)) {
+					editingOverrideMvUnitIdolSlot = i;
+					std::strncpy(inputOverrideMvUnitIdol, strIdolData.c_str(), sizeof(inputOverrideMvUnitIdol) - 1);
+					inputOverrideMvUnitIdol[sizeof(inputOverrideMvUnitIdol) - 1] = '\0'; // Ensure null-termination
+				}
 			}
 		}
 		ImGui::End();
+
+		if (editingOverrideMvUnitIdolSlot >= 0) {
+			ImGui::OpenPopup("InputManuallyOverrideMvUnitIdol");
+		}
+		if (ImGui::BeginPopupModal("InputManuallyOverrideMvUnitIdol", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+			ImGui::Text("Set override data manually: (in JSON)");
+			ImGui::InputText("##NameInput", inputOverrideMvUnitIdol, IM_ARRAYSIZE(inputOverrideMvUnitIdol));
+
+			if (ImGui::Button("OK", ImVec2(120, 0))) {
+				if (editingOverrideMvUnitIdolSlot >= 0 && editingOverrideMvUnitIdolSlot < 8) {
+					overridenMvUnitIdols[editingOverrideMvUnitIdolSlot].LoadJson(inputOverrideMvUnitIdol);
+				}
+				else {
+					printf("ArgumentOutOfRangeException at `overridenMvUnitIdols[editingOverrideMvUnitIdolSlot]`; editingOverrideMvUnitIdolSlot = %d.\n", editingOverrideMvUnitIdolSlot);
+				}
+				editingOverrideMvUnitIdolSlot = -1;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+				editingOverrideMvUnitIdolSlot = -1;
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
 	}
 
 	void mainLoop() {
@@ -215,6 +249,10 @@ namespace SCGUILoop {
 				ImGui::Checkbox("Override MV unit idols", &g_overrie_mv_unit_idols);
 				ImGui::SameLine();
 				HELP_TOOLTIP("(?)", "在操作窗口中保存用于替换MV播放时的角色信息。\nSave idols' data in control panel to replace them when playing MV.");
+
+				ImGui::Checkbox("Unlock everything", &g_unlock_everything);
+				ImGui::SameLine();
+				HELP_TOOLTIP("(?)", "在进入换装窗口前勾选有效。\nAvailable only checked before entering costume changing view.");
 				ImGui::Unindent(30);
 			}
 
@@ -290,8 +328,9 @@ namespace SCGUILoop {
 
 				if (ImGui::CollapsingHeader("Free Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
 					ImGui::Checkbox("Enable Free Camera", &g_enable_free_camera);
+					ImGui::Checkbox("[Legacy] Re-enable ClipPlane overriding", &g_reenable_clipPlane);
 					ImGui::SameLine();
-					HELP_TOOLTIP("(?)", "MV开始时会自动反选此选项以避免崩溃。(unknown bug)\nThis option will be cancelled when MV starts to avoid crashing.")
+					HELP_TOOLTIP("(?)", "Re-enable the modification of nearClipPlane & farClipPlane like old versions.");
 					INPUT_AND_SLIDER_FLOAT("Move Speed", &BaseCamera::moveStep, 0.0f, 0.5f);
 					INPUT_AND_SLIDER_FLOAT("Mouse Speed", &g_free_camera_mouse_speed, 0.0f, 100.0f);
 					INPUT_AND_SLIDER_FLOAT("Camera FOV", &SCCamera::baseCamera.fov, 0.0f, 360.0f);
