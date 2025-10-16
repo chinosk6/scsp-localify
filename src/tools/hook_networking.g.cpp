@@ -26,15 +26,15 @@ void tools::AddNetworkingHooks() {}
 		return reinterpret_cast<decltype(_type_##_WriteTo_hook)*>(_type_##_WriteTo_orig)(_this, output, mi); \
 	}
 
-#define ADD_HOOK(_dll_, _ns_, _type_, _name_, _argcount_) \
-	offset = reinterpret_cast<void*>(il2cpp_symbols::get_method_pointer(#_dll_, #_ns_, #_type_, #_name_, _argcount_)); \
+#define ADD_HOOK(_dll_, _ns_, _type_, _str_func_name_, _name_, _argcount_) \
+	offset = reinterpret_cast<void*>(il2cpp_symbols::get_method_pointer(#_dll_, #_ns_, #_type_, _str_func_name_, _argcount_)); \
 	stat1 = MH_CreateHook(offset, _type_##_##_name_##_hook, &_type_##_##_name_##_orig); \
 	stat2 = MH_EnableHook(offset); \
 	printf(#_type_ "_" #_name_ " at %p (%s, %s)\n", offset, MH_StatusToString(stat1), MH_StatusToString(stat2)); 
 
 #define ADD_GRPC_HOOK(_ns_, _type_) \
-	ADD_HOOK(PRISM.Module.Networking.dll, _ns_, _type_, MergeFrom, 1); \
-	ADD_HOOK(PRISM.Module.Networking.dll, _ns_, _type_, WriteTo, 1);
+	ADD_HOOK(PRISM.Module.Networking.dll, _ns_, _type_, "pb::Google.Protobuf.IBufferMessage.InternalMergeFrom", MergeFrom, 1); \
+	ADD_HOOK(PRISM.Module.Networking.dll, _ns_, _type_, "pb::Google.Protobuf.IBufferMessage.InternalWriteTo", WriteTo, 1);
 
 DEFINE_GRPC_HOOK(AchievementStatus);
 DEFINE_GRPC_HOOK(AnnounceStatus);
