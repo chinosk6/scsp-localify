@@ -39,6 +39,8 @@ LONG WINAPI seh_filter(EXCEPTION_POINTERS* ep) {
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
+#define __EXCEPT(strContext) __except (seh_filter(GetExceptionInformation())) { printf("SEH exception detected in '" strContext "'.\n"); }
+
 //using namespace std;
 
 std::function<void()> g_on_hook_ready;
@@ -477,7 +479,7 @@ namespace
 		if (ReplaceFontGcHandle)
 		{
 			replaceFont = il2cpp_gchandle_get_target(ReplaceFontGcHandle);
-			
+
 			// 加载场景时会被 Resources.UnloadUnusedAssets 干掉，且不受 DontDestroyOnLoad 影响，暂且判断是否存活，并在必要的时候重新加载
 			// TODO: 考虑挂载到 GameObject 上
 			// AssetBundle 不会被干掉
@@ -1608,7 +1610,7 @@ namespace
 				if (klass_CostumeChangeViewModel == nullptr) {
 					klass_CostumeChangeViewModel = il2cpp_symbols::get_class_from_instance(viewModel);
 					mtd_CostumeChangeViewModel_GetPreviewUnitIdol = il2cpp_class_get_method_from_name(klass_CostumeChangeViewModel, "GetPreviewUnitIdol", 0);
-					func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<managed::UnitIdol* (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
+					func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<managed::UnitIdol * (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
 				}
 
 				auto idol = func_CostumeChangeViewModel_GetPreviewUnitIdol(viewModel, mtd_CostumeChangeViewModel_GetPreviewUnitIdol);
@@ -2250,6 +2252,23 @@ namespace
 		return ret;
 	}
 
+	void* CameraWorkEvent_ApplyCamera_orig;
+	void CameraWorkEvent_ApplyCamera_hook(void* _this) {
+		static auto klass_CameraWorkEvent = il2cpp_symbols_logged::get_class("PRISM.Legacy", "", "CameraWorkEvent");
+		static auto field_CameraWorkEvent_camera = il2cpp_class_get_field_from_name(klass_CameraWorkEvent, "_cameraCache");
+		auto camera = il2cpp_field_get_value_object(field_CameraWorkEvent_camera, _this);
+
+		reinterpret_cast<decltype(CameraWorkEvent_ApplyCamera_hook)*>(CameraWorkEvent_ApplyCamera_orig)(_this);
+
+		if (g_enable_free_camera && baseCameraTransform != nullptr && camera == baseCamera) {
+			Unity_get_position_hook(baseCameraTransform);
+			Unity_get_rotation_hook(baseCameraTransform);
+			Vector3_t worldPosition{}, worldUp{};
+			worldUp.y = 1;
+			Unity_InternalLookAt_hook(baseCameraTransform, worldPosition, worldUp);
+		}
+	}
+
 	void readDMMGameGuardData();
 
 	void* GGIregualDetector_ShowPopup_orig;
@@ -2539,6 +2558,11 @@ namespace
 			"CameraController", "get_BaseCamera", 0
 		);
 
+		auto CameraWorkEvent_ApplyCamera_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy", "",
+			"CameraWorkEvent", "ApplyCamera", 0
+		);
+
 		const auto AssetBundle_LoadAsset_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.AssetBundleModule.dll", "UnityEngine", "AssetBundle", "LoadAsset_Internal", 2);
 
 		auto Unity_get_position_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "get_position", 0);
@@ -2754,6 +2778,7 @@ namespace
 		ADD_HOOK(LiveMVOverlayView_UpdateLyrics, "LiveMVOverlayView_UpdateLyrics at %p");
 		ADD_HOOK(TimelineController_SetLyric, "TimelineController_SetLyric at %p");
 		ADD_HOOK(get_baseCamera, "get_baseCamera at %p");
+		ADD_HOOK(CameraWorkEvent_ApplyCamera, "CameraWorkEvent_ApplyCamera at %p");
 		ADD_HOOK(Unity_get_position, "Unity_get_position at %p");
 		ADD_HOOK(Unity_set_position, "Unity_set_position at %p");
 		ADD_HOOK(Unity_get_fieldOfView, "Unity_get_fieldOfView at %p");

@@ -52,7 +52,9 @@ char* il2cpp_array_addr_with_size(void* array, int32_t size, uintptr_t idx)
 
 namespace il2cpp_symbols
 {
-#define RESOLVE_IMPORT(name) name = reinterpret_cast<name##_t>(GetProcAddress(game_module, #name))
+#define RESOLVE_IMPORT(name) \
+	name = reinterpret_cast<name##_t>(GetProcAddress(game_module, #name)); \
+	if (!name) { printf("[ERROR] Failed to resolve '" #name "'.\n"); }
 
 	void* il2cpp_domain = nullptr;
 
