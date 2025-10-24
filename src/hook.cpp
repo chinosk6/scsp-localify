@@ -1590,8 +1590,14 @@ namespace
 
 	void* CostumeChangeViewModel_ctor_orig;
 	void CostumeChangeViewModel_ctor_hook(void* _this, int characterId, void* costumeService, bool isCostumeUnlimited) {
-		if (g_unlock_everything) {
-			isCostumeUnlimited = true;
+		if (g_override_isCostumeUnlimited) {
+			if (isCostumeUnlimited) {
+				printf("isCostumeUnlimited is already true.\n");
+			}
+			else {
+				isCostumeUnlimited = true;
+				printf("isCostumeUnlimited is overriden to true.\n");
+			}
 		}
 		return reinterpret_cast<decltype(CostumeChangeViewModel_ctor_hook)*>(CostumeChangeViewModel_ctor_orig)(_this, characterId, costumeService, isCostumeUnlimited);
 	}
@@ -1637,8 +1643,13 @@ namespace
 	void* LiveMVStartData_ctor_orig;
 	void* LiveMVStartData_ctor_hook(void* _this, void* musicMaster, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int backgroundMode, int renderingDynamicRange, int soundEffectMode) {
 		if (g_override_isVocalSeparatedOn) {
-			isVocalSeparatedOn = true;
-			printf("isVocalSeparatedOn is overriden to true.\n");
+			if (isVocalSeparatedOn) {
+				printf("isVocalSeparatedOn is already true.\n");
+			}
+			else {
+				isVocalSeparatedOn = true;
+				printf("isVocalSeparatedOn is overriden to true.\n");
+			}
 		}
 
 		auto ret = reinterpret_cast<decltype(LiveMVStartData_ctor_hook)*>(LiveMVStartData_ctor_orig)(_this, musicMaster, onStageIdols, cameraIndex, isVocalSeparatedOn, backgroundMode, renderingDynamicRange, soundEffectMode);
