@@ -159,23 +159,58 @@ void convertPtrType(T* cvtTarget, TF func_ptr) {
 }
 
 #pragma region HOOK_MACRO
+#ifdef __SAFETYHOOK
+void AddSafetyHook(const char* orig_name, void* orig, void* hook, SafetyHookInline& result) {
+	if (orig == nullptr) {
+		std::cout << "[ERROR] Failed to create hook for \"" << orig_name << "\" (orig=0x" << orig << "): nullptr" << std::endl;
+		return;
+	}
+	try {
+		auto value = safetyhook::InlineHook::create(orig, hook);
+		if (value) {
+			result = std::move(value.value());
+			std::cout << "Hook created for \"" << orig_name << "\" (orig=0x" << orig << ")" << std::endl;
+		}
+		else {
+			auto err = value.error();
+			std::cout << "[ERROR] Failed to create hook for \"" << orig_name << "\" (" << orig << "): ";
+			if (err.type == safetyhook::InlineHook::Error::BAD_ALLOCATION) {
+				std::cout << "BAD_ALLOCATION (" << (uint8_t)err.allocator_error << ")";
+			}
+			else {
+				std::cout << std::to_string(err.type) << "(" << ((void*)err.ip) << ")";
+			}
+			std::cout << std::endl;
+			return;
+		}
+	}
+	catch (const std::exception& e) {
+		std::cout << "[ERROR] Failed to create hook for \"" << orig_name << "\" (orig=0x" << orig << "): " << e.what() << std::endl;
+	}
+	catch (...) {
+		std::cout << "[ERROR] Failed to create hook for \"" << orig_name << "\" (orig=0x" << orig << "): unknown exception" << std::endl;
+	}
+}
+#define ADD_HOOK(_name_, _nothing_) AddSafetyHook(#_name_, (void*)_name_##_addr, (void*)_name_##_hook, _name_##_orig);
+#else
 #define ADD_HOOK(_name_, _fmt_) \
 	auto _name_##_offset = reinterpret_cast<void*>(_name_##_addr); \
  	\
 	const auto _name_##stat1 = MH_CreateHook(_name_##_offset, _name_##_hook, &_name_##_orig); \
 	const auto _name_##stat2 = MH_EnableHook(_name_##_offset); \
-	printf(_fmt_##" (%s, %s)\n", _name_##_offset, MH_StatusToString(_name_##stat1), MH_StatusToString(_name_##stat2)); 
+	printf(_fmt_##" (%s, %s)\n", _name_##_offset, MH_StatusToString(_name_##stat1), MH_StatusToString(_name_##stat2))
+#endif
 #pragma endregion
 
 bool exd = false;
-void* SetResolution_orig;
-void* AssembleCharacter_ApplyParam_orig;
+HOOK_ORIG_TYPE SetResolution_orig;
+HOOK_ORIG_TYPE AssembleCharacter_ApplyParam_orig;
 Il2CppString* (*environment_get_stacktrace)();
 
 
 void CharaParam_t::Apply() {
 	const auto ApplyParamFunc = reinterpret_cast<void (*)(void*, float, float, float, float, float)>(
-		AssembleCharacter_ApplyParam_orig
+		HOOK_GET_ORIG(AssembleCharacter_ApplyParam)
 		);
 	auto currObjPtr = getObjPtr();
 	if (currObjPtr) {
@@ -506,7 +541,7 @@ namespace
 		return replaceFont;
 	}
 
-	void* DataFile_GetBytes_orig;
+	HOOK_ORIG_TYPE DataFile_GetBytes_orig;
 	bool (*DataFile_IsKeyExist)(Il2CppString*);
 
 	void set_fps_hook(int value);
@@ -517,7 +552,7 @@ namespace
 	// 调用之前检查 DataFile_IsKeyExist
 	void fmtAndDumpJsonBytesData(const std::wstring& dumpName) {
 		const auto dumpNameIl = il2cpp_symbols::NewWStr(dumpName);
-		auto dataBytes = reinterpret_cast<void* (*)(Il2CppString*)>(DataFile_GetBytes_orig)(dumpNameIl);
+		auto dataBytes = (reinterpret_cast<void* (*)(Il2CppString*)>HOOK_GET_ORIG(DataFile_GetBytes))(dumpNameIl);
 		auto newStr = bytesToIl2cppString(dataBytes);
 		auto writeWstr = std::wstring(newStr->start_char);
 		const std::wstring searchStr = L"\r";
@@ -684,9 +719,9 @@ namespace
 	}
 
 	// NOT HOOK
-	void* PIdolDetailPopupViewModel_Create_orig;
+	HOOK_ORIG_TYPE PIdolDetailPopupViewModel_Create_orig;
 	void* PIdolDetailPopupViewModel_Create_hook(void* produceIdol, void* costumeSetInfoList, void* idolBase, void* idolParameter, bool isChangeableIdolSkill, bool isChangeableFavorite, void* produceAdvStatusList, bool isPlayableAdv, bool inLive, bool upgradingButtonActive) {
-		auto ret = reinterpret_cast<decltype(PIdolDetailPopupViewModel_Create_hook)*>(PIdolDetailPopupViewModel_Create_orig)(
+		auto ret = HOOK_CAST_CALL(void*, PIdolDetailPopupViewModel_Create)(
 			produceIdol, costumeSetInfoList, idolBase, idolParameter, isChangeableIdolSkill, isChangeableFavorite, produceAdvStatusList, isPlayableAdv, inLive, upgradingButtonActive
 			);
 		return ret;
@@ -714,7 +749,7 @@ namespace
 		return ret;*/
 	}
 
-	void* ScenarioContentViewModel_ctor_orig;
+	HOOK_ORIG_TYPE ScenarioContentViewModel_ctor_orig;
 	void ScenarioContentViewModel_ctor_hook(void* _this, void* scenarioID, Il2CppString* title, Il2CppString* summary, bool isLocked,
 		bool isAdvPlayable, Il2CppString* alias, Il2CppString* characterName, int unlockLevel) {
 
@@ -724,10 +759,10 @@ namespace
 				isLocked = true;
 			}
 		}
-		return reinterpret_cast<decltype(ScenarioContentViewModel_ctor_hook)*>(ScenarioContentViewModel_ctor_orig)(_this, scenarioID, title, summary, isLocked, isAdvPlayable, alias, characterName, unlockLevel);
+		return HOOK_CAST_CALL(void, ScenarioContentViewModel_ctor)(_this, scenarioID, title, summary, isLocked, isAdvPlayable, alias, characterName, unlockLevel);
 	}
 
-	void* LocalizationManager_GetTextOrNull_orig;
+	HOOK_ORIG_TYPE LocalizationManager_GetTextOrNull_orig;
 	Il2CppString* LocalizationManager_GetTextOrNull_hook(void* _this, Il2CppString* category, int id) {
 		if (g_max_fps != -1) set_fps_hook(g_max_fps);
 		if (g_vsync_count != -1) set_vsync_count_hook(g_vsync_count);
@@ -738,12 +773,12 @@ namespace
 			return il2cpp_string_new(resultText.c_str());
 		}
 		// GG category: mlPublicText_GameGuard, id: 1
-		return reinterpret_cast<decltype(LocalizationManager_GetTextOrNull_hook)*>(LocalizationManager_GetTextOrNull_orig)(_this, category, id);
+		return HOOK_CAST_CALL(Il2CppString*, LocalizationManager_GetTextOrNull)(_this, category, id);
 	}
 
-	void* GetResolutionSize_orig;
+	HOOK_ORIG_TYPE GetResolutionSize_orig;
 	Vector2Int_t GetResolutionSize_hook(void* camera, void* method) {
-		auto ret = reinterpret_cast<decltype(GetResolutionSize_hook)*>(GetResolutionSize_orig)(camera, method);
+		auto ret = HOOK_CAST_CALL(Vector2Int_t, GetResolutionSize)(camera, method);
 		if (g_3d_resolution_scale != 1.0f) {
 			ret.x *= g_3d_resolution_scale;
 			ret.y *= g_3d_resolution_scale;
@@ -753,11 +788,11 @@ namespace
 		return ret;
 	}
 
-	void* AssetBundle_LoadAsset_orig;
+	HOOK_ORIG_TYPE AssetBundle_LoadAsset_orig;
 	void* AssetBundle_LoadAsset_hook(void* _this, Il2CppString* name, Il2CppReflectionType* type)
 	{
 		// printf("AssetBundle_LoadAsset: %ls\n", name->start_char);
-		return reinterpret_cast<decltype(AssetBundle_LoadAsset_hook)*>(AssetBundle_LoadAsset_orig)(_this, name, type);
+		return HOOK_CAST_CALL(void*, AssetBundle_LoadAsset)(_this, name, type);
 	}
 
 	class SpanReader {
@@ -1118,15 +1153,15 @@ namespace
 		return dumpCount;
 	}
 
-	void* LiveMVOverlayView_UpdateLyrics_orig;
+	HOOK_ORIG_TYPE LiveMVOverlayView_UpdateLyrics_orig;
 	void LiveMVOverlayView_UpdateLyrics_hook(void* _this, Il2CppString* text) {
 		const std::wstring origWstr(text->start_char);
 		const auto newText = SCLocal::getLyricsTrans(origWstr);
-		return reinterpret_cast<decltype(LiveMVOverlayView_UpdateLyrics_hook)*>(LiveMVOverlayView_UpdateLyrics_orig)(_this, il2cpp_string_new(newText.c_str()));
+		return HOOK_CAST_CALL(void, LiveMVOverlayView_UpdateLyrics)(_this, il2cpp_string_new(newText.c_str()));
 	}
 
 	std::pair<std::wstring, std::string> lastLrc{};
-	void* TimelineController_SetLyric_orig;
+	HOOK_ORIG_TYPE TimelineController_SetLyric_orig;
 	void TimelineController_SetLyric_hook(void* _this, Il2CppString* text) {
 		const std::wstring origWstr(text->start_char);
 		std::string newText = "";
@@ -1140,17 +1175,17 @@ namespace
 				newText = lastLrc.second;
 			}
 		}
-		return reinterpret_cast<decltype(TimelineController_SetLyric_hook)*>(TimelineController_SetLyric_orig)(_this, il2cpp_string_new(newText.c_str()));
+		return HOOK_CAST_CALL(void, TimelineController_SetLyric)(_this, il2cpp_string_new(newText.c_str()));
 	}
 
-	void* TMP_Text_set_text_orig;
+	HOOK_ORIG_TYPE TMP_Text_set_text_orig;
 	void TMP_Text_set_text_hook(void* _this, Il2CppString* value) {
 		if (needPrintStack) {
 			//wprintf(L"TMP_Text_set_text: %ls\n", value->start_char);
 			//printf("%ls\n\n", environment_get_stacktrace()->start_char);
 		}
 		//if(value) value = il2cpp_symbols::NewWStr(std::format(L"(h){}", std::wstring(value->start_char)));
-		reinterpret_cast<decltype(TMP_Text_set_text_hook)*>(TMP_Text_set_text_orig)(
+		HOOK_CAST_CALL(void, TMP_Text_set_text)(
 			_this, value
 			);
 	}
@@ -1186,7 +1221,7 @@ namespace
 	// void* lastUpdateFontPtr = nullptr;
 	std::unordered_set<void*> updatedFontPtrs{};
 
-	void* UITextMeshProUGUI_Awake_orig;
+	HOOK_ORIG_TYPE UITextMeshProUGUI_Awake_orig;
 	void UITextMeshProUGUI_Awake_hook(void* _this) {
 		static auto get_Text = reinterpret_cast<Il2CppString * (*)(void*)>(
 			il2cpp_symbols::get_method_pointer(
@@ -1247,13 +1282,13 @@ namespace
 			}*/
 		}
 		set_fontSize(_this, get_fontSize(_this) + g_font_size_offset);
-		reinterpret_cast<decltype(UITextMeshProUGUI_Awake_hook)*>(UITextMeshProUGUI_Awake_orig)(_this);
+		HOOK_CAST_CALL(void, UITextMeshProUGUI_Awake)(_this);
 	}
 
-	void* ScenarioManager_Init_orig;
+	HOOK_ORIG_TYPE ScenarioManager_Init_orig;
 	void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName) {
 		// printf("ScenarioManager_Init: %ls\n%ls\n\n", scrName->start_char, environment_get_stacktrace()->start_char);
-		return reinterpret_cast<decltype(ScenarioManager_Init_hook)*>(ScenarioManager_Init_orig)(retstr, _this, scrName);
+		return HOOK_CAST_CALL(void*, ScenarioManager_Init)(retstr, _this, scrName);
 	}
 
 	void* DataFile_GetBytes_hook(Il2CppString* path) {
@@ -1267,7 +1302,7 @@ namespace
 			return readFileAllBytes(localFileName);
 		}
 
-		auto ret = reinterpret_cast<decltype(DataFile_GetBytes_hook)*>(DataFile_GetBytes_orig)(path);
+		auto ret = HOOK_CAST_CALL(void*, DataFile_GetBytes)(path);
 		if (g_auto_dump_all_json) {
 			if (pathStrView.ends_with(L".json")) {
 				auto basePath = std::filesystem::path("dumps") / "autoDumpJson";
@@ -1306,7 +1341,7 @@ namespace
 				g_start_resolution_h = height;
 				g_start_resolution_fullScreen = fullscreen;
 			}
-			return reinterpret_cast<decltype(SetResolution_hook)*>(SetResolution_orig)(g_start_resolution_w,
+			return HOOK_CAST_CALL(void, SetResolution)(g_start_resolution_w,
 				g_start_resolution_h, g_start_resolution_fullScreen);
 		}
 		return;
@@ -1314,18 +1349,18 @@ namespace
 		width = SCGUIData::screenW;
 		height = SCGUIData::screenH;
 		fullscreen = SCGUIData::screenFull;
-		return reinterpret_cast<decltype(SetResolution_hook)*>(SetResolution_orig)(width, height, fullscreen);
+		return HOOK_CAST_CALL(void, SetResolution)(width, height, fullscreen);
 		*/
 	}
 
-	void* InvokeMoveNext_orig;
+	HOOK_ORIG_TYPE InvokeMoveNext_orig;
 	void InvokeMoveNext_hook(void* enumerator, void* returnValueAddress) {
 		MHotkey::start_hotkey(hotKey);
-		return reinterpret_cast<decltype(InvokeMoveNext_hook)*>(InvokeMoveNext_orig)(enumerator, returnValueAddress);
+		return HOOK_CAST_CALL(void, InvokeMoveNext)(enumerator, returnValueAddress);
 	}
 
 	// Normal 3D Live
-	void* DepthOfFieldClip_CreatePlayable_orig;
+	HOOK_ORIG_TYPE DepthOfFieldClip_CreatePlayable_orig;
 	void* DepthOfFieldClip_CreatePlayable_hook(void* retstr, void* _this, void* graph, void* go, void* mtd) {
 		if (g_enable_free_camera) {
 			static auto DepthOfFieldClip_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM", "DepthOfFieldClip");
@@ -1349,11 +1384,11 @@ namespace
 
 			// printf("DepthOfFieldClip_CreatePlayable, focusDistance: %f, aperture: %f, focalLength: %f\n", focusDistance, aperture, focalLength);
 		}
-		return reinterpret_cast<decltype(DepthOfFieldClip_CreatePlayable_hook)*>(DepthOfFieldClip_CreatePlayable_orig)(retstr, _this, graph, go, mtd);
+		return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(retstr, _this, graph, go, mtd);
 	}
 
 	// HDR Live
-	void* PostProcess_DepthOfFieldClip_CreatePlayable_orig;
+	HOOK_ORIG_TYPE PostProcess_DepthOfFieldClip_CreatePlayable_orig;
 	void PostProcess_DepthOfFieldClip_CreatePlayable_hook(void* retstr, void* _this, void* graph, void* go, void* mtd) {
 
 		if (g_enable_free_camera) {
@@ -1378,36 +1413,36 @@ namespace
 			// printf("DepthOfFieldClip_CreatePlayable, focusDistance: %f, aperture: %f, focalLength: %f\n", focusDistance, aperture, focalLength);
 		}
 
-		reinterpret_cast<decltype(PostProcess_DepthOfFieldClip_CreatePlayable_hook)*>(PostProcess_DepthOfFieldClip_CreatePlayable_orig)(retstr, _this, graph, go, mtd);
+		HOOK_CAST_CALL(void, PostProcess_DepthOfFieldClip_CreatePlayable)(retstr, _this, graph, go, mtd);
 	}
 
 	// 已过时
-	void* Live_SetEnableDepthOfField_orig;
+	HOOK_ORIG_TYPE Live_SetEnableDepthOfField_orig;
 	void Live_SetEnableDepthOfField_hook(void* _this, bool isEnable) {
 		if (g_enable_free_camera) {
 			isEnable = false;
 		}
-		return reinterpret_cast<decltype(Live_SetEnableDepthOfField_hook)*>(Live_SetEnableDepthOfField_orig)(_this, isEnable);
+		return HOOK_CAST_CALL(void, Live_SetEnableDepthOfField)(_this, isEnable);
 	}
 
 	// 未hook
-	void* Live_Update_orig;
+	HOOK_ORIG_TYPE Live_Update_orig;
 	void Live_Update_hook(void* _this) {
-		reinterpret_cast<decltype(Live_Update_hook)*>(Live_Update_orig)(_this);
+		HOOK_CAST_CALL(void, Live_Update)(_this);
 		if (g_enable_free_camera) {
 			// Live_SetEnableDepthOfField_hook(_this, false);
 		}
 	}
 
 	bool isCancelTryOn = false;
-	void* LiveCostumeChangeView_setTryOnMode_orig;
+	HOOK_ORIG_TYPE LiveCostumeChangeView_setTryOnMode_orig;
 	void LiveCostumeChangeView_setTryOnMode_hook(void* _this, void* idol, bool isTryOn) {
 		if (!isTryOn) isCancelTryOn = true;
-		reinterpret_cast<decltype(LiveCostumeChangeView_setTryOnMode_hook)*>(LiveCostumeChangeView_setTryOnMode_orig)(_this, idol, isTryOn);
+		HOOK_CAST_CALL(void, LiveCostumeChangeView_setTryOnMode)(_this, idol, isTryOn);
 		isCancelTryOn = false;
 	}
 
-	void* LiveCostumeChangeView_setIdolCostume_orig;
+	HOOK_ORIG_TYPE LiveCostumeChangeView_setIdolCostume_orig;
 	void LiveCostumeChangeView_setIdolCostume_hook(void* _this, void* idol, int category, int costumeId) {
 		if (g_allow_use_tryon_costume) {
 			static auto iidol_klass = il2cpp_symbols::get_class_from_instance(idol);
@@ -1419,27 +1454,27 @@ namespace
 			if (isCancelTryOn) return;
 		}
 
-		return reinterpret_cast<decltype(LiveCostumeChangeView_setIdolCostume_hook)*>(LiveCostumeChangeView_setIdolCostume_orig)(_this, idol, category, costumeId);
+		return HOOK_CAST_CALL(void, LiveCostumeChangeView_setIdolCostume)(_this, idol, category, costumeId);
 	}
 
 	void* (*LiveCostumeChangeModel_get_Idol)(void*);
 
-#define replaceResourceId(currHook, currOrig) \
+#define replaceResourceId(curr) \
 	const auto idol = LiveCostumeChangeModel_get_Idol(_this);\
 	static auto iidol_klass = il2cpp_symbols::get_class_from_instance(idol);\
 	static auto get_CharacterId_mtd = il2cpp_class_get_method_from_name(iidol_klass, "get_CharacterId", 0);\
 	const auto idolId = reinterpret_cast<int (*)(void*)>(get_CharacterId_mtd->methodPointer)(idol);\
 	const auto resId = il2cpp_symbols::read_field<int>(ret, resourceId_field);\
-	printf(#currHook" idol: %d, dressId: %d, ResId: %d, this at %p\n", idolId, id, resId, _this);\
+	printf(#curr"_orig idol: %d, dressId: %d, ResId: %d, this at %p\n", idolId, id, resId, _this);\
 	\
 	int replaceDressId = baseId + idolId * 1000;\
 	\
 	auto replaceResId = id == replaceDressId ? baseResId : il2cpp_symbols::read_field<int>(ret, resourceId_field);\
-	auto newRet = reinterpret_cast<decltype(currHook)*>(currOrig)(_this, replaceDressId);\
+	auto newRet = HOOK_CAST_CALL(void*, curr)(_this, replaceDressId);\
 	if (!newRet) {\
 		printf("ReplaceId: %d not found. try++\n", replaceDressId);\
 		replaceDressId++;\
-		newRet = reinterpret_cast<decltype(currHook)*>(currOrig)(_this, replaceDressId);\
+		newRet = HOOK_CAST_CALL(void*, curr)(_this, replaceDressId);\
 		if (!newRet){\
 			printf("replaceId: %d not found. Replace failed.\n", replaceDressId);\
 			return ret;\
@@ -1449,9 +1484,9 @@ namespace
 	il2cpp_symbols::write_field(newRet, resourceId_field, replaceResId)
 
 
-	void* LiveCostumeChangeModel_GetDress_orig;
+	HOOK_ORIG_TYPE LiveCostumeChangeModel_GetDress_orig;
 	void* LiveCostumeChangeModel_GetDress_hook(void* _this, int id) {  // 替换服装 ResID
-		auto ret = reinterpret_cast<decltype(LiveCostumeChangeModel_GetDress_hook)*>(LiveCostumeChangeModel_GetDress_orig)(_this, id);
+		auto ret = HOOK_CAST_CALL(void*, LiveCostumeChangeModel_GetDress)(_this, id);
 		if (!g_unlock_all_dress) return ret;
 		if (!ret) {
 			printf("LiveCostumeChangeModel_GetDress returns NULL ResId: %d, this at %p\n", id, _this);
@@ -1462,13 +1497,13 @@ namespace
 
 		const auto baseId = 100001;
 		const auto baseResId = 1;
-		replaceResourceId(LiveCostumeChangeModel_GetDress_hook, LiveCostumeChangeModel_GetDress_orig);
+		replaceResourceId(LiveCostumeChangeModel_GetDress);
 		return newRet;
 	}
 
-	void* LiveCostumeChangeModel_GetAccessory_orig;
+	HOOK_ORIG_TYPE LiveCostumeChangeModel_GetAccessory_orig;
 	void* LiveCostumeChangeModel_GetAccessory_hook(void* _this, int id) {  // 替换饰品 ResID
-		auto ret = reinterpret_cast<decltype(LiveCostumeChangeModel_GetAccessory_hook)*>(LiveCostumeChangeModel_GetAccessory_orig)(_this, id);
+		auto ret = HOOK_CAST_CALL(void*, LiveCostumeChangeModel_GetAccessory)(_this, id);
 		if (!(g_unlock_all_dress && g_unlock_all_headwear)) return ret;
 		if (!ret) {
 			printf("LiveCostumeChangeModel_GetAccessory returns NULL ResId: %d, this at %p\n", id, _this);
@@ -1498,14 +1533,14 @@ namespace
 		default: return ret;
 		}
 
-		replaceResourceId(LiveCostumeChangeModel_GetAccessory_hook, LiveCostumeChangeModel_GetAccessory_orig);
+		replaceResourceId(LiveCostumeChangeModel_GetAccessory);
 		// LiveCostumeChangeModel_GetAccessory_hook idol : 15, dressId : 815004, ResId : 1103200, this at 0000021E62ADDD80
 		return newRet;
 	}
 
-	void* LiveCostumeChangeModel_GetHairstyle_orig;
+	HOOK_ORIG_TYPE LiveCostumeChangeModel_GetHairstyle_orig;
 	void* LiveCostumeChangeModel_GetHairstyle_hook(void* _this, int id) {  // 替换头发 ResID
-		auto ret = reinterpret_cast<decltype(LiveCostumeChangeModel_GetHairstyle_hook)*>(LiveCostumeChangeModel_GetHairstyle_orig)(_this, id);
+		auto ret = HOOK_CAST_CALL(void*, LiveCostumeChangeModel_GetHairstyle)(_this, id);
 		if (!(g_unlock_all_dress && g_unlock_all_headwear)) return ret;
 		if (!ret) {
 			printf("LiveCostumeChangeModel_GetHairstyle returns NULL ResId: %d, this at %p\n", id, _this);
@@ -1516,7 +1551,7 @@ namespace
 
 		const auto baseId = 600001;
 		const auto baseResId = 1;
-		replaceResourceId(LiveCostumeChangeModel_GetHairstyle_hook, LiveCostumeChangeModel_GetHairstyle_orig);
+		replaceResourceId(LiveCostumeChangeModel_GetHairstyle);
 
 		static auto accessoryResourceIdList_field = il2cpp_class_get_field_from_name(ret_klass, "accessoryResourceIdList_");
 		const auto replaceaccessoryResourceIdList = il2cpp_symbols::read_field(ret, accessoryResourceIdList_field);
@@ -1545,7 +1580,7 @@ namespace
 	std::map<int, void*> cacheHairMap{};
 	std::map<int, void*> cacheAccessoryMap{};
 
-	void* LiveCostumeChangeModel_ctor_orig;
+	HOOK_ORIG_TYPE LiveCostumeChangeModel_ctor_orig;
 	void LiveCostumeChangeModel_ctor_hook(void* _this, void* reply, void* idol, int costumeType, bool forceDressOrdered) {  // 添加服装到 dressDic
 		/*
 		static auto iidol_klass = il2cpp_symbols::get_class_from_instance(idol);
@@ -1555,7 +1590,7 @@ namespace
 			printf("LiveCostumeChangeModel_ctor idolId: %d, costumeType: %d\n", idolId, costumeType);
 		}
 		*/
-		reinterpret_cast<decltype(LiveCostumeChangeModel_ctor_hook)*>(LiveCostumeChangeModel_ctor_orig)(_this, reply, idol, costumeType, forceDressOrdered);
+		HOOK_CAST_CALL(void, LiveCostumeChangeModel_ctor)(_this, reply, idol, costumeType, forceDressOrdered);
 
 		if (g_unlock_all_dress && (costumeType == 1)) {
 			static auto LiveCostumeChangeModel_klass = il2cpp_symbols::get_class("PRISM.Adapters.dll", "PRISM.Adapters", "LiveCostumeChangeModel");
@@ -1588,7 +1623,7 @@ namespace
 	}
 
 
-	void* CostumeChangeViewModel_ctor_orig;
+	HOOK_ORIG_TYPE CostumeChangeViewModel_ctor_orig;
 	void CostumeChangeViewModel_ctor_hook(void* _this, int characterId, void* costumeService, bool isCostumeUnlimited) {
 		if (g_override_isCostumeUnlimited) {
 			if (isCostumeUnlimited) {
@@ -1599,13 +1634,13 @@ namespace
 				printf("isCostumeUnlimited is overriden to true.\n");
 			}
 		}
-		return reinterpret_cast<decltype(CostumeChangeViewModel_ctor_hook)*>(CostumeChangeViewModel_ctor_orig)(_this, characterId, costumeService, isCostumeUnlimited);
+		return HOOK_CAST_CALL(void, CostumeChangeViewModel_ctor)(_this, characterId, costumeService, isCostumeUnlimited);
 	}
 
 	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
-	void* CostumeChangeView_Reload_orig;
+	HOOK_ORIG_TYPE CostumeChangeView_Reload_orig;
 	void* CostumeChangeView_Reload_hook(void* _this, void* viewModel) {
-		auto ret = reinterpret_cast<decltype(CostumeChangeView_Reload_hook)*>(CostumeChangeView_Reload_orig)(_this, viewModel);
+		auto ret = HOOK_CAST_CALL(void*, CostumeChangeView_Reload)(_this, viewModel);
 
 		static void* klass_CostumeChangeViewModel;
 		static MethodInfo* mtd_CostumeChangeViewModel_GetPreviewUnitIdol;
@@ -1640,7 +1675,7 @@ namespace
 	}
 
 	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
-	void* LiveMVStartData_ctor_orig;
+	HOOK_ORIG_TYPE LiveMVStartData_ctor_orig;
 	void* LiveMVStartData_ctor_hook(void* _this, void* musicMaster, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int backgroundMode, int renderingDynamicRange, int soundEffectMode) {
 		if (g_override_isVocalSeparatedOn) {
 			if (isVocalSeparatedOn) {
@@ -1652,7 +1687,7 @@ namespace
 			}
 		}
 
-		auto ret = reinterpret_cast<decltype(LiveMVStartData_ctor_hook)*>(LiveMVStartData_ctor_orig)(_this, musicMaster, onStageIdols, cameraIndex, isVocalSeparatedOn, backgroundMode, renderingDynamicRange, soundEffectMode);
+		auto ret = HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, musicMaster, onStageIdols, cameraIndex, isVocalSeparatedOn, backgroundMode, renderingDynamicRange, soundEffectMode);
 
 		__try {
 			auto idolsLength = il2cpp_array_length(onStageIdols);
@@ -1748,10 +1783,10 @@ namespace
 				charaParam.emplace(showObjName, CharaParam_t(height, bust, head, arm, hand, mdl));
 			}
 		}
-		return reinterpret_cast<decltype(AssembleCharacter_ApplyParam_hook)*>(AssembleCharacter_ApplyParam_orig)(mdl, height, bust, head, arm, hand);
+		return HOOK_CAST_CALL(void, AssembleCharacter_ApplyParam)(mdl, height, bust, head, arm, hand);
 	}
 
-	void* MainThreadDispatcher_LateUpdate_orig;
+	HOOK_ORIG_TYPE MainThreadDispatcher_LateUpdate_orig;
 	void MainThreadDispatcher_LateUpdate_hook(void* _this, void* method) {
 		try {
 			auto it = mainThreadTasks.begin();
@@ -1774,7 +1809,7 @@ namespace
 		catch (std::exception& ex) {
 			printf("MainThreadDispatcher Error: %s\n", ex.what());
 		}
-		return reinterpret_cast<decltype(MainThreadDispatcher_LateUpdate_hook)*>(MainThreadDispatcher_LateUpdate_orig)(_this, method);
+		return HOOK_CAST_CALL(void, MainThreadDispatcher_LateUpdate)(_this, method);
 	}
 
 	void checkAndAddCostume(int key, void* value) {
@@ -1807,10 +1842,10 @@ namespace
 		}
 	}
 
-	void* dic_int_ICostumeStatus_add_orig;
+	HOOK_ORIG_TYPE dic_int_ICostumeStatus_add_orig;
 	void dic_int_ICostumeStatus_add_hook(void* _this, int key, void* value, MethodInfo* method) {  // 添加服装到缓存表(失效)
 		if ((g_unlock_all_dress || g_allow_use_tryon_costume) && confirmationingModel) checkAndAddCostume(key, value);
-		return reinterpret_cast<decltype(dic_int_ICostumeStatus_add_hook)*>(dic_int_ICostumeStatus_add_orig)(_this, key, value, method);
+		return HOOK_CAST_CALL(void, dic_int_ICostumeStatus_add)(_this, key, value, method);
 	}
 
 	void checkCostumeListReply(void* _this, void* ret, const char* costumeIdFieldName) {
@@ -1836,36 +1871,36 @@ namespace
 		}
 	}
 
-	void* GetCostumeListReply_get_CostumeList_orig;
+	HOOK_ORIG_TYPE GetCostumeListReply_get_CostumeList_orig;
 	void* GetCostumeListReply_get_CostumeList_hook(void* _this) {  // 添加服装到缓存表
-		auto ret = reinterpret_cast<decltype(GetCostumeListReply_get_CostumeList_hook)*>(GetCostumeListReply_get_CostumeList_orig)(_this);
+		auto ret = HOOK_CAST_CALL(void*, GetCostumeListReply_get_CostumeList)(_this);
 		checkCostumeListReply(_this, ret, "mstCostumeId_");
 		return ret;
 	}
 
 	// The first registered auto getter
-	void* GetCostumeListReply_get_HairstyleList_orig;
+	HOOK_ORIG_TYPE GetCostumeListReply_get_HairstyleList_orig;
 	void* GetCostumeListReply_get_HairstyleList_hook(void* _this) {  // 添加服装到缓存表
-		auto ret = reinterpret_cast<decltype(GetCostumeListReply_get_HairstyleList_hook)*>(GetCostumeListReply_get_HairstyleList_orig)(_this);
+		auto ret = HOOK_CAST_CALL(void*, GetCostumeListReply_get_HairstyleList)(_this);
 		checkCostumeListReply(_this, ret, "mstHairstyleId_");
 		return ret;
 	}
 
-	void* GetCostumeListReply_get_AccessoryList_orig;
+	HOOK_ORIG_TYPE GetCostumeListReply_get_AccessoryList_orig;
 	void* GetCostumeListReply_get_AccessoryList_hook(void* _this) {  // 添加服装到缓存表
-		auto ret = reinterpret_cast<decltype(GetCostumeListReply_get_AccessoryList_hook)*>(GetCostumeListReply_get_AccessoryList_orig)(_this);
+		auto ret = HOOK_CAST_CALL(void*, GetCostumeListReply_get_AccessoryList)(_this);
 		checkCostumeListReply(_this, ret, "mstAccessoryId_");
 		return ret;
 	}
 
-	void* LiveMVUnitConfirmationModel_ctor_orig;
+	HOOK_ORIG_TYPE LiveMVUnitConfirmationModel_ctor_orig;
 	void LiveMVUnitConfirmationModel_ctor_hook(void* _this, void* musicData, void* saveData, void* unitListReply, void* costumeService) {
 		confirmationingModel = true;
 		cacheDressMap.clear();
 		cacheHairMap.clear();
 		cacheAccessoryMap.clear();
 
-		reinterpret_cast<decltype(LiveMVUnitConfirmationModel_ctor_hook)*>(LiveMVUnitConfirmationModel_ctor_orig)(_this, musicData, saveData, unitListReply, costumeService);
+		HOOK_CAST_CALL(void, LiveMVUnitConfirmationModel_ctor)(_this, musicData, saveData, unitListReply, costumeService);
 		confirmationingModel = false;
 		return;
 	}
@@ -1934,7 +1969,7 @@ namespace
 			});
 	}
 
-	void* SwayString_SetupPoint_orig;
+	HOOK_ORIG_TYPE SwayString_SetupPoint_orig;
 	void SwayString_SetupPoint_hook(void* _this) {
 		if (g_enable_chara_param_edit) {
 			static auto SwayString_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM", "SwayString");
@@ -1943,22 +1978,22 @@ namespace
 				updateSwayStringPoint(_this);
 			}
 		}
-		reinterpret_cast<decltype(SwayString_SetupPoint_hook)*>(SwayString_SetupPoint_orig)(_this);
+		HOOK_CAST_CALL(void, SwayString_SetupPoint)(_this);
 	}
 
-	void* LiveMVUnit_GetMemberChangeRequestData_orig;
+	HOOK_ORIG_TYPE LiveMVUnit_GetMemberChangeRequestData_orig;
 	void* LiveMVUnit_GetMemberChangeRequestData_hook(void* _this, int position, void* idol, int exchangePosition) {
 		if (g_allow_same_idol) {  // 此方法已过时
 			exchangePosition = -1;
 		}
-		return reinterpret_cast<decltype(LiveMVUnit_GetMemberChangeRequestData_hook)*>(LiveMVUnit_GetMemberChangeRequestData_orig)(_this, position, idol, exchangePosition);
+		return HOOK_CAST_CALL(void*, LiveMVUnit_GetMemberChangeRequestData)(_this, position, idol, exchangePosition);
 	}
 
 	int slotNewCount = 0;
 	bool settingLiveIdolSlot = false;
 	void* lastIdol = NULL;
 
-	void* MvUnitSlotGenerator_NewMvUnitSlot_orig;
+	HOOK_ORIG_TYPE MvUnitSlotGenerator_NewMvUnitSlot_orig;
 	void* MvUnitSlotGenerator_NewMvUnitSlot_hook(int slot, void* idol, void* method) {
 		if (g_allow_same_idol && settingLiveIdolSlot) {
 			if (slotNewCount >= 1) {
@@ -1970,7 +2005,7 @@ namespace
 				lastIdol = idol;
 			}
 		}
-		return reinterpret_cast<decltype(MvUnitSlotGenerator_NewMvUnitSlot_hook)*>(MvUnitSlotGenerator_NewMvUnitSlot_orig)(slot, idol, method);
+		return HOOK_CAST_CALL(void*, MvUnitSlotGenerator_NewMvUnitSlot)(slot, idol, method);
 	}
 
 	bool checkMusicDataSatisfy(void* _this, void* unit, int pos = -1) {
@@ -2023,56 +2058,54 @@ namespace
 		return ret;
 	}
 
-	void* CheckVocalSeparatedSatisfy_orig;
+	HOOK_ORIG_TYPE CheckVocalSeparatedSatisfy_orig;
 	bool CheckVocalSeparatedSatisfy_hook(void* _this, void* unit, void* mtd) {
 		if (!g_allow_same_idol) {
-			return reinterpret_cast<decltype(CheckVocalSeparatedSatisfy_hook)*>(CheckVocalSeparatedSatisfy_orig)(
+			return HOOK_CAST_CALL(bool, CheckVocalSeparatedSatisfy)(
 				_this, unit, mtd);
 		}
 
 		return checkMusicDataSatisfy(_this, unit);
 	}
 
-	void* CheckLimitedVocalSeparatedSatisfy_2_orig;
+	HOOK_ORIG_TYPE CheckLimitedVocalSeparatedSatisfy_2_orig;
 	bool CheckLimitedVocalSeparatedSatisfy_2_hook(void* _this, void* unit, int pos, void* mtd) {
 		if (!g_allow_same_idol) {
-			return reinterpret_cast<decltype(CheckLimitedVocalSeparatedSatisfy_2_hook)*>(CheckLimitedVocalSeparatedSatisfy_2_orig)(
+			return HOOK_CAST_CALL(bool, CheckLimitedVocalSeparatedSatisfy_2)(
 				_this, unit, pos, mtd);
 		}
 		// printf("CheckLimitedVocalSeparatedSatisfy: %d\n", pos);
 		return checkMusicDataSatisfy(_this, unit, pos);
 	}
 
-	void* LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_orig;
+	HOOK_ORIG_TYPE LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_orig;
 	void LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_hook(void* _this, MethodInfo* method) {
 		slotNewCount = 0;
 		settingLiveIdolSlot = true;
 
-		reinterpret_cast<decltype(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_hook)*>
-			(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext_orig)(_this, method);
-
+		HOOK_CAST_CALL(void, LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext)(_this, method);
 		slotNewCount = 0;
 		settingLiveIdolSlot = false;
 	}
 
-	void* CriWareErrorHandler_HandleMessage_orig;
+	HOOK_ORIG_TYPE CriWareErrorHandler_HandleMessage_orig;
 	void CriWareErrorHandler_HandleMessage_hook(void* _this, Il2CppString* msg) {
 		// wprintf(L"CriWareErrorHandler_HandleMessage: %ls\n%ls\n\n", msg->start_char, environment_get_stacktrace()->start_char);
 		environment_get_stacktrace();
-		return reinterpret_cast<decltype(CriWareErrorHandler_HandleMessage_hook)*>(CriWareErrorHandler_HandleMessage_orig)(_this, msg);
+		return HOOK_CAST_CALL(void, CriWareErrorHandler_HandleMessage)(_this, msg);
 	}
 
-	void* UnsafeLoadBytesFromKey_orig;
+	HOOK_ORIG_TYPE UnsafeLoadBytesFromKey_orig;
 	void* UnsafeLoadBytesFromKey_hook(void* _this, Il2CppString* tagName, Il2CppString* assetKey) {
-		auto ret = reinterpret_cast<decltype(UnsafeLoadBytesFromKey_hook)*>(UnsafeLoadBytesFromKey_orig)(_this, tagName, assetKey);
+		auto ret = HOOK_CAST_CALL(void*, UnsafeLoadBytesFromKey)(_this, tagName, assetKey);
 		// wprintf(L"UnsafeLoadBytesFromKey: tag: %ls, assetKey: %ls\n", tagName->start_char, assetKey->start_char);
 		// dumpByteArray(tagName->start_char, assetKey->start_char, ret);
 		return ret;
 	}
 
-	void* TextLog_AddLog_orig;
+	HOOK_ORIG_TYPE TextLog_AddLog_orig;
 	void TextLog_AddLog_hook(void* _this, int speakerFlag, Il2CppString* textID, Il2CppString* text, bool isChoice) {
-		return reinterpret_cast<decltype(TextLog_AddLog_hook)*>(TextLog_AddLog_orig)(_this, speakerFlag, textID, text, isChoice);
+		return HOOK_CAST_CALL(void, TextLog_AddLog)(_this, speakerFlag, textID, text, isChoice);
 
 		static auto TextLog_klass = il2cpp_symbols::get_class_from_instance(_this);
 		static auto dicConvertID_field = il2cpp_class_get_field_from_name(TextLog_klass, "dicConvertID");
@@ -2105,14 +2138,14 @@ namespace
 	void* baseCameraTransform = nullptr;
 	void* baseCamera = nullptr;
 
-	void* Unity_set_position_orig;
+	HOOK_ORIG_TYPE Unity_set_position_orig;
 	void Unity_set_position_hook(void* _this, Vector3_t value) {
-		return reinterpret_cast<decltype(Unity_set_position_hook)*>(Unity_set_position_orig)(_this, value);
+		return HOOK_CAST_CALL(void, Unity_set_position)(_this, value);
 	}
 
-	void* Unity_get_position_orig;
+	HOOK_ORIG_TYPE Unity_get_position_orig;
 	Vector3_t Unity_get_position_hook(void* _this) {
-		auto data = reinterpret_cast<decltype(Unity_get_position_hook)*>(Unity_get_position_orig)(_this);
+		auto data = HOOK_CAST_CALL(Vector3_t, Unity_get_position)(_this);
 
 		if (_this == baseCameraTransform) {
 			if (guiStarting) {
@@ -2129,13 +2162,13 @@ namespace
 		return data;
 	}
 
-	void* Unity_set_fieldOfView_orig;
+	HOOK_ORIG_TYPE Unity_set_fieldOfView_orig;
 	void Unity_set_fieldOfView_hook(void* _this, float single) {
-		return reinterpret_cast<decltype(Unity_set_fieldOfView_hook)*>(Unity_set_fieldOfView_orig)(_this, single);
+		return HOOK_CAST_CALL(void, Unity_set_fieldOfView)(_this, single);
 	}
-	void* Unity_get_fieldOfView_orig;
+	HOOK_ORIG_TYPE Unity_get_fieldOfView_orig;
 	float Unity_get_fieldOfView_hook(void* _this) {
-		const auto origFov = reinterpret_cast<decltype(Unity_get_fieldOfView_hook)*>(Unity_get_fieldOfView_orig)(_this);
+		const auto origFov = HOOK_CAST_CALL(float, Unity_get_fieldOfView)(_this);
 		if (_this == baseCamera) {
 			if (guiStarting) {
 				SCGUIData::sysCamFov = origFov;
@@ -2150,7 +2183,7 @@ namespace
 		return origFov;
 	}
 
-	void* Unity_InternalLookAt_orig;
+	HOOK_ORIG_TYPE Unity_InternalLookAt_orig;
 	void Unity_InternalLookAt_hook(void* _this, Vector3_t worldPosition, Vector3_t worldUp) {
 		if (_this == baseCameraTransform) {
 			if (g_enable_free_camera) {
@@ -2160,22 +2193,22 @@ namespace
 				worldPosition.z = pos.z;
 			}
 		}
-		return reinterpret_cast<decltype(Unity_InternalLookAt_hook)*>(Unity_InternalLookAt_orig)(_this, worldPosition, worldUp);
+		return HOOK_CAST_CALL(void, Unity_InternalLookAt)(_this, worldPosition, worldUp);
 	}
 
-	void* Unity_set_nearClipPlane_orig;
+	HOOK_ORIG_TYPE Unity_set_nearClipPlane_orig;
 	void Unity_set_nearClipPlane_hook(void* _this, float single) {
 		if (_this == baseCamera) {
 			if (g_enable_free_camera && g_reenable_clipPlane) {
 				single = 0.001f;
 			}
 		}
-		return reinterpret_cast<decltype(Unity_set_nearClipPlane_hook)*>(Unity_set_nearClipPlane_orig)(_this, single);
+		return HOOK_CAST_CALL(void, Unity_set_nearClipPlane)(_this, single);
 	}
 
-	void* Unity_get_nearClipPlane_orig;
+	HOOK_ORIG_TYPE Unity_get_nearClipPlane_orig;
 	float Unity_get_nearClipPlane_hook(void* _this) {
-		auto ret = reinterpret_cast<decltype(Unity_get_nearClipPlane_hook)*>(Unity_get_nearClipPlane_orig)(_this);
+		auto ret = HOOK_CAST_CALL(float, Unity_get_nearClipPlane)(_this);
 		if (_this == baseCamera) {
 			if (g_enable_free_camera && g_reenable_clipPlane) {
 				ret = 0.001f;
@@ -2183,9 +2216,9 @@ namespace
 		}
 		return ret;
 	}
-	void* Unity_get_farClipPlane_orig;
+	HOOK_ORIG_TYPE Unity_get_farClipPlane_orig;
 	float Unity_get_farClipPlane_hook(void* _this) {
-		auto ret = reinterpret_cast<decltype(Unity_get_farClipPlane_hook)*>(Unity_get_farClipPlane_orig)(_this);
+		auto ret = HOOK_CAST_CALL(float, Unity_get_farClipPlane)(_this);
 		if (_this == baseCamera) {
 			if (g_enable_free_camera && g_reenable_clipPlane) {
 				ret = 2500.0f;
@@ -2194,23 +2227,23 @@ namespace
 		return ret;
 	}
 
-	void* Unity_set_farClipPlane_orig;
+	HOOK_ORIG_TYPE Unity_set_farClipPlane_orig;
 	void Unity_set_farClipPlane_hook(void* _this, float value) {
 		if (_this == baseCamera) {
 			if (g_enable_free_camera && g_reenable_clipPlane) {
 				value = 2500.0f;
 			}
 		}
-		reinterpret_cast<decltype(Unity_set_farClipPlane_hook)*>(Unity_set_farClipPlane_orig)(_this, value);
+		HOOK_CAST_CALL(void, Unity_set_farClipPlane)(_this, value);
 	}
 
-	void* Unity_set_rotation_orig;
+	HOOK_ORIG_TYPE Unity_set_rotation_orig;
 	void Unity_set_rotation_hook(void* _this, Quaternion_t value) {
-		return reinterpret_cast<decltype(Unity_set_rotation_hook)*>(Unity_set_rotation_orig)(_this, value);
+		return HOOK_CAST_CALL(void, Unity_set_rotation)(_this, value);
 	}
-	void* Unity_get_rotation_orig;
+	HOOK_ORIG_TYPE Unity_get_rotation_orig;
 	Quaternion_t Unity_get_rotation_hook(void* _this) {
-		auto ret = reinterpret_cast<decltype(Unity_get_rotation_hook)*>(Unity_get_rotation_orig)(_this);
+		auto ret = HOOK_CAST_CALL(Quaternion_t, Unity_get_rotation)(_this);
 
 		if (_this == baseCameraTransform) {
 			if (guiStarting) {
@@ -2241,10 +2274,10 @@ namespace
 	}
 
 
-	void* get_baseCamera_orig;
+	HOOK_ORIG_TYPE get_baseCamera_orig;
 	void* get_baseCamera_hook(void* _this) {
 		// printf("get_baseCamera\n");
-		auto ret = reinterpret_cast<decltype(get_baseCamera_hook)*>(get_baseCamera_orig)(_this);  // UnityEngine.Camera
+		auto ret = HOOK_CAST_CALL(void*, get_baseCamera)(_this);  // UnityEngine.Camera
 
 		// always save the camera as users may enable the gui option after the init
 		static auto GetComponent = reinterpret_cast<void* (*)(void*, Il2CppReflectionType*)>(
@@ -2263,13 +2296,13 @@ namespace
 		return ret;
 	}
 
-	void* CameraWorkEvent_ApplyCamera_orig;
+	HOOK_ORIG_TYPE CameraWorkEvent_ApplyCamera_orig;
 	void CameraWorkEvent_ApplyCamera_hook(void* _this) {
 		static auto klass_CameraWorkEvent = il2cpp_symbols_logged::get_class("PRISM.Legacy", "", "CameraWorkEvent");
 		static auto field_CameraWorkEvent_camera = il2cpp_class_get_field_from_name(klass_CameraWorkEvent, "_cameraCache");
 		auto camera = il2cpp_field_get_value_object(field_CameraWorkEvent_camera, _this);
 
-		reinterpret_cast<decltype(CameraWorkEvent_ApplyCamera_hook)*>(CameraWorkEvent_ApplyCamera_orig)(_this);
+		HOOK_CAST_CALL(void, CameraWorkEvent_ApplyCamera)(_this);
 
 		if (g_enable_free_camera && baseCameraTransform != nullptr && camera == baseCamera) {
 			Unity_get_position_hook(baseCameraTransform);
@@ -2282,7 +2315,7 @@ namespace
 
 	void readDMMGameGuardData();
 
-	void* GGIregualDetector_ShowPopup_orig;
+	HOOK_ORIG_TYPE GGIregualDetector_ShowPopup_orig;
 	void GGIregualDetector_ShowPopup_hook(void* _this, int code) {
 		static auto End = reinterpret_cast<void (*)(void*)>(
 			il2cpp_symbols::get_method_pointer(
@@ -2305,75 +2338,75 @@ namespace
 			// if (code == 0) return;
 		}
 
-		return reinterpret_cast<decltype(GGIregualDetector_ShowPopup_hook)*>(GGIregualDetector_ShowPopup_orig)(_this, code);
+		return HOOK_CAST_CALL(void, GGIregualDetector_ShowPopup)(_this, code);
 	}
 
-	void* DMMGameGuard_NPGameMonCallback_orig;
+	HOOK_ORIG_TYPE DMMGameGuard_NPGameMonCallback_orig;
 	int DMMGameGuard_NPGameMonCallback_hook(UINT dwMsg, UINT dwArg) {
 		// printf("DMMGameGuard_NPGameMonCallback: dwMsg: %u, dwArg: %u\n%ls\n\n", dwMsg, dwArg, environment_get_stacktrace()->start_char);
 		return 1;
-		// return reinterpret_cast<decltype(DMMGameGuard_NPGameMonCallback_hook)*>(DMMGameGuard_NPGameMonCallback_orig)(dwMsg, dwArg);
+		// return HOOK_CAST_CALL(void, DMMGameGuard_NPGameMonCallback)(dwMsg, dwArg);
 	}
 
-	void* set_vsync_count_orig;
+	HOOK_ORIG_TYPE set_vsync_count_orig;
 	void set_vsync_count_hook(int value) {
-		return reinterpret_cast<decltype(set_vsync_count_hook)*>(set_vsync_count_orig)(g_vsync_count == -1 ? value : g_vsync_count);
+		return HOOK_CAST_CALL(void, set_vsync_count)(g_vsync_count == -1 ? value : g_vsync_count);
 	}
 
-	void* set_fps_orig;
+	HOOK_ORIG_TYPE set_fps_orig;
 	void set_fps_hook(int value) {
-		return reinterpret_cast<decltype(set_fps_hook)*>(set_fps_orig)(g_max_fps == -1 ? value : g_max_fps);
+		return HOOK_CAST_CALL(void, set_fps)(g_max_fps == -1 ? value : g_max_fps);
 	}
 
-	void* Unity_Quit_orig;
+	HOOK_ORIG_TYPE Unity_Quit_orig;
 	void Unity_Quit_hook(int code) {
 		printf("Quit code: %d\n", code);
 		TerminateProcess(GetCurrentProcess(), 0);
 		// printf("Quit code: %d\n%ls\n\n", code, environment_get_stacktrace()->start_char);
-		// return reinterpret_cast<decltype(Unity_Quit_hook)*>(Unity_Quit_orig)(code);
+		// return HOOK_CAST_CALL(void, Unity_Quit)(code);
 	}
 
-	void* SetCallbackToGameMon_orig;
+	HOOK_ORIG_TYPE SetCallbackToGameMon_orig;
 	int SetCallbackToGameMon_hook(void* DMMGameGuard_NPGameMonCallback_addr) {
 		// printf("SetCallbackToGameMon: %p\n%ls\n\n", DMMGameGuard_NPGameMonCallback_addr, environment_get_stacktrace()->start_char);
 		ADD_HOOK(DMMGameGuard_NPGameMonCallback, "DMMGameGuard_NPGameMonCallback at %p");
-		return reinterpret_cast<decltype(SetCallbackToGameMon_hook)*>(SetCallbackToGameMon_orig)(DMMGameGuard_NPGameMonCallback_addr);
+		return HOOK_CAST_CALL(int, SetCallbackToGameMon)(DMMGameGuard_NPGameMonCallback_addr);
 	}
 
-	void* DMMGameGuard_Setup_orig;
+	HOOK_ORIG_TYPE DMMGameGuard_Setup_orig;
 	void DMMGameGuard_Setup_hook() {
 		// printf("\n\nDMMGameGuard_Setup\n\n");
 		readDMMGameGuardData();
 	}
 
-	void* DMMGameGuard_SetCheckMode_orig;
+	HOOK_ORIG_TYPE DMMGameGuard_SetCheckMode_orig;
 	void DMMGameGuard_SetCheckMode_hook(bool isCheck) {
 		// printf("DMMGameGuard_SetCheckMode before\n");
 		// readDMMGameGuardData();
-		reinterpret_cast<decltype(DMMGameGuard_SetCheckMode_hook)*>(DMMGameGuard_SetCheckMode_orig)(isCheck);
+		HOOK_CAST_CALL(void, DMMGameGuard_SetCheckMode)(isCheck);
 		// printf("DMMGameGuard_SetCheckMode after\n");
 		// readDMMGameGuardData();
 	}
 
-	void* PreInitNPGameMonW_orig;
+	HOOK_ORIG_TYPE PreInitNPGameMonW_orig;
 	void PreInitNPGameMonW_hook(int64_t v) {
 		// printf("PreInitNPGameMonW\n");
 		// readDMMGameGuardData();
 	}
-	void* PreInitNPGameMonA_orig;
+	HOOK_ORIG_TYPE PreInitNPGameMonA_orig;
 	void PreInitNPGameMonA_hook(int64_t v) {
 		// printf("PreInitNPGameMonA\n");
 		// readDMMGameGuardData();
 	}
 
-	void* InitNPGameMon_orig;
+	HOOK_ORIG_TYPE InitNPGameMon_orig;
 	UINT InitNPGameMon_hook() {
 		// printf("InitNPGameMon\n");
 		// readDMMGameGuardData();
 		return 1877;
 	}
 
-	void* SetHwndToGameMon_orig;
+	HOOK_ORIG_TYPE SetHwndToGameMon_orig;
 	void SetHwndToGameMon_hook(int64_t v) {
 		// printf("SetHwndToGameMon\n");
 		// readDMMGameGuardData();

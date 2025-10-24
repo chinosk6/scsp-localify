@@ -7,3 +7,6 @@
 [submodule "resources/schinese"]
 	path = resources/schinese
 	url = https://github.com/chinosk6/SCSPTranslationData.git
+[submodule "deps/safetyhook"]
+	path = deps/safetyhook
+	url = https://github.com/Muitsonz/safetyhook.git

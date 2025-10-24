@@ -2,7 +2,7 @@
 #include "stdinclude.hpp"
 #include "scgui/scGUIData.hpp"
 
-extern void* SetResolution_orig;
+extern HOOK_ORIG_TYPE SetResolution_orig;
 // extern std::vector<std::pair<std::pair<int, int>, int>> replaceDressResIds;
 extern std::map<std::string, CharaParam_t> charaParam;
 extern CharaParam_t baseParam;
@@ -162,7 +162,8 @@ namespace SCGUILoop {
 
 				if (ImGui::Button(label)) {
 					it = savedCostumes.erase(it);
-				} else {
+				}
+				else {
 					++it;
 				}
 
@@ -174,7 +175,7 @@ namespace SCGUILoop {
 	}
 
 	int editingOverrideMvUnitIdolSlot = -1;
-	char inputOverrideMvUnitIdol[1024] = ""; 
+	char inputOverrideMvUnitIdol[1024] = "";
 	void overrideMvUnitIdolLoop() {
 		if (ImGui::Begin("Override MvUnit Idols")) {
 			for (int i = 0; i < overridenMvUnitIdols_length; ++i) {
@@ -243,7 +244,7 @@ namespace SCGUILoop {
 			ImGui::Checkbox("Save & Replace costume changes", &g_save_and_replace_costume_changes);
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "保存服装编辑信息并在MV播放时替换。\nSave costumes changing data and Replace when MV starts.");
-			
+
 			if (g_save_and_replace_costume_changes) {
 				ImGui::Indent(30);
 				ImGui::Checkbox("Override MV unit idols", &g_overrie_mv_unit_idols);
@@ -264,11 +265,11 @@ namespace SCGUILoop {
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "影分身术！\n允许在 Live 中选择同一人。\n（此模式的编组数据会上传，请小心你的号）")
 
-			ImGui::Checkbox("Enable Character Parameter Editor", &g_enable_chara_param_edit);
+				ImGui::Checkbox("Enable Character Parameter Editor", &g_enable_chara_param_edit);
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "启用角色身体参数编辑器")
 
-			ImGui::Checkbox("Unlock PIdol And SChara Events", &g_unlock_PIdol_and_SChara_events);
+				ImGui::Checkbox("Unlock PIdol And SChara Events", &g_unlock_PIdol_and_SChara_events);
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "解锁 角色 - 一览 中的P卡和S卡事件\nUnlock Idol Event (アイドルイベント) and Support Event (サポートイベント)")
 
@@ -305,9 +306,8 @@ namespace SCGUILoop {
 					ImGui::Checkbox("Full Screen", &SCGUIData::screenFull);
 					if (ImGui::Button("Update Resolution")) {
 						if (SetResolution_orig) {
-							reinterpret_cast<void (*)(int, int, bool)>(SetResolution_orig)(SCGUIData::screenW, SCGUIData::screenH, SCGUIData::screenFull);
+							(reinterpret_cast<void (*)(int, int, bool)>HOOK_GET_ORIG(SetResolution))(SCGUIData::screenW, SCGUIData::screenH, SCGUIData::screenFull);
 						}
-
 					}
 
 					ImGui::Separator();
