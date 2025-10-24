@@ -151,3 +151,19 @@ Set `dumpUntransLyrics` and `dumpUntransLocal2` in `scsp-config.json` to `true`,
 - Install `conan 2`, `cmake`
 - Run `generate.bat` to resolve dependencies
 - Open `build/ImasSCSP-localify.sln` in `Visual Studio 2022` to build
+
+## Preprocessor `__SAFETYHOOK`
+
+### What is `safetyhook` and why to use it
+`safetyhook` inserts hooks with a higher probability of success than the default `minhook` library.
+
+If the plugin failed to insert hooks because of `MH_ERROR_MEMORY_ALLOC`, it's time to try `safetyhook`.
+
+### How to compile with `safetyhook`
+- Run `cmake . -B build -G "Visual Studio 17 2022"` under path `deps/safetyhook` to initialize the safetyhook project（requiring directory `build` created before）
+- Compile `deps/safetyhook/build/safetyhook.sln` in release mode
+- Add references in this project:
+    - C/C++ - General | Additional Include Directories: `..\deps\safetyhook\include`
+    - Linker - General | Additional Library Directories: `..\deps\safetyhook\build\Release`, `..\deps\safetyhook\build\_deps\zydis-build\Release`
+    - Linker - Input | Additional Dependencies: `Zydis.lib`, `safetyhook.lib`
+- Add `__SAFETYHOOK` under "C/C++ - Preprocessor | Preprocessor Definitions"

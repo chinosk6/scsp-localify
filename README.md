@@ -151,3 +151,19 @@
 - 安装 `conan 2`、`cmake`
 - 运行 `generate.bat` 获取依赖包
 - 通过 `build/ImasSCSP-localify.sln` 使用 `Visual Studio 2022` 进行编译
+
+## 预处理器命令 `__SAFETYHOOK`
+
+### 什么是`safetyhook`以及为什么要使用
+`safetyhook`相比默认的`minhook`在插入hook时有更高的成功率。
+
+如果插件因为`MH_ERROR_MEMORY_ALLOC`而无法成功插入hook，就可以尝试`safetyhook`。
+
+## 如何编译并使用`safetyhook`
+- 在 `deps/safetyhook` 路径下运行 `cmake . -B build -G "Visual Studio 17 2022"` 初始化safetyhook工程（需要手动创建`build`文件夹）
+- 在Release模式下编译 `deps/safetyhook/build/safetyhook.sln`
+- 在当前工程中添加引用
+    - C/C++ - General | Additional Include Directories: `..\deps\safetyhook\include`
+    - Linker - General | Additional Library Directories: `..\deps\safetyhook\build\Release`, `..\deps\safetyhook\build\_deps\zydis-build\Release`
+    - Linker - Input | Additional Dependencies: `Zydis.lib`, `safetyhook.lib`
+- 在 C/C++ - Preprocessor | Preprocessor Definitions 下添加: `__SAFETYHOOK`
