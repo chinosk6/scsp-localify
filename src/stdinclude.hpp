@@ -53,7 +53,7 @@
 #else
 #define HOOK_ORIG_TYPE void*
 #define HOOK_GET_ORIG(_name_) (_name_##_orig)
-#define HOOK_CAST_CALL(_ret_type_, _name_, ...) (reinterpret_cast<decltype(_name_##_hook)*>(_name_##_orig))
+#define HOOK_CAST_CALL(_ret_type_, _name_) (reinterpret_cast<decltype(_name_##_hook)*>(_name_##_orig))
 #endif
 
 
