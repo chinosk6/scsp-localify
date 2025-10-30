@@ -343,6 +343,9 @@ namespace SCGUILoop {
 #ifdef __TOOL_HOOK_NETWORKING__
 				ImGui::Checkbox("Output networking calls", &tools::output_networking_calls);
 #endif
+				ImGui::Checkbox("LoadAsset|Output", &g_dev_loadasset_output);
+				ImGui::Checkbox("LoadAsset|Extract", &g_dev_loadasset_extract);
+				ImGui::Checkbox("LoadAsset|Quick probing for shaders", &g_dev_shader_quickprobing);
 			}
 
 		}
