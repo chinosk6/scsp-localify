@@ -461,7 +461,13 @@ namespace
 	void* (*AssetBundle_LoadAsset)(void* _this, Il2CppString* name, Il2CppReflectionType* type);
 	Il2CppReflectionType* Font_Type;
 
+	std::unordered_set<std::string> unfoundAssetBundles{};
+
 	void* LoadExternAsset(std::string assetFullPath, Il2CppReflectionType* assetType) {
+		if (unfoundAssetBundles.find(assetFullPath) != unfoundAssetBundles.end()) {
+			return nullptr;
+		}
+
 		const std::string delimiter = "::";
 		size_t index = assetFullPath.rfind(delimiter);
 		std::string bundlePath, assetPath;
@@ -475,6 +481,7 @@ namespace
 		}
 
 		if (bundlePath.empty() || !std::filesystem::exists(bundlePath)) {
+			unfoundAssetBundles.emplace(assetFullPath);
 			std::cout << "[ERROR] AssetBundle \"" << bundlePath << "\" doesn't exist." << std::endl;
 			return nullptr;
 		}
@@ -507,6 +514,7 @@ namespace
 		return asset;
 	}
 
+	bool firstFontUnfoundError = true;
 	void* getReplaceFont() {
 		void* replaceFont{};
 		if (g_custom_font_path.empty()) return replaceFont;
@@ -535,7 +543,10 @@ namespace
 		}
 		else
 		{
-			std::wprintf(L"Cannot load asset font\n");
+			if (firstFontUnfoundError) {
+				firstFontUnfoundError = false;
+				printf("[ERROR] Failed to load the font to replace.\n");
+			}
 		}
 
 		return replaceFont;
@@ -1624,17 +1635,17 @@ namespace
 
 
 	HOOK_ORIG_TYPE CostumeChangeViewModel_ctor_orig;
-	void CostumeChangeViewModel_ctor_hook(void* _this, int characterId, void* costumeService, bool isCostumeUnlimited) {
-		if (g_override_isCostumeUnlimited) {
-			if (isCostumeUnlimited) {
-				printf("isCostumeUnlimited is already true.\n");
-			}
-			else {
-				isCostumeUnlimited = true;
-				printf("isCostumeUnlimited is overriden to true.\n");
-			}
-		}
-		return HOOK_CAST_CALL(void, CostumeChangeViewModel_ctor)(_this, characterId, costumeService, isCostumeUnlimited);
+	void CostumeChangeViewModel_ctor_hook(void* _this, void* parameter, void* previewCostumeSet) {
+		//if (g_override_isCostumeUnlimited) {
+		//	if (isCostumeUnlimited) {
+		//		printf("isCostumeUnlimited is already true.\n");
+		//	}
+		//	else {
+		//		isCostumeUnlimited = true;
+		//		printf("isCostumeUnlimited is overriden to true.\n");
+		//	}
+		//}
+		return HOOK_CAST_CALL(void, CostumeChangeViewModel_ctor)(_this, parameter, previewCostumeSet);
 	}
 
 	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
@@ -1676,7 +1687,7 @@ namespace
 
 	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
 	HOOK_ORIG_TYPE LiveMVStartData_ctor_orig;
-	void* LiveMVStartData_ctor_hook(void* _this, void* musicMaster, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int backgroundMode, int renderingDynamicRange, int soundEffectMode) {
+	void* LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int renderingDynamicRange, int soundEffectMode) {
 		if (g_override_isVocalSeparatedOn) {
 			if (isVocalSeparatedOn) {
 				printf("isVocalSeparatedOn is already true.\n");
@@ -1687,7 +1698,7 @@ namespace
 			}
 		}
 
-		auto ret = HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, musicMaster, onStageIdols, cameraIndex, isVocalSeparatedOn, backgroundMode, renderingDynamicRange, soundEffectMode);
+		auto ret = HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraIndex, isVocalSeparatedOn, renderingDynamicRange, soundEffectMode);
 
 		__try {
 			auto idolsLength = il2cpp_array_length(onStageIdols);
@@ -2799,7 +2810,7 @@ namespace
 
 		auto CostumeChangeViewModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Adapters", "PRISM.Adapters.CostumeChange",
-			"CostumeChangeViewModel", ".ctor", 3
+			"CostumeChangeViewModel", ".ctor", 2
 		);
 
 		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
@@ -2809,7 +2820,7 @@ namespace
 		);
 		auto LiveMVStartData_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy", "PRISM.Live",
-			"LiveMVStartData", ".ctor", 7
+			"LiveMVStartData", ".ctor", 6
 		);
 
 #pragma endregion
