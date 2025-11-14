@@ -10,36 +10,9 @@
 #include <cpprest/http_client.h>
 #include <cpprest/filestream.h>
 #include <boost/beast/core/detail/base64.hpp>
-
-#define PRINT(var) std::cout << #var << " = " << var << std::endl;
-
-LONG WINAPI seh_filter(EXCEPTION_POINTERS* ep) {
-	DWORD code = ep->ExceptionRecord->ExceptionCode;
-	PVOID addr = ep->ExceptionRecord->ExceptionAddress;
-
-	std::cerr << "SEH Exception caught!" << std::endl;
-	std::cerr << "  Code: 0x" << std::hex << code << std::endl;
-	std::cerr << "  Address: " << addr << std::endl;
-
-	switch (code) {
-	case EXCEPTION_ACCESS_VIOLATION:
-		std::cerr << "  Type: Access Violation" << std::endl;
-		break;
-	case EXCEPTION_INT_DIVIDE_BY_ZERO:
-		std::cerr << "  Type: Divide by Zero" << std::endl;
-		break;
-	case EXCEPTION_STACK_OVERFLOW:
-		std::cerr << "  Type: Stack Overflow" << std::endl;
-		break;
-	default:
-		std::cerr << "  Type: Unknown SEH Exception (code=" << code << ")" << std::endl;
-		break;
-	}
-
-	return EXCEPTION_EXECUTE_HANDLER;
-}
-
-#define __EXCEPT(strContext) __except (seh_filter(GetExceptionInformation())) { printf("SEH exception detected in '" strContext "'.\n"); }
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/filewritestream.h>
 
 //using namespace std;
 
@@ -200,6 +173,7 @@ void AddSafetyHook(const char* orig_name, void* orig, void* hook, SafetyHookInli
 	const auto _name_##stat2 = MH_EnableHook(_name_##_offset); \
 	printf(_fmt_##" (%s, %s)\n", _name_##_offset, MH_StatusToString(_name_##stat1), MH_StatusToString(_name_##stat2))
 #endif
+#define ADD_HOOK_1(_name_) ADD_HOOK(_name_, #_name_##" at %p")
 #pragma endregion
 
 bool exd = false;
@@ -1635,54 +1609,27 @@ namespace
 
 
 	HOOK_ORIG_TYPE CostumeChangeViewModel_ctor_orig;
-	void CostumeChangeViewModel_ctor_hook(void* _this, void* parameter, void* previewCostumeSet) {
-		//if (g_override_isCostumeUnlimited) {
-		//	if (isCostumeUnlimited) {
-		//		printf("isCostumeUnlimited is already true.\n");
-		//	}
-		//	else {
-		//		isCostumeUnlimited = true;
-		//		printf("isCostumeUnlimited is overriden to true.\n");
-		//	}
-		//}
-		return HOOK_CAST_CALL(void, CostumeChangeViewModel_ctor)(_this, parameter, previewCostumeSet);
-	}
+	void CostumeChangeViewModel_ctor_hook(Il2CppObject* _this, Il2CppObject* parameter, Il2CppObject* previewCostumeSet) {
+		static auto method_CostumeChangeViewModelParameter_get_IsAllDressOrdered = il2cpp_symbols_logged::get_method(
+			"PRISM.Adapters", "PRISM.Adapters.CostumeChange",
+			"CostumeChangeViewModelParameter", "get_IsAllDressOrdered", 0
+		);
+		static auto method_CostumeChangeViewModelParameter_set_IsAllDressOrdered = il2cpp_symbols_logged::get_method(
+			"PRISM.Adapters", "PRISM.Adapters.CostumeChange",
+			"CostumeChangeViewModelParameter", "set_IsAllDressOrdered", 1
+		);
 
-	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
-	HOOK_ORIG_TYPE CostumeChangeView_Reload_orig;
-	void* CostumeChangeView_Reload_hook(void* _this, void* viewModel) {
-		auto ret = HOOK_CAST_CALL(void*, CostumeChangeView_Reload)(_this, viewModel);
+		if (g_show_hidden_costumes) {
+			bool isAllDressOrdered = il2cpp_symbols::unbox<bool>(
+				reflection::Invoke(method_CostumeChangeViewModelParameter_get_IsAllDressOrdered, parameter, nullptr, "get_IsAllDressOrdered")
+			);
 
-		static void* klass_CostumeChangeViewModel;
-		static MethodInfo* mtd_CostumeChangeViewModel_GetPreviewUnitIdol;
-		static managed::UnitIdol* (*func_CostumeChangeViewModel_GetPreviewUnitIdol)(void* _this, void* mtd);
-
-		if (g_save_and_replace_costume_changes) {
-			__try {
-				if (klass_CostumeChangeViewModel == nullptr) {
-					klass_CostumeChangeViewModel = il2cpp_symbols::get_class_from_instance(viewModel);
-					mtd_CostumeChangeViewModel_GetPreviewUnitIdol = il2cpp_class_get_method_from_name(klass_CostumeChangeViewModel, "GetPreviewUnitIdol", 0);
-					func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<managed::UnitIdol * (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
-				}
-
-				auto idol = func_CostumeChangeViewModel_GetPreviewUnitIdol(viewModel, mtd_CostumeChangeViewModel_GetPreviewUnitIdol);
-
-				UnitIdol data;
-				data.ReadFrom(idol);
-				std::cout << "Saved UnitIdel = ";
-				data.Print(std::cout);
-
-				if (data.CharaId >= 0)
-					savedCostumes[data.CharaId] = data;
-
-				lastSavedCostume = data;
-			}
-			__except (seh_filter(GetExceptionInformation())) {
-				printf("SEH exception detected in 'CostumeChangeView_Reload_hook'.\n");
-			}
+			const bool trueValue = true;
+			auto pTrue = &trueValue;
+			reflection::Invoke(method_CostumeChangeViewModelParameter_set_IsAllDressOrdered, parameter, (Il2CppObject**)&pTrue, "set_IsAllDressOrdered");
 		}
 
-		return ret;
+		return HOOK_CAST_CALL(void, CostumeChangeViewModel_ctor)(_this, parameter, previewCostumeSet);
 	}
 
 	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
@@ -2324,6 +2271,58 @@ namespace
 		}
 	}
 
+	uintptr_t GetSubject_OnNext_addr() {
+		// var managedGenericArguments = [typeof(PRISM.Adapters.CostumeChange.CostumeChangeViewModel)];
+		auto refltype_CostumeChangeViewModel = reflection::typeof("PRISM.Adapters.dll", "PRISM.Adapters.CostumeChange", "CostumeChangeViewModel");
+		std::vector<Il2CppReflectionType*> genericArguments{ refltype_CostumeChangeViewModel };
+		auto managedGenericArguments = reflection::CreateManagedTypeArray(genericArguments);
+
+		// var refltype_Subject_closed = RuntimeType.MakeGenericType(typeof(UniRx.Subject<>), managedGenericArguments);
+		auto method_RuntimeType_MakeGenericType_2 = il2cpp_symbols_logged::get_method_corlib("System", "RuntimeType", "MakeGenericType", 2);
+		auto refltype_Subject_T = reflection::typeof("UniRx.dll", "UniRx", "Subject`1");
+		Il2CppObject* args_RuntimeType_MakeGenericType_2[2]{ refltype_Subject_T, managedGenericArguments };
+		auto refltype_Subject_closed = (Il2CppReflectionType*)reflection::Invoke(method_RuntimeType_MakeGenericType_2, nullptr, args_RuntimeType_MakeGenericType_2, "RuntimeType::MakeGenericType(2)");
+
+		// var method_Subject_OnNext = refltype_Subject_closed.GetMethod("OnNext");
+		auto method_Subject_OnNext = il2cpp_class_get_method_from_name(il2cpp_class_from_system_type(refltype_Subject_closed), "OnNext", 1);
+
+		return method_Subject_OnNext->methodPointer;
+	}
+	HOOK_ORIG_TYPE Subject_OnNext_orig;
+	void Subject_OnNext_hook(void* _this, void* value, void* mi) {
+		HOOK_CAST_CALL(void, Subject_OnNext)(_this, value, mi);
+
+		auto klass = il2cpp_object_get_class((Il2CppObject*)value);
+		if (0 != strcmp("CostumeChangeViewModel", il2cpp_class_get_name(klass))) return;
+
+		static MethodInfo* mtd_CostumeChangeViewModel_GetPreviewUnitIdol;
+		static managed::UnitIdol* (*func_CostumeChangeViewModel_GetPreviewUnitIdol)(void* _this, void* mtd);
+
+		if (g_save_and_replace_costume_changes) {
+			__try {
+				if (mtd_CostumeChangeViewModel_GetPreviewUnitIdol == nullptr) {
+					mtd_CostumeChangeViewModel_GetPreviewUnitIdol = il2cpp_class_get_method_from_name(klass, "GetPreviewUnitIdol", 0);
+					func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<managed::UnitIdol * (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
+				}
+
+				auto idol = func_CostumeChangeViewModel_GetPreviewUnitIdol(value, mtd_CostumeChangeViewModel_GetPreviewUnitIdol);
+
+				UnitIdol data;
+				data.ReadFrom(idol);
+				std::cout << "Saved UnitIdel = ";
+				data.Print(std::cout);
+
+				if (data.CharaId >= 0)
+					savedCostumes[data.CharaId] = data;
+
+				lastSavedCostume = data;
+			}
+			__except (seh_filter(GetExceptionInformation())) {
+				printf("SEH exception detected in 'CostumeChangeView_Reload_hook'.\n");
+			}
+		}
+	}
+
 	void readDMMGameGuardData();
 
 	HOOK_ORIG_TYPE GGIregualDetector_ShowPopup_orig;
@@ -2814,14 +2813,12 @@ namespace
 		);
 
 		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
-		auto CostumeChangeView_Reload_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Interactions", "PRISM.Interactions.CostumeChange",
-			"CostumeChangeView", "Reload", 1
-		);
 		auto LiveMVStartData_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy", "PRISM.Live",
 			"LiveMVStartData", ".ctor", 6
 		);
+
+		auto Subject_OnNext_addr = GetSubject_OnNext_addr();
 
 #pragma endregion
 		ADD_HOOK(SetResolution, "SetResolution at %p");
@@ -2886,9 +2883,9 @@ namespace
 		ADD_HOOK(Unity_Quit, "Unity_Quit at %p");
 
 		ADD_HOOK(CostumeChangeViewModel_ctor, "CostumeChangeViewModel_ctor at %p");
-		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
-		ADD_HOOK(CostumeChangeView_Reload, "CostumeChangeView_Reload at %p");
 		ADD_HOOK(LiveMVStartData_ctor, "LiveMVStartData_ctor at %p");
+
+		ADD_HOOK_1(Subject_OnNext);
 
 		tools::AddNetworkingHooks();
 

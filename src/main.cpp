@@ -41,7 +41,7 @@ bool g_allow_use_tryon_costume = false;
 bool g_allow_same_idol = false;
 bool g_unlock_all_dress = false;
 bool g_unlock_all_headwear = false;
-bool g_override_isCostumeUnlimited = false;
+bool g_show_hidden_costumes = false;
 bool g_save_and_replace_costume_changes = false;
 bool g_overrie_mv_unit_idols = false;
 bool g_override_isVocalSeparatedOn = false;
@@ -51,6 +51,9 @@ int g_start_resolution_w = -1;
 int g_start_resolution_h = -1;
 bool g_start_resolution_fullScreen = false;
 bool g_reenable_clipPlane = false;
+bool g_dev_loadasset_output = false;
+bool g_dev_loadasset_extract = false;
+bool g_dev_shader_quickprobing = true;
 
 std::filesystem::path g_localify_base("scsp_localify");
 constexpr const char ConfigJson[] = "scsp-config.json";
