@@ -5,11 +5,16 @@ il2cpp_string_new_t il2cpp_string_new;
 il2cpp_domain_get_t il2cpp_domain_get;
 il2cpp_domain_assembly_open_t il2cpp_domain_assembly_open;
 il2cpp_assembly_get_image_t il2cpp_assembly_get_image;
+il2cpp_class_from_il2cpp_type_t il2cpp_class_from_il2cpp_type;
 il2cpp_class_from_name_t il2cpp_class_from_name;
 il2cpp_class_get_methods_t il2cpp_class_get_methods;
 il2cpp_class_get_method_from_name_t il2cpp_class_get_method_from_name;
+il2cpp_method_get_param_count_t il2cpp_method_get_param_count;
 il2cpp_method_get_param_t il2cpp_method_get_param;
+il2cpp_method_get_object_t il2cpp_method_get_object;
+il2cpp_method_get_return_type_t il2cpp_method_get_return_type;
 il2cpp_object_new_t il2cpp_object_new;
+il2cpp_runtime_object_init_t il2cpp_runtime_object_init;
 il2cpp_resolve_icall_t il2cpp_resolve_icall;
 il2cpp_array_new_t il2cpp_array_new;
 il2cpp_thread_attach_t il2cpp_thread_attach;
@@ -23,6 +28,7 @@ il2cpp_type_get_object_t il2cpp_type_get_object;
 il2cpp_gchandle_new_t il2cpp_gchandle_new;
 il2cpp_gchandle_free_t il2cpp_gchandle_free;
 il2cpp_gchandle_get_target_t il2cpp_gchandle_get_target;
+il2cpp_reflection_type_get_type_t il2cpp_reflection_type_get_type;
 il2cpp_class_from_type_t il2cpp_class_from_type;
 il2cpp_runtime_class_init_t il2cpp_runtime_class_init;
 il2cpp_runtime_invoke_t il2cpp_runtime_invoke;
@@ -31,6 +37,7 @@ il2cpp_field_get_value_t il2cpp_field_get_value;
 il2cpp_field_get_value_object_t il2cpp_field_get_value_object;
 il2cpp_class_from_system_type_t il2cpp_class_from_system_type;
 il2cpp_get_corlib_t il2cpp_get_corlib;
+il2cpp_class_get_namespace_t il2cpp_class_get_namespace;
 il2cpp_class_get_name_t il2cpp_class_get_name;
 il2cpp_field_set_value_t il2cpp_field_set_value;
 il2cpp_field_set_value_object_t il2cpp_field_set_value_object;
@@ -44,6 +51,8 @@ il2cpp_method_get_class_t il2cpp_method_get_class;
 il2cpp_object_get_class_t il2cpp_object_get_class;
 il2cpp_string_chars_t il2cpp_string_chars;
 il2cpp_string_length_t il2cpp_string_length;
+il2cpp_type_get_class_or_element_class_t il2cpp_type_get_class_or_element_class;
+il2cpp_type_get_name_t il2cpp_type_get_name;
 
 char* il2cpp_array_addr_with_size(void* array, int32_t size, uintptr_t idx)
 {
@@ -65,11 +74,16 @@ namespace il2cpp_symbols
 		RESOLVE_IMPORT(il2cpp_domain_get);
 		RESOLVE_IMPORT(il2cpp_domain_assembly_open);
 		RESOLVE_IMPORT(il2cpp_assembly_get_image);
+		RESOLVE_IMPORT(il2cpp_class_from_il2cpp_type);
 		RESOLVE_IMPORT(il2cpp_class_from_name);
 		RESOLVE_IMPORT(il2cpp_class_get_methods);
 		RESOLVE_IMPORT(il2cpp_class_get_method_from_name);
+		RESOLVE_IMPORT(il2cpp_method_get_param_count);
 		RESOLVE_IMPORT(il2cpp_method_get_param);
+		RESOLVE_IMPORT(il2cpp_method_get_object);
+		RESOLVE_IMPORT(il2cpp_method_get_return_type);
 		RESOLVE_IMPORT(il2cpp_object_new);
+		RESOLVE_IMPORT(il2cpp_runtime_object_init);
 		RESOLVE_IMPORT(il2cpp_resolve_icall);
 		RESOLVE_IMPORT(il2cpp_array_new);
 		RESOLVE_IMPORT(il2cpp_thread_attach);
@@ -83,6 +97,7 @@ namespace il2cpp_symbols
 		RESOLVE_IMPORT(il2cpp_gchandle_new);
 		RESOLVE_IMPORT(il2cpp_gchandle_free);
 		RESOLVE_IMPORT(il2cpp_gchandle_get_target);
+		RESOLVE_IMPORT(il2cpp_reflection_type_get_type);
 		RESOLVE_IMPORT(il2cpp_class_from_type);
 		RESOLVE_IMPORT(il2cpp_runtime_class_init);
 		RESOLVE_IMPORT(il2cpp_runtime_invoke);
@@ -91,6 +106,7 @@ namespace il2cpp_symbols
 		RESOLVE_IMPORT(il2cpp_field_get_value_object);
 		RESOLVE_IMPORT(il2cpp_class_from_system_type);
 		RESOLVE_IMPORT(il2cpp_get_corlib);
+		RESOLVE_IMPORT(il2cpp_class_get_namespace);
 		RESOLVE_IMPORT(il2cpp_class_get_name);
 		RESOLVE_IMPORT(il2cpp_field_set_value);
 		RESOLVE_IMPORT(il2cpp_field_set_value_object);
@@ -104,6 +120,8 @@ namespace il2cpp_symbols
 		RESOLVE_IMPORT(il2cpp_object_get_class);
 		RESOLVE_IMPORT(il2cpp_string_chars);
 		RESOLVE_IMPORT(il2cpp_string_length);
+		RESOLVE_IMPORT(il2cpp_type_get_class_or_element_class);
+		RESOLVE_IMPORT(il2cpp_type_get_name);
 
 		il2cpp_domain = il2cpp_domain_get();
 	}
@@ -143,7 +161,7 @@ namespace il2cpp_symbols
 	void* find_nested_class_from_name(void* klass, const char* name)
 	{
 		return find_nested_class(klass, [name = std::string_view(name)](void* nestedClass) {
-			return static_cast<Il2CppClassHead*>(nestedClass)->name == name;
+			return static_cast<Il2CppClass*>(nestedClass)->name == name;
 			});
 	}
 
@@ -157,7 +175,7 @@ namespace il2cpp_symbols
 		return il2cpp_class_get_method_from_name(klass, name, argsCount);
 	}
 
-	uintptr_t find_method(const char* assemblyName, const char* namespaze,
+	const MethodInfo* find_method(const char* assemblyName, const char* namespaze,
 		const char* klassName, std::function<bool(const MethodInfo*)> predict)
 	{
 		auto assembly = il2cpp_domain_assembly_open(il2cpp_domain, assemblyName);
@@ -168,9 +186,19 @@ namespace il2cpp_symbols
 		while (const MethodInfo* method = il2cpp_class_get_methods(klass, &iter))
 		{
 			if (predict(method))
-				return method->methodPointer;
+				return method;
 		}
 
+		return 0;
+	}
+
+	const MethodInfo* find_method(Il2CppClass* klass, std::function<bool(const MethodInfo*)> predict) {
+		void* iter = nullptr;
+		while (const MethodInfo* method = il2cpp_class_get_methods(klass, &iter))
+		{
+			if (predict(method))
+				return method;
+		}
 		return 0;
 	}
 
@@ -222,6 +250,10 @@ namespace il2cpp_symbols
 		static auto func_Array_SetValue = reinterpret_cast<void* (*)(void* _this, void* value, int index, void* mtd)>(mtd_Array_SetValue->methodPointer);
 		func_Array_SetValue(array, value, index, mtd_Array_SetValue);
 	}
+
+	const char* il2cpp_method_get_param_type_name(const MethodInfo* mi, uint32_t index) {
+		return il2cpp_class_get_name(il2cpp_class_from_il2cpp_type(il2cpp_method_get_param(mi, index)));
+	}
 }
 
 
@@ -243,6 +275,14 @@ namespace il2cpp_symbols_logged {
 		return p;
 	}
 
+	Il2CppClass* get_class_corlib(const char* namespaze, const char* klassName) {
+		auto p = (Il2CppClass*)il2cpp_class_from_name(il2cpp_get_corlib(), namespaze, klassName);
+		if (p == nullptr) {
+			std::cout << "[ERROR] `il2cpp_symbols::get_class_corlib(`" << namespaze << ", " << klassName << ")` returned NULL." << std::endl;
+		}
+		return p;
+	}
+
 	FieldInfo* il2cpp_class_get_field_from_name(void* klass, const char* name) {
 		auto p = ::il2cpp_class_get_field_from_name(klass, name);
 		if (p == nullptr) {
@@ -255,6 +295,16 @@ namespace il2cpp_symbols_logged {
 		auto p = il2cpp_symbols::get_method(assemblyName, namespaze, klassName, name, argsCount);
 		if (p == 0) {
 			std::cout << "[ERROR] `il2cpp_symbols::get_method(" << assemblyName << ", " << namespaze << ", " << klassName << ", " << name << ", " << argsCount << ")` returned NULL." << std::endl;
+		}
+		return p;
+	}
+
+	MethodInfo* get_method_corlib(const char* namespaze, const char* klassName, const char* name, int argsCount) {
+		auto klass = get_class_corlib(namespaze, klassName);
+		if (!klass) return nullptr;
+		auto p = il2cpp_class_get_method_from_name(klass, name, argsCount);
+		if (p == 0) {
+			std::cout << "[ERROR] `il2cpp_symbols::get_method_corlib(" << namespaze << ", " << klassName << ", " << name << ", " << argsCount << ")` returned NULL." << std::endl;
 		}
 		return p;
 	}

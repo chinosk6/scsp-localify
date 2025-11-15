@@ -2,6 +2,9 @@
 
 #include <concepts>
 
+typedef struct Il2CppClass Il2CppClass;
+typedef uint32_t il2cpp_array_size_t;
+
 // UnityEngine.Color
 struct Color_t
 {
@@ -44,6 +47,15 @@ public:
 	float y;
 	// System.Single UnityEngine.Vector3::z
 	float z;
+};
+
+struct Rect_t
+{
+public:
+	float x;
+	float y;
+	float width;
+	float height;
 };
 
 // UnityEngine.Quaternion
@@ -227,6 +239,27 @@ struct FieldInfo
 	uint32_t token;
 };
 
+typedef struct PropertyInfo
+{
+	Il2CppClass* parent;
+	const char* name;
+	const MethodInfo* get;
+	const MethodInfo* set;
+	uint32_t attrs;
+	uint32_t token;
+} PropertyInfo;
+
+typedef struct EventInfo
+{
+	const char* name;
+	const Il2CppType* eventType;
+	Il2CppClass* parent;
+	const MethodInfo* add;
+	const MethodInfo* remove;
+	const MethodInfo* raise;
+	uint32_t token;
+} EventInfo;
+
 template <typename T>
 struct TypedField
 {
@@ -242,34 +275,162 @@ struct Il2CppObject
 {
 	union
 	{
-		void* klass;
+		Il2CppClass* klass;
 		void* vtable;
 	};
 	void* monitor;
 };
 
-typedef struct Il2CppArraySize
+typedef struct VirtualInvokeData
 {
-	Il2CppObject obj;
-	void* bounds;
-	uintptr_t max_length;
-	alignas(8)
-		void* vector[0];
-} Il2CppArraySize;
+	void* methodPtr;
+	const MethodInfo* method;
+} VirtualInvokeData;
 
-struct Il2CppClassHead
+typedef struct Il2CppClass // unity 6000.0.45f1
 {
+	// The following fields are always valid for a Il2CppClass structure
 	const void* image;
 	void* gc_desc;
 	const char* name;
 	const char* namespaze;
-};
+	Il2CppType byval_arg;
+	Il2CppType this_arg;
+	Il2CppClass* element_class;
+	Il2CppClass* castClass;
+	Il2CppClass* declaringType;
+	Il2CppClass* parent;
+	/*Il2CppGenericClass**/ void* generic_class;
+	/*Il2CppMetadataTypeHandle*/ void* typeMetadataHandle; // non-NULL for Il2CppClass's constructed from type defintions
+	const /*Il2CppInteropData**/ void* interopData;
+	Il2CppClass* klass; // hack to pretend we are a MonoVTable. Points to ourself
+	// End always valid fields
 
-struct Il2CppReflectionType
+	// The following fields need initialized before access. This can be done per field or as an aggregate via a call to Class::Init
+	FieldInfo* fields; // Initialized in SetupFields
+	const EventInfo* events; // Initialized in SetupEvents
+	const PropertyInfo* properties; // Initialized in SetupProperties
+	const MethodInfo** methods; // Initialized in SetupMethods
+	Il2CppClass** nestedTypes; // Initialized in SetupNestedTypes
+	Il2CppClass** implementedInterfaces; // Initialized in SetupInterfaces
+	/*Il2CppRuntimeInterfaceOffsetPair**/void* interfaceOffsets; // Initialized in Init
+	void* static_fields; // Initialized in Init
+	const /*Il2CppRGCTXData**/void* rgctx_data; // Initialized in Init
+	// used for fast parent checks
+	Il2CppClass** typeHierarchy; // Initialized in SetupTypeHierachy
+	// End initialization required fields
+
+	void* unity_user_data;
+
+	/*Il2CppGCHandle*/uintptr_t initializationExceptionGCHandle;
+
+	uint32_t cctor_started;
+	uint32_t cctor_finished_or_no_cctor;
+	__declspec(align(8)) size_t cctor_thread;
+
+	// Remaining fields are always valid except where noted
+	/*Il2CppMetadataGenericContainerHandle*/uint32_t genericContainerHandle;
+	uint32_t instance_size; // valid when size_inited is true
+	uint32_t stack_slot_size; // valid when size_inited is true
+	uint32_t actualSize;
+	uint32_t element_size;
+	int32_t native_size;
+	uint32_t static_fields_size;
+	uint32_t thread_static_fields_size;
+	int32_t thread_static_fields_offset;
+	uint32_t flags;
+	uint32_t token;
+
+	uint16_t method_count; // lazily calculated for arrays, i.e. when rank > 0
+	uint16_t property_count;
+	uint16_t field_count;
+	uint16_t event_count;
+	uint16_t nested_type_count;
+	uint16_t vtable_count; // lazily calculated for arrays, i.e. when rank > 0
+	uint16_t interfaces_count;
+	uint16_t interface_offsets_count; // lazily calculated for arrays, i.e. when rank > 0
+
+	uint8_t typeHierarchyDepth; // Initialized in SetupTypeHierachy
+	uint8_t genericRecursionDepth;
+	uint8_t rank;
+	uint8_t minimumAlignment; // Alignment of this type
+	uint8_t packingSize;
+
+	// this is critical for performance of Class::InitFromCodegen. Equals to initialized && !initializationExceptionGCHandle at all times.
+	// Use Class::PublishInitialized to update
+	uint8_t initialized_and_no_error : 1;
+
+	uint8_t initialized : 1;
+	uint8_t enumtype : 1;
+	uint8_t nullabletype : 1;
+	uint8_t is_generic : 1;
+	uint8_t has_references : 1; // valid when size_inited is true
+	uint8_t init_pending : 1;
+	uint8_t size_init_pending : 1;
+	uint8_t size_inited : 1;
+	uint8_t has_finalize : 1;
+	uint8_t has_cctor : 1;
+	uint8_t is_blittable : 1;
+	uint8_t is_import_or_windows_runtime : 1;
+	uint8_t is_vtable_initialized : 1;
+	uint8_t is_byref_like : 1;
+	VirtualInvokeData vtable[0];
+} Il2CppClass;
+
+
+typedef int32_t il2cpp_array_lower_bound_t;
+#define IL2CPP_ARRAY_MAX_INDEX ((int32_t) 0x7fffffff)
+#define IL2CPP_ARRAY_MAX_SIZE  ((uint32_t) 0xffffffff)
+
+typedef struct Il2CppArrayBounds
 {
-	Il2CppObject object;
+	il2cpp_array_size_t length;
+	il2cpp_array_lower_bound_t lower_bound;
+} Il2CppArrayBounds;
+
+typedef struct Il2CppArray : public Il2CppObject
+{
+	/* bounds is NULL for szarrays */
+	Il2CppArrayBounds* bounds;
+	/* total number of elements of the array */
+	il2cpp_array_size_t max_length;
+} Il2CppArray;
+
+typedef struct Il2CppArraySize : public Il2CppArray
+{
+	__declspec(align(8)) void* vector[0];
+} Il2CppArraySize;
+
+
+struct Il2CppReflectionType : public Il2CppObject
+{
 	const Il2CppType* type;
 };
+
+typedef struct Il2CppReflectionMethod : public Il2CppObject
+{
+	const MethodInfo* method;
+	Il2CppString* name;
+	Il2CppReflectionType* reftype;
+} Il2CppReflectionMethod;
+
+
+typedef struct __declspec(align(8)) Il2CppDelegate : public Il2CppObject {
+	intptr_t method_ptr;
+	intptr_t invoke_impl;
+	Il2CppObject* m_target;
+	intptr_t method;
+	intptr_t delegate_trampoline;
+	intptr_t extra_arg;
+	intptr_t method_code;
+	intptr_t interp_method;
+	intptr_t interp_invoke_impl;
+	Il2CppReflectionMethod* method_info;
+	Il2CppReflectionMethod* original_method_info;
+	void* data;
+	bool method_is_virtual;
+};
+
 
 static const size_t kIl2CppSizeOfArray = (offsetof(Il2CppArraySize, vector));
 
@@ -287,11 +448,16 @@ typedef Il2CppString* (*il2cpp_string_new_t)(const char* str);
 typedef void* (*il2cpp_domain_get_t)();
 typedef void* (*il2cpp_domain_assembly_open_t)(void* domain, const char* name);
 typedef void* (*il2cpp_assembly_get_image_t)(void* assembly);
+typedef Il2CppClass* (*il2cpp_class_from_il2cpp_type_t)(const Il2CppType* type);
 typedef void* (*il2cpp_class_from_name_t)(void* image, const char* namespaze, const char* name);
 typedef MethodInfo* (*il2cpp_class_get_methods_t)(void* klass, void** iter);
 typedef MethodInfo* (*il2cpp_class_get_method_from_name_t)(void* klass, const char* name, int argsCount);
-typedef void* (*il2cpp_method_get_param_t)(const MethodInfo* method, uint32_t index);
+typedef uint32_t(*il2cpp_method_get_param_count_t)(const MethodInfo* method);
+typedef Il2CppType* (*il2cpp_method_get_param_t)(const MethodInfo* method, uint32_t index);
+typedef Il2CppReflectionMethod* (*il2cpp_method_get_object_t)(const MethodInfo* method, Il2CppClass* refclass);
+typedef const Il2CppType* (*il2cpp_method_get_return_type_t)(const MethodInfo* method);
 typedef void* (*il2cpp_object_new_t)(void* klass);
+typedef void (*il2cpp_runtime_object_init_t)(Il2CppObject* obj);
 typedef void* (*il2cpp_resolve_icall_t)(const char* name);
 typedef void* (*il2cpp_array_new_t)(void* klass, uintptr_t count);
 typedef void* (*il2cpp_thread_attach_t)(void* domain);
@@ -302,9 +468,10 @@ typedef void (*il2cpp_class_for_each_t)(void(*klassReportFunc)(void* klass, void
 typedef void* (*il2cpp_class_get_nested_types_t)(void* klass, void** iter);
 typedef void* (*il2cpp_class_get_type_t)(void* klass);
 typedef Il2CppReflectionType* (*il2cpp_type_get_object_t)(const void* type);
-typedef void*(*il2cpp_gchandle_new_t)(void* obj, bool pinned);
+typedef void* (*il2cpp_gchandle_new_t)(void* obj, bool pinned);
 typedef void (*il2cpp_gchandle_free_t)(void* gchandle);
 typedef void* (*il2cpp_gchandle_get_target_t)(void* gchandle);
+typedef Il2CppType* (*il2cpp_reflection_type_get_type_t)(Il2CppReflectionType* reflType);
 typedef void* (*il2cpp_class_from_type_t)(const Il2CppType* type);
 typedef void (*il2cpp_runtime_class_init_t)(void* klass);
 typedef void* (*il2cpp_runtime_invoke_t)(MethodInfo* method, void* obj, void** params, Il2CppObject** exc);
@@ -313,19 +480,22 @@ typedef void (*il2cpp_field_get_value_t)(void* obj, void* field, void* value);
 typedef void* (*il2cpp_field_get_value_object_t)(void* field, void* obj);
 typedef void* (*il2cpp_class_from_system_type_t)(Il2CppReflectionType* type);
 typedef void* (*il2cpp_get_corlib_t)();
+typedef const char* (*il2cpp_class_get_namespace_t)(void* klass);
 typedef const char* (*il2cpp_class_get_name_t)(void* klass);
 typedef void (*il2cpp_field_set_value_t)(void* obj, void* field, void* value);
 typedef void (*il2cpp_field_set_value_object_t)(void* obj, void* field, void* valueObj);
 typedef void (*il2cpp_field_static_set_value_t)(void* field, void* value);
-typedef void* (*il2cpp_value_box_t)(void* klass, void* data);
-typedef void* (*il2cpp_object_unbox_t)(void* obj);
+typedef Il2CppObject* (*il2cpp_value_box_t)(Il2CppClass* klass, void* data);
+typedef void* (*il2cpp_object_unbox_t)(Il2CppObject* obj);
 typedef uint32_t(*il2cpp_array_length_t)(void* arr);
 typedef void* (*il2cpp_class_get_parent_t)(void* klass);
 typedef const char* (*il2cpp_method_get_name_t)(const MethodInfo* method);
 typedef void* (*il2cpp_method_get_class_t)(const MethodInfo* method);
-typedef Il2CppClassHead* (*il2cpp_object_get_class_t)(Il2CppObject* instance);
+typedef Il2CppClass* (*il2cpp_object_get_class_t)(Il2CppObject* instance);
 typedef Il2CppChar* (*il2cpp_string_chars_t)(Il2CppString* str);
 typedef int32_t(*il2cpp_string_length_t) (Il2CppString* str);
+typedef Il2CppClass* (*il2cpp_type_get_class_or_element_class_t)(const Il2CppType* type);
+typedef char* (*il2cpp_type_get_name_t)(const Il2CppType* type);
 
 // function defines
 extern il2cpp_string_new_utf16_t il2cpp_string_new_utf16;
@@ -333,11 +503,16 @@ extern il2cpp_string_new_t il2cpp_string_new;
 extern il2cpp_domain_get_t il2cpp_domain_get;
 extern il2cpp_domain_assembly_open_t il2cpp_domain_assembly_open;
 extern il2cpp_assembly_get_image_t il2cpp_assembly_get_image;
+extern il2cpp_class_from_il2cpp_type_t il2cpp_class_from_il2cpp_type;
 extern il2cpp_class_from_name_t il2cpp_class_from_name;
 extern il2cpp_class_get_methods_t il2cpp_class_get_methods;
 extern il2cpp_class_get_method_from_name_t il2cpp_class_get_method_from_name;
+extern il2cpp_method_get_param_count_t il2cpp_method_get_param_count;
 extern il2cpp_method_get_param_t il2cpp_method_get_param;
+extern il2cpp_method_get_object_t il2cpp_method_get_object;
+extern il2cpp_method_get_return_type_t il2cpp_method_get_return_type;
 extern il2cpp_object_new_t il2cpp_object_new;
+extern il2cpp_runtime_object_init_t il2cpp_runtime_object_init;
 extern il2cpp_resolve_icall_t il2cpp_resolve_icall;
 extern il2cpp_array_new_t il2cpp_array_new;
 extern il2cpp_thread_attach_t il2cpp_thread_attach;
@@ -351,6 +526,7 @@ extern il2cpp_type_get_object_t il2cpp_type_get_object;
 extern il2cpp_gchandle_new_t il2cpp_gchandle_new;
 extern il2cpp_gchandle_free_t il2cpp_gchandle_free;
 extern il2cpp_gchandle_get_target_t il2cpp_gchandle_get_target;
+extern il2cpp_reflection_type_get_type_t il2cpp_reflection_type_get_type;
 extern il2cpp_class_from_type_t il2cpp_class_from_type;
 extern il2cpp_runtime_class_init_t il2cpp_runtime_class_init;
 extern il2cpp_runtime_invoke_t il2cpp_runtime_invoke;
@@ -359,6 +535,7 @@ extern il2cpp_field_get_value_t il2cpp_field_get_value;
 extern il2cpp_field_get_value_object_t il2cpp_field_get_value_object;
 extern il2cpp_class_from_system_type_t il2cpp_class_from_system_type;
 extern il2cpp_get_corlib_t il2cpp_get_corlib;
+extern il2cpp_class_get_namespace_t il2cpp_class_get_namespace;
 extern il2cpp_class_get_name_t il2cpp_class_get_name;
 extern il2cpp_field_set_value_t il2cpp_field_set_value;
 extern il2cpp_field_set_value_object_t il2cpp_field_set_value_object;
@@ -372,6 +549,8 @@ extern il2cpp_method_get_class_t il2cpp_method_get_class;
 extern il2cpp_object_get_class_t il2cpp_object_get_class;
 extern il2cpp_string_chars_t il2cpp_string_chars;
 extern il2cpp_string_length_t il2cpp_string_length;
+extern il2cpp_type_get_class_or_element_class_t il2cpp_type_get_class_or_element_class;
+extern il2cpp_type_get_name_t il2cpp_type_get_name;
 
 char* il2cpp_array_addr_with_size(void* arr, int32_t size, uintptr_t idx);
 
@@ -411,8 +590,10 @@ namespace il2cpp_symbols
 	MethodInfo* get_method(const char* assemblyName, const char* namespaze,
 		const char* klassName, const char* name, int argsCount);
 
-	uintptr_t find_method(const char* assemblyName, const char* namespaze,
+	const MethodInfo* find_method(const char* assemblyName, const char* namespaze,
 		const char* klassName, std::function<bool(const MethodInfo*)> predict);
+
+	const MethodInfo* find_method(Il2CppClass* klass, std::function<bool(const MethodInfo*)> predict);
 
 	FieldInfo* get_field(const char* assemblyName, const char* namespaze,
 		const char* klassName, const char* name);
@@ -490,12 +671,18 @@ namespace il2cpp_symbols
 	void* array_get_value(void* array, int index);
 
 	void array_set_value(void* array, void* value, int index);
+
+	const char* il2cpp_method_get_param_type_name(const MethodInfo* mi, uint32_t index);
+
+	template <typename T> T unbox(Il2CppObject* boxed) { return *(T*)il2cpp_object_unbox(boxed); }
 }
 
 namespace il2cpp_symbols_logged {
 	void* il2cpp_resolve_icall(const char* name);
 	void* get_class(const char* assemblyName, const char* namespaze, const char* klassName);
+	Il2CppClass* get_class_corlib(const char* namespaze, const char* klassName);
 	FieldInfo* il2cpp_class_get_field_from_name(void* klass, const char* name);
 	MethodInfo* get_method(const char* assemblyName, const char* namespaze, const char* klassName, const char* name, int argsCount);
+	MethodInfo* get_method_corlib(const char* namespaze, const char* klassName, const char* name, int argsCount);
 	uintptr_t get_method_pointer(const char* assemblyName, const char* namespaze, const char* klassName, const char* name, int argsCount);
 }

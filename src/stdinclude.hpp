@@ -57,6 +57,17 @@
 #endif
 
 
+#define PRINT(var) std::cout << #var << " = " << var << std::endl;
+LONG WINAPI seh_filter(EXCEPTION_POINTERS* ep);
+#define __EXCEPT(strContext) __except (seh_filter(GetExceptionInformation())) { std::cout << "SEH exception detected in '" << strContext << "'.\n"; }
+
+
+namespace debug {
+	void DumpRelationMemoryHex(const void* target, const size_t length = 0x40);
+	void DumpRegisters();
+}
+
+
 class CharaParam_t {
 public:
 	CharaParam_t(float height, float bust, float head, float arm, float hand) :
@@ -223,7 +234,7 @@ extern bool g_allow_use_tryon_costume;
 extern bool g_allow_same_idol;
 extern bool g_unlock_all_dress;
 extern bool g_unlock_all_headwear;
-extern bool g_override_isCostumeUnlimited;
+extern bool g_show_hidden_costumes;
 extern bool g_save_and_replace_costume_changes;
 extern bool g_overrie_mv_unit_idols;
 extern bool g_override_isVocalSeparatedOn;
