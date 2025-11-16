@@ -3,6 +3,9 @@
 #include <concepts>
 
 typedef struct Il2CppClass Il2CppClass;
+typedef struct Il2CppObject Il2CppObject;
+typedef struct Il2CppString Il2CppString;
+typedef struct MethodInfo MethodInfo;
 typedef uint32_t il2cpp_array_size_t;
 
 // UnityEngine.Color
@@ -139,15 +142,6 @@ public:
 	bool generateOutOfBounds;
 };
 
-// not real Il2CppString class
-struct Il2CppString
-{
-	void* Empty;
-	void* WhiteChars;
-	int32_t length;
-	wchar_t start_char[1];
-};
-
 enum Il2CppTypeEnum
 {
 	IL2CPP_TYPE_END = 0x00,       /* End of List */
@@ -208,28 +202,6 @@ struct ParameterInfo
 	const Il2CppType* parameter_type;
 };
 
-struct MethodInfo
-{
-	uintptr_t methodPointer;
-	uintptr_t virtualMethodPointer;
-	uintptr_t invoker_method;
-	const char* name;
-	uintptr_t klass;
-	const Il2CppType* return_type;
-	const ParameterInfo* parameters;
-	uintptr_t methodDefinition;
-	uintptr_t genericContainer;
-	uint32_t token;
-	uint16_t flags;
-	uint16_t iflags;
-	uint16_t slot;
-	uint8_t parameters_count;
-	uint8_t is_generic : 1;
-	uint8_t is_inflated : 1;
-	uint8_t wrapper_type : 1;
-	uint8_t is_marshaled_from_native : 1;
-};
-
 struct FieldInfo
 {
 	const char* name;
@@ -279,6 +251,17 @@ struct Il2CppObject
 		void* vtable;
 	};
 	void* monitor;
+};
+
+struct Il2CppString : public Il2CppObject
+{
+	int32_t length;
+	wchar_t start_char[1];
+
+	inline std::wstring toWstring() {
+		return std::wstring(start_char, length);
+	}
+	std::string ToUtf8String();
 };
 
 typedef struct VirtualInvokeData
@@ -456,6 +439,7 @@ typedef uint32_t(*il2cpp_method_get_param_count_t)(const MethodInfo* method);
 typedef Il2CppType* (*il2cpp_method_get_param_t)(const MethodInfo* method, uint32_t index);
 typedef Il2CppReflectionMethod* (*il2cpp_method_get_object_t)(const MethodInfo* method, Il2CppClass* refclass);
 typedef const Il2CppType* (*il2cpp_method_get_return_type_t)(const MethodInfo* method);
+typedef Il2CppClass* (*il2cpp_method_get_declaring_type_t)(const MethodInfo* method);
 typedef void* (*il2cpp_object_new_t)(void* klass);
 typedef void (*il2cpp_runtime_object_init_t)(Il2CppObject* obj);
 typedef void* (*il2cpp_resolve_icall_t)(const char* name);
@@ -511,6 +495,7 @@ extern il2cpp_method_get_param_count_t il2cpp_method_get_param_count;
 extern il2cpp_method_get_param_t il2cpp_method_get_param;
 extern il2cpp_method_get_object_t il2cpp_method_get_object;
 extern il2cpp_method_get_return_type_t il2cpp_method_get_return_type;
+extern il2cpp_method_get_declaring_type_t il2cpp_method_get_declaring_type;
 extern il2cpp_object_new_t il2cpp_object_new;
 extern il2cpp_runtime_object_init_t il2cpp_runtime_object_init;
 extern il2cpp_resolve_icall_t il2cpp_resolve_icall;
@@ -551,6 +536,37 @@ extern il2cpp_string_chars_t il2cpp_string_chars;
 extern il2cpp_string_length_t il2cpp_string_length;
 extern il2cpp_type_get_class_or_element_class_t il2cpp_type_get_class_or_element_class;
 extern il2cpp_type_get_name_t il2cpp_type_get_name;
+
+struct MethodInfo
+{
+	uintptr_t methodPointer;
+	uintptr_t virtualMethodPointer;
+	uintptr_t invoker_method;
+	const char* name;
+	uintptr_t klass;
+	const Il2CppType* return_type;
+	const ParameterInfo* parameters;
+	uintptr_t methodDefinition;
+	uintptr_t genericContainer;
+	uint32_t token;
+	uint16_t flags;
+	uint16_t iflags;
+	uint16_t slot;
+	uint8_t parameters_count;
+	uint8_t is_generic : 1;
+	uint8_t is_inflated : 1;
+	uint8_t wrapper_type : 1;
+	uint8_t is_marshaled_from_native : 1;
+
+private:
+	Il2CppObject* ReflectionInvoke(const Il2CppObject* instance, std::initializer_list<Il2CppObject*> params) const;
+public:
+	void InvokeVoid(const Il2CppObject* instance, std::initializer_list<Il2CppObject*> params) const;
+	template <typename T> T Invoke(const Il2CppObject* instance, std::initializer_list<Il2CppObject*> params) const {
+		auto ret = ReflectionInvoke(instance, params);
+		return (T)ret;
+	}
+};
 
 char* il2cpp_array_addr_with_size(void* arr, int32_t size, uintptr_t idx);
 

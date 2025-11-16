@@ -65,14 +65,14 @@ namespace reflection {
 		return Invoke(method, nullptr, (Il2CppObject**)&refl, "Activator_CreateInstance");
 	}
 
-	Il2CppObject* InvokeInTry(const MethodInfo* method, Il2CppObject* instance, Il2CppObject** params, Il2CppObject** exc, const char* context) {
+	Il2CppObject* InvokeInTry(const MethodInfo* method, const Il2CppObject* instance, Il2CppObject** params, Il2CppObject** exc, const char* context) {
 		__try {
 			return (Il2CppObject*)il2cpp_runtime_invoke((MethodInfo*)method, (void*)instance, (void**)params, exc);
 		}
 		__EXCEPT("reflection::Invoke|" << context);
 	}
 
-	void InvokeVoid(const MethodInfo* method, Il2CppObject* instance, Il2CppObject** params, const char* context) {
+	void InvokeVoid(const MethodInfo* method, const Il2CppObject* instance, Il2CppObject** params, const char* context) {
 		Invoke(method, instance, params, context);
 	}
 }

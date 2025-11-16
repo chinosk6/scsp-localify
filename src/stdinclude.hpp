@@ -246,9 +246,15 @@ extern int g_start_resolution_w;
 extern int g_start_resolution_h;
 extern bool g_start_resolution_fullScreen;
 extern bool g_reenable_clipPlane;
-extern bool g_dev_loadasset_output;
-extern bool g_dev_loadasset_extract;
-extern bool g_dev_shader_quickprobing;
+extern bool g_shader_quickprobing;
+extern bool g_loadasset_output;
+extern bool g_extract_asset;
+extern bool g_extract_asset_image;
+extern bool g_extract_asset_rawimage;
+extern bool g_extract_asset_renderer;
+extern bool g_extract_asset_sprite;
+extern bool g_extract_asset_texture2d;
+extern bool g_extract_asset_log_unknown_asset;
 
 namespace tools {
 	extern bool output_networking_calls;

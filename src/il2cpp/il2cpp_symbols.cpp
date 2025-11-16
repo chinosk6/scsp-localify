@@ -13,6 +13,7 @@ il2cpp_method_get_param_count_t il2cpp_method_get_param_count;
 il2cpp_method_get_param_t il2cpp_method_get_param;
 il2cpp_method_get_object_t il2cpp_method_get_object;
 il2cpp_method_get_return_type_t il2cpp_method_get_return_type;
+il2cpp_method_get_declaring_type_t il2cpp_method_get_declaring_type;
 il2cpp_object_new_t il2cpp_object_new;
 il2cpp_runtime_object_init_t il2cpp_runtime_object_init;
 il2cpp_resolve_icall_t il2cpp_resolve_icall;
@@ -59,6 +60,28 @@ char* il2cpp_array_addr_with_size(void* array, int32_t size, uintptr_t idx)
 	return ((char*)array) + kIl2CppSizeOfArray + size * idx;
 }
 
+
+std::string Il2CppString::ToUtf8String() {
+	return reflection::helper::ToUtf8(this);
+}
+
+
+Il2CppObject* MethodInfo::ReflectionInvoke(const Il2CppObject* instance, std::initializer_list<Il2CppObject*> params) const {
+	auto declaringKlass = il2cpp_method_get_declaring_type(this);
+	std::string fullname = std::format(
+		"{}::{}.{}",
+		il2cpp_class_get_namespace(declaringKlass),
+		il2cpp_class_get_name(declaringKlass),
+		il2cpp_method_get_name(this)
+	);
+	return reflection::Invoke<Il2CppObject*>(this, instance, (Il2CppObject**)params.begin(), fullname.c_str());
+}
+
+void MethodInfo::InvokeVoid(const Il2CppObject* instance, std::initializer_list<Il2CppObject*> params) const {
+	this->ReflectionInvoke(instance, params);
+}
+
+
 namespace il2cpp_symbols
 {
 #define RESOLVE_IMPORT(name) \
@@ -82,6 +105,7 @@ namespace il2cpp_symbols
 		RESOLVE_IMPORT(il2cpp_method_get_param);
 		RESOLVE_IMPORT(il2cpp_method_get_object);
 		RESOLVE_IMPORT(il2cpp_method_get_return_type);
+		RESOLVE_IMPORT(il2cpp_method_get_declaring_type);
 		RESOLVE_IMPORT(il2cpp_object_new);
 		RESOLVE_IMPORT(il2cpp_runtime_object_init);
 		RESOLVE_IMPORT(il2cpp_resolve_icall);

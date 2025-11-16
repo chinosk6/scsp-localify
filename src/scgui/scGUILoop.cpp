@@ -339,13 +339,38 @@ namespace SCGUILoop {
 				}
 			}
 
+			if (ImGui::CollapsingHeader("Assets"), ImGuiTreeNodeFlags_DefaultOpen) {
+				ImGui::Checkbox("Use quick probing for unknown shaders", &g_shader_quickprobing);
+				ImGui::SameLine();
+				HELP_TOOLTIP("(?)", "对不认识的渲染程序启用快速探测。\nUse quick probing for unknwon shaders. (quick upper: 8192)");
+				ImGui::Checkbox("Output asset names", &g_loadasset_output);
+				ImGui::SameLine();
+				HELP_TOOLTIP("(?)", "在资源加载时输出资源和资源包的名称。\nOutput assets' name and AssetBundle's name when loaded.");
+				ImGui::Checkbox("Extract assets of:", &g_extract_asset);
+				ImGui::SameLine();
+				HELP_TOOLTIP("(?)", "启用资源提取功能。注意：此选项本身不进行提取。\nEnable the process of extracting assets.\nNote: This option itself doesn't extract anything.");
+
+				if (g_extract_asset) {
+					ImGui::Checkbox("Renderer", &g_extract_asset_renderer);
+					ImGui::SameLine();
+					HELP_TOOLTIP("(?)", "此选项将提取所有Renderer类型子类的资源。\nThis option will extract all assets inheriting class Renderer.");
+					ImGui::SameLine();
+					ImGui::Checkbox("Texture2D", &g_extract_asset_texture2d);
+					ImGui::SameLine();
+					HELP_TOOLTIP("(?)", "此选项只提取Texture2D类型对象。\nThis option only extract instances of class Texture2D.");
+					ImGui::SameLine();
+					ImGui::Checkbox("Image", &g_extract_asset_image);
+					ImGui::SameLine();
+					ImGui::Checkbox("RawImage", &g_extract_asset_rawimage);
+					ImGui::SameLine();
+					ImGui::Checkbox("Sprite", &g_extract_asset_sprite);
+				}
+			}
+
 			if (ImGui::CollapsingHeader("Devs", ImGuiTreeNodeFlags_None)) {
 #ifdef __TOOL_HOOK_NETWORKING__
 				ImGui::Checkbox("Output networking calls", &tools::output_networking_calls);
 #endif
-				ImGui::Checkbox("LoadAsset|Output", &g_dev_loadasset_output);
-				ImGui::Checkbox("LoadAsset|Extract", &g_dev_loadasset_extract);
-				ImGui::Checkbox("LoadAsset|Quick probing for shaders", &g_dev_shader_quickprobing);
 			}
 
 		}

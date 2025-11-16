@@ -969,7 +969,7 @@ namespace
 		const auto filepath = g_localify_base / "textures";
 		if (!std::filesystem::exists(filepath))
 			return;
-		for (const auto& entry : std::filesystem::directory_iterator(filepath	)) {
+		for (const auto& entry : std::filesystem::directory_iterator(filepath)) {
 			if (entry.is_regular_file()) {
 				std::filesystem::path filePath = entry.path();
 				std::string stem = filePath.stem().string();
@@ -1157,7 +1157,7 @@ namespace
 			}
 			if (it == shaderPropIds.end()) {
 				std::vector<int> propIds{};
-				uint32_t upper = g_dev_shader_quickprobing ? 8192 : 0;
+				uint32_t upper = g_shader_quickprobing ? 8192 : 0;
 				printf("Detecting shader '%s'... (%i)\n", shaderName.c_str(), upper);
 				DetectShaderTextureIds(shaderName, material, propIds, upper);
 				shaderPropIds.emplace(shaderName, propIds);
@@ -1179,34 +1179,44 @@ namespace
 		static auto klass_Renderer = il2cpp_symbols_logged::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Renderer");
 
 		if (0 == strcmp(obj->klass->name, "Image")) {
-			auto method_getsprite = il2cpp_class_get_method_from_name(obj->klass, "get_sprite", 0);
-			auto sprite = reflection::Invoke(method_getsprite, obj, nullptr, "ExtractAsset|Image::get_sprite");
-			//DumpSprite(sprite, "Image");
+			if (g_extract_asset_image) {
+				auto method_getsprite = il2cpp_class_get_method_from_name(obj->klass, "get_sprite", 0);
+				auto sprite = reflection::Invoke(method_getsprite, obj, nullptr, "ExtractAsset|Image::get_sprite");
+				DumpSprite(sprite, "Image");
+			}
 		}
 		else if (0 == strcmp(obj->klass->name, "RawImage")) {
-			auto method_gettexture = il2cpp_class_get_method_from_name(obj->klass, "get_texture", 0);
-			auto texture = reflection::Invoke(method_gettexture, obj, nullptr, "ExtractAsset|RawImage::get_texture");
-			//DumpTexture2D(texture, "RawImage");
+			if (g_extract_asset_rawimage) {
+				auto method_gettexture = il2cpp_class_get_method_from_name(obj->klass, "get_texture", 0);
+				auto texture = reflection::Invoke(method_gettexture, obj, nullptr, "ExtractAsset|RawImage::get_texture");
+				DumpTexture2D(texture, "RawImage");
+			}
 		}
 		else if (il2cpp_class_is_assignable_from(klass_Renderer, obj->klass)) {
-			static auto method_Renderer_getsharedMaterial = il2cpp_symbols_logged::get_method("UnityEngine.CoreModule.dll", "UnityEngine", "Renderer", "get_sharedMaterial", 0);
-			static auto method_Renderer_getsharedMaterials = il2cpp_symbols_logged::get_method("UnityEngine.CoreModule.dll", "UnityEngine", "Renderer", "get_sharedMaterials", 0);
+			if (g_extract_asset_renderer) {
+				static auto method_Renderer_getsharedMaterial = il2cpp_symbols_logged::get_method("UnityEngine.CoreModule.dll", "UnityEngine", "Renderer", "get_sharedMaterial", 0);
+				static auto method_Renderer_getsharedMaterials = il2cpp_symbols_logged::get_method("UnityEngine.CoreModule.dll", "UnityEngine", "Renderer", "get_sharedMaterials", 0);
 
-			auto sharedMaterials = reflection::Invoke(method_Renderer_getsharedMaterials, obj, nullptr, "ExtractAsset|Renderer::get_sharedMaterials");
-			auto length = il2cpp_array_length(sharedMaterials);
-			for (uint32_t i = 0; i < length; ++i) {
-				auto material = (Il2CppObject*)il2cpp_symbols::array_get_value(sharedMaterials, i);
-				DumpMaterial(material, obj->klass->name);
+				auto sharedMaterials = reflection::Invoke(method_Renderer_getsharedMaterials, obj, nullptr, "ExtractAsset|Renderer::get_sharedMaterials");
+				auto length = il2cpp_array_length(sharedMaterials);
+				for (uint32_t i = 0; i < length; ++i) {
+					auto material = (Il2CppObject*)il2cpp_symbols::array_get_value(sharedMaterials, i);
+					DumpMaterial(material, obj->klass->name);
+				}
 			}
 		}
 		else if (0 == strcmp(obj->klass->name, "Sprite")) {
-			//DumpSprite(obj, "Sprite");
+			if (g_extract_asset_sprite) {
+				DumpSprite(obj, "Sprite");
+			}
 		}
 		else if (0 == strcmp(obj->klass->name, "Texture")) {
-			//DumpTexture2D(obj, "Texture2D");
+			if (g_extract_asset_texture2d) {
+				DumpTexture2D(obj, "Texture2D");
+			}
 		}
-		else {
-			//printf("  [Asset] %s: %s\n", reflection::helper::ToUtf8(name).c_str(), obj->klass->name);
+		else if (g_extract_asset_log_unknown_asset) {
+			printf("  [Asset] %s : %s\n", reflection::helper::ToUtf8(name).c_str(), obj->klass->name);
 		}
 	}
 
@@ -1245,18 +1255,22 @@ namespace
 	}
 
 	HOOK_ORIG_TYPE AssetBundle_LoadAsset_orig;
-	void* AssetBundle_LoadAsset_hook(void* _this, Il2CppString* name, Il2CppReflectionType* type)
+	void* AssetBundle_LoadAsset_hook(Il2CppObject* _this, Il2CppString* name, Il2CppReflectionType* type)
 	{
-		if (g_dev_loadasset_output) {
-			std::wstring ws(name->start_char, name->length);
-			std::wcout << L"[LoadAsset] " << ws;
+		static auto method_AssetBundle_get_name = il2cpp_symbols_logged::get_method("UnityEngine.AssetBundleModule.dll", "UnityEngine", "AssetBundle", "get_name", 0);
+
+		if (g_loadasset_output) {
+			auto assetBundleName = method_AssetBundle_get_name->Invoke<Il2CppString*>(_this, {});
+			auto cAssetBundleName = assetBundleName->toWstring();
+			auto cName = name->toWstring();
+			std::wcout << L"[LoadAsset] " << cAssetBundleName << "::" << cName;
 			auto klass = il2cpp_class_from_il2cpp_type(type->type);
-			std::cout << ": " << klass->namespaze << "::" << klass->name << std::endl;
+			std::cout << " : " << klass->namespaze << "::" << klass->name << std::endl;
 		}
 
 		auto ret = HOOK_CAST_CALL(void*, AssetBundle_LoadAsset)(_this, name, type);
 
-		if (g_dev_loadasset_extract) {
+		if (g_extract_asset) {
 			ExtractAssetsGameObject((Il2CppObject*)ret, name);
 		}
 
