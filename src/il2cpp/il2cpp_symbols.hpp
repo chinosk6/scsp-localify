@@ -562,7 +562,7 @@ private:
 	Il2CppObject* ReflectionInvoke(const Il2CppObject* instance, std::initializer_list<Il2CppObject*> params) const;
 public:
 	void InvokeVoid(const Il2CppObject* instance, std::initializer_list<Il2CppObject*> params) const;
-	template <typename T> T Invoke(const Il2CppObject* instance, std::initializer_list<Il2CppObject*> params) const {
+	template <typename T = Il2CppObject*> T Invoke(const Il2CppObject* instance, std::initializer_list<Il2CppObject*> params) const {
 		auto ret = ReflectionInvoke(instance, params);
 		return (T)ret;
 	}

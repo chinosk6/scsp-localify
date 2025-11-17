@@ -2129,21 +2129,8 @@ namespace
 		return HOOK_CAST_CALL(void, CostumeChangeViewModel_ctor)(_this, parameter, previewCostumeSet);
 	}
 
-	// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
-	HOOK_ORIG_TYPE LiveMVStartData_ctor_orig;
-	void* LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int renderingDynamicRange, int soundEffectMode) {
-		if (g_override_isVocalSeparatedOn) {
-			if (isVocalSeparatedOn) {
-				printf("isVocalSeparatedOn is already true.\n");
-			}
-			else {
-				isVocalSeparatedOn = true;
-				printf("isVocalSeparatedOn is overriden to true.\n");
-			}
-		}
 
-		auto ret = HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraIndex, isVocalSeparatedOn, renderingDynamicRange, soundEffectMode);
-
+	void ModifyOnStageIdols(void* onStageIdols) {
 		__try {
 			auto idolsLength = il2cpp_array_length(onStageIdols);
 			if (g_save_and_replace_costume_changes) {
@@ -2176,10 +2163,32 @@ namespace
 			}
 		}
 		__except (seh_filter(GetExceptionInformation())) {
-			printf("SEH exception detected in `LiveMVStartData_ctor_hook`.\n");
+			printf("SEH exception detected in `ModifyOnStageIdols`.\n");
+		}
+	}
+
+	HOOK_ORIG_TYPE LiveMVStartData_ctor_orig;
+	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int renderingDynamicRange, int soundEffectMode) {
+		if (g_override_isVocalSeparatedOn) {
+			if (isVocalSeparatedOn) {
+				printf("isVocalSeparatedOn is already true.\n");
+			}
+			else {
+				isVocalSeparatedOn = true;
+				printf("isVocalSeparatedOn is overriden to true.\n");
+			}
 		}
 
-		return ret;
+		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraIndex, isVocalSeparatedOn, renderingDynamicRange, soundEffectMode);
+		ModifyOnStageIdols(onStageIdols);
+	}
+
+	HOOK_ORIG_TYPE RunwayEventStartData_ctor_orig;
+	void RunwayEventStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, void* methodInfo) {
+		if (0 == strcmp("UnitIdolWithMstCostume[]", ((Il2CppObject*)onStageIdols)->klass->name)) {
+			ModifyOnStageIdols(onStageIdols);
+		}
+		HOOK_CAST_CALL(void, RunwayEventStartData_ctor)(_this, mvStage, onStageIdols, methodInfo);
 	}
 
 
@@ -3309,10 +3318,14 @@ namespace
 			"CostumeChangeViewModel", ".ctor", 2
 		);
 
-		// [Muitsonz/#1](https://github.com/Muitsonz/scsp-localify/issues/1)
 		auto LiveMVStartData_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy", "PRISM.Live",
 			"LiveMVStartData", ".ctor", 6
+		);
+
+		auto RunwayEventStartData_ctor_addr = il2cpp_symbols_logged::get_method_pointer(
+			"PRISM.Legacy", "PRISM.RunwayEvent",
+			"RunwayEventStartData", ".ctor", 2
 		);
 
 		auto Subject_OnNext_addr = GetSubject_OnNext_addr();
@@ -3381,6 +3394,7 @@ namespace
 
 		ADD_HOOK(CostumeChangeViewModel_ctor, "CostumeChangeViewModel_ctor at %p");
 		ADD_HOOK(LiveMVStartData_ctor, "LiveMVStartData_ctor at %p");
+		ADD_HOOK_1(RunwayEventStartData_ctor);
 
 		ADD_HOOK_1(Subject_OnNext);
 
