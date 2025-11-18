@@ -41,8 +41,8 @@ namespace reflection {
 	Il2CppObject* Activator_CreateInstance(Il2CppReflectionType* refl);
 
 
-	Il2CppObject* InvokeInTry(const MethodInfo* method, Il2CppObject* instance, Il2CppObject** params, Il2CppObject** exc, const char* context);
-	template<typename T = Il2CppObject*> T Invoke(const MethodInfo* method, Il2CppObject* instance, Il2CppObject** params, const char* context = nullptr) {
+	Il2CppObject* InvokeInTry(const MethodInfo* method, const Il2CppObject* instance, Il2CppObject** params, Il2CppObject** exc, const char* context);
+	template<typename T = Il2CppObject*> T Invoke(const MethodInfo* method, const Il2CppObject* instance, Il2CppObject** params, const char* context = nullptr) {
 		Il2CppObject* exc = nullptr;
 		Il2CppObject* ret = nullptr;
 		ret = InvokeInTry(method, instance, params, &exc, context);
@@ -61,7 +61,7 @@ namespace reflection {
 		}
 		return (T)ret;
 	}
-	void InvokeVoid(const MethodInfo* method, Il2CppObject* instance, Il2CppObject** params, const char* context = nullptr);
+	void InvokeVoid(const MethodInfo* method, const Il2CppObject* instance, Il2CppObject** params, const char* context = nullptr);
 }
 
 namespace reflection::helper {

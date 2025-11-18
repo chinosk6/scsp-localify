@@ -51,9 +51,15 @@ int g_start_resolution_w = -1;
 int g_start_resolution_h = -1;
 bool g_start_resolution_fullScreen = false;
 bool g_reenable_clipPlane = false;
-bool g_dev_loadasset_output = false;
-bool g_dev_loadasset_extract = false;
-bool g_dev_shader_quickprobing = true;
+bool g_shader_quickprobing = true;
+bool g_loadasset_output = false;
+bool g_extract_asset = false;
+bool g_extract_asset_image = false;
+bool g_extract_asset_rawimage = false;
+bool g_extract_asset_renderer = false;
+bool g_extract_asset_sprite = false;
+bool g_extract_asset_texture2d = false;
+bool g_extract_asset_log_unknown_asset = false;
 
 std::filesystem::path g_localify_base("scsp_localify");
 constexpr const char ConfigJson[] = "scsp-config.json";
