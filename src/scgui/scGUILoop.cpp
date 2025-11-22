@@ -34,6 +34,18 @@ extern void saveGUIDataCache();
 namespace SCGUILoop {
 	static float inputFloatWidth = 50.0f;
 
+	struct FreeCamState {
+		bool hasData = false;
+		float moveSpeed = 0.0f;
+		float mouseSpeed = 0.0f;
+		float fov = 0.0f;
+		
+		struct { float x, y, z; } pos = { 0,0,0 };
+		struct { float x, y, z; } lookAt = { 0,0,0 };
+	};
+
+	static std::vector<FreeCamState> freeCamSlots(1);
+
 	void charaParamEditLoop() {
 		if (ImGui::Begin("Character Parameter Edit")) {
 			if (ImGui::CollapsingHeader("Sway offset (Non real-time, requires reloading)")) {
@@ -309,6 +321,15 @@ namespace SCGUILoop {
 							(reinterpret_cast<void (*)(int, int, bool)>HOOK_GET_ORIG(SetResolution))(SCGUIData::screenW, SCGUIData::screenH, SCGUIData::screenFull);
 						}
 					}
+					ImGui::SameLine();
+					if (ImGui::Button("Swap")) {
+						int temp = SCGUIData::screenW;
+						SCGUIData::screenW = SCGUIData::screenH;
+						SCGUIData::screenH = temp;
+						if (SetResolution_orig) {
+							(reinterpret_cast<void (*)(int, int, bool)>HOOK_GET_ORIG(SetResolution))(SCGUIData::screenW, SCGUIData::screenH, SCGUIData::screenFull);
+						}
+					}
 
 					ImGui::Separator();
 
@@ -336,6 +357,71 @@ namespace SCGUILoop {
 					INPUT_AND_SLIDER_FLOAT("Camera FOV", &SCCamera::baseCamera.fov, 0.0f, 360.0f);
 					ImGui::InputFloat3("Camera Pos (x, y, z)", &SCCamera::baseCamera.pos.x);
 					ImGui::InputFloat3("Camera LookAt (x, y, z)", &SCCamera::baseCamera.lookAt.x);
+
+					ImGui::Separator();
+					ImGui::Text("Save Camera State:");
+					
+					// Camera Slot
+					for (int i = 0; i < freeCamSlots.size(); ++i) {
+						ImGui::PushID(i);
+						
+						// --- Save button ---
+						if (ImGui::Button("S", ImVec2(30, 0))) {
+							freeCamSlots[i].hasData = true;
+							freeCamSlots[i].moveSpeed = BaseCamera::moveStep;
+							freeCamSlots[i].mouseSpeed = g_free_camera_mouse_speed;
+							freeCamSlots[i].fov = SCCamera::baseCamera.fov;
+
+							freeCamSlots[i].pos.x = SCCamera::baseCamera.pos.x;
+							freeCamSlots[i].pos.y = SCCamera::baseCamera.pos.y;
+							freeCamSlots[i].pos.z = SCCamera::baseCamera.pos.z;
+
+							freeCamSlots[i].lookAt.x = SCCamera::baseCamera.lookAt.x;
+							freeCamSlots[i].lookAt.y = SCCamera::baseCamera.lookAt.y;
+							freeCamSlots[i].lookAt.z = SCCamera::baseCamera.lookAt.z;
+						}
+						ImGui::SameLine();
+
+						// --- SLOT BUTTON ---
+						char slotName[32];
+						snprintf(slotName, 32, "Slot %d", i + 1);
+
+						if (freeCamSlots[i].hasData) {
+							ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.0f, 0.4f, 0.8f, 1.0f)); // Blue
+						}
+						else {
+							ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f, 1.0f)); // Grey
+						}
+
+						if (ImGui::Button(slotName, ImVec2(80, 0))) {
+							if (freeCamSlots[i].hasData) {
+								BaseCamera::moveStep = freeCamSlots[i].moveSpeed;
+								g_free_camera_mouse_speed = freeCamSlots[i].mouseSpeed;
+								SCCamera::baseCamera.fov = freeCamSlots[i].fov;
+
+								SCCamera::baseCamera.pos.x = freeCamSlots[i].pos.x;
+								SCCamera::baseCamera.pos.y = freeCamSlots[i].pos.y;
+								SCCamera::baseCamera.pos.z = freeCamSlots[i].pos.z;
+
+								SCCamera::baseCamera.lookAt.x = freeCamSlots[i].lookAt.x;
+								SCCamera::baseCamera.lookAt.y = freeCamSlots[i].lookAt.y;
+								SCCamera::baseCamera.lookAt.z = freeCamSlots[i].lookAt.z;
+							}
+						}
+						ImGui::PopStyleColor();
+
+						// --- Clear button ---
+						ImGui::SameLine();
+						if (ImGui::Button("C", ImVec2(30, 0))) {
+							freeCamSlots[i].hasData = false;
+						}
+						ImGui::PopID();
+					}
+
+					// --- Add New Slot Button ---
+					if (ImGui::Button("Add New Slot")) {
+						freeCamSlots.emplace_back();
+					}
 				}
 			}
 
