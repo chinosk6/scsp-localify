@@ -704,49 +704,16 @@ namespace
 
 	}
 
-	// NOT HOOK
-	HOOK_ORIG_TYPE PIdolDetailPopupViewModel_Create_orig;
-	void* PIdolDetailPopupViewModel_Create_hook(void* produceIdol, void* costumeSetInfoList, void* idolBase, void* idolParameter, bool isChangeableIdolSkill, bool isChangeableFavorite, void* produceAdvStatusList, bool isPlayableAdv, bool inLive, bool upgradingButtonActive) {
-		auto ret = HOOK_CAST_CALL(void*, PIdolDetailPopupViewModel_Create)(
-			produceIdol, costumeSetInfoList, idolBase, idolParameter, isChangeableIdolSkill, isChangeableFavorite, produceAdvStatusList, isPlayableAdv, inLive, upgradingButtonActive
-			);
-		return ret;
-		/*  // 功能被 ScenarioContentViewModel_ctor_hook 替代
-		static auto get_EventList = reinterpret_cast<void* (*)(void*)>(
-			il2cpp_symbols::get_method_pointer("PRISM.Adapters.dll", "PRISM.Adapters",
-				"PIdolDetailPopupViewModel", "get_EventList", 0)
-			);
-		static auto EventModel_klass = il2cpp_symbols::get_class("PRISM.Adapters.dll", "PRISM.Adapters", "EventModel");
-		static auto Read_field = il2cpp_class_get_field_from_name(EventModel_klass, "<Read>k__BackingField");
-		static auto IsAdvPlayable_field = il2cpp_class_get_field_from_name(EventModel_klass, "<IsAdvPlayable>k__BackingField");
-
-		printf("PIdolDetailPopupViewModel_Create\n");
-
-		auto events = get_EventList(ret);
-
-		il2cpp_symbols::iterate_IEnumerable(events, [](void* event) {
-			const auto read = il2cpp_symbols::read_field<bool>(event, Read_field);
-			const auto isAdvPlayable = il2cpp_symbols::read_field<bool>(event, IsAdvPlayable_field);
-			printf("read: %d, isAdvPlayable: %d\n", read, isAdvPlayable);
-
-			il2cpp_symbols::write_field(event, Read_field, true);
-			});
-
-		return ret;*/
-	}
-
-	HOOK_ORIG_TYPE ScenarioContentViewModel_ctor_orig;
-	void ScenarioContentViewModel_ctor_hook(void* _this, void* scenarioID, Il2CppString* title, Il2CppString* summary, bool isLocked,
-		bool isAdvPlayable, Il2CppString* alias, Il2CppString* characterName, int unlockLevel) {
-
+	HOOK_ORIG_TYPE StoryExtensions_IsLocked_orig;
+	bool StoryExtensions_IsLocked_hook(void* self) {
 		if (g_unlock_PIdol_and_SChara_events) {
-			if (!isLocked) {
-				wprintf(L"Force Unlock Event: %ls\n", title->start_char);
-				isLocked = true;
-			}
+			return false;
 		}
-		return HOOK_CAST_CALL(void, ScenarioContentViewModel_ctor)(_this, scenarioID, title, summary, isLocked, isAdvPlayable, alias, characterName, unlockLevel);
+		else {
+			return HOOK_CAST_CALL(bool, StoryExtensions_IsLocked)(self);
+		}
 	}
+
 
 	HOOK_ORIG_TYPE LocalizationManager_GetTextOrNull_orig;
 	Il2CppString* LocalizationManager_GetTextOrNull_hook(void* _this, Il2CppString* category, int id) {
@@ -3087,13 +3054,9 @@ namespace
 			"TextLog", "AddLog", 4
 		);
 
-		//auto PIdolDetailPopupViewModel_Create_addr = il2cpp_symbols::get_method_pointer(
-		//	"PRISM.Adapters.dll", "PRISM.Adapters",
-		//	"PIdolDetailPopupViewModel", "Create", 10
-		//);
-		auto ScenarioContentViewModel_ctor_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Adapters.dll", "PRISM.Adapters",
-			"ScenarioContentViewModel", ".ctor", 8
+		auto StoryExtensions_IsLocked_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM.Domain",
+			"StoryExtensions", "IsLocked", 1
 		);
 
 		auto LocalizationManager_GetTextOrNull_addr = il2cpp_symbols::get_method_pointer(
@@ -3332,8 +3295,7 @@ namespace
 
 #pragma endregion
 		ADD_HOOK(SetResolution, "SetResolution at %p");
-		// ADD_HOOK(PIdolDetailPopupViewModel_Create, "PIdolDetailPopupViewModel_Create at %p");
-		ADD_HOOK(ScenarioContentViewModel_ctor, "ScenarioContentViewModel_ctor at %p");
+		ADD_HOOK_1(StoryExtensions_IsLocked);
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(GetResolutionSize, "GetResolutionSize at %p");
 		ADD_HOOK(AssetBundle_LoadAsset, "AssetBundle_LoadAsset at %p");

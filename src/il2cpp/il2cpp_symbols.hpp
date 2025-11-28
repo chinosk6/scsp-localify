@@ -566,6 +566,8 @@ public:
 		auto ret = ReflectionInvoke(instance, params);
 		return (T)ret;
 	}
+	std::string GetFullName() const;
+	bool IsName(const char* methodName = nullptr, const char* klassName = nullptr, const char* namespaze = nullptr) const;
 };
 
 char* il2cpp_array_addr_with_size(void* arr, int32_t size, uintptr_t idx);

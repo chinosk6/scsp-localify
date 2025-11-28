@@ -81,6 +81,22 @@ void MethodInfo::InvokeVoid(const Il2CppObject* instance, std::initializer_list<
 	this->ReflectionInvoke(instance, params);
 }
 
+std::string MethodInfo::GetFullName() const {
+	auto klass = il2cpp_method_get_class(this);
+	auto namespaze = il2cpp_class_get_namespace(klass);
+	auto klassName = il2cpp_class_get_name(klass);
+	auto name = il2cpp_method_get_name(this);
+	return std::string(namespaze) + "::" + klassName + "." + name;
+}
+
+bool MethodInfo::IsName(const char* methodName, const char* klassName, const char* namespaze) const {
+	auto klass = il2cpp_method_get_class(this);
+	if (methodName && strcmp(methodName, il2cpp_method_get_name(this))) return false;
+	if (klassName && (!klass || strcmp(klassName, il2cpp_class_get_name(klass)))) return false;
+	if (namespaze && (!klass || strcmp(namespaze, il2cpp_class_get_namespace(klass)))) return false;
+	return true;
+}
+
 
 namespace il2cpp_symbols
 {
