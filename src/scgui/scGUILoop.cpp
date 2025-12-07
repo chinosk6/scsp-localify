@@ -1,6 +1,9 @@
 #include "imgui/imgui.h"
 #include "stdinclude.hpp"
 #include "scgui/scGUIData.hpp"
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 extern HOOK_ORIG_TYPE SetResolution_orig;
 // extern std::vector<std::pair<std::pair<int, int>, int>> replaceDressResIds;
@@ -36,15 +39,69 @@ namespace SCGUILoop {
 
 	struct FreeCamState {
 		bool hasData = false;
-		float moveSpeed = 0.0f;
-		float mouseSpeed = 0.0f;
+		std::string name = "";
 		float fov = 0.0f;
-		
+
 		struct { float x, y, z; } pos = { 0,0,0 };
 		struct { float x, y, z; } lookAt = { 0,0,0 };
 	};
 
+	rapidjson::Value SerializeFreeCamState(const FreeCamState& state, rapidjson::Document::AllocatorType& allocator) {
+		rapidjson::Value obj(rapidjson::kObjectType);
+		obj.AddMember("hasData", rapidjson::Value(state.hasData), allocator);
+		if (!state.name.empty()) {
+			obj.AddMember("name", rapidjson::Value(state.name.c_str(), allocator), allocator);
+		}
+		if (state.hasData) {
+			obj.AddMember("fov", rapidjson::Value(state.fov), allocator);
+
+			rapidjson::Value valPos(rapidjson::kArrayType);
+			valPos.PushBack(state.pos.x, allocator);
+			valPos.PushBack(state.pos.y, allocator);
+			valPos.PushBack(state.pos.z, allocator);
+			obj.AddMember("pos", valPos, allocator);
+
+			rapidjson::Value valLookAt(rapidjson::kArrayType);
+			valLookAt.PushBack(state.lookAt.x, allocator);
+			valLookAt.PushBack(state.lookAt.y, allocator);
+			valLookAt.PushBack(state.lookAt.z, allocator);
+			obj.AddMember("lookAt", valLookAt, allocator);
+		}
+		return obj;
+	}
+	FreeCamState DeserializeFreeCameraState(const rapidjson::Value& v) {
+		FreeCamState state;
+		if (v.HasMember("hasData") && v["hasData"].IsBool()) state.hasData = v["hasData"].GetBool();
+		if (v.HasMember("name") && v["name"].IsString()) state.name = v["name"].GetString();
+		if (state.hasData) {
+			if (v.HasMember("fov") && v["fov"].IsNumber()) state.fov = v["fov"].GetFloat();
+			if (v.HasMember("pos") && v["pos"].IsArray()) {
+				const auto& arr = v["pos"].GetArray();
+				auto length = arr.Size();
+				if (length > 0 && arr[0].IsNumber()) state.pos.x = arr[0].GetFloat();
+				if (length > 1 && arr[1].IsNumber()) state.pos.y = arr[1].GetFloat();
+				if (length > 2 && arr[2].IsNumber()) state.pos.z = arr[2].GetFloat();
+			}
+			if (v.HasMember("lookAt") && v["lookAt"].IsArray()) {
+				const auto& arr = v["lookAt"].GetArray();
+				auto length = arr.Size();
+				if (length > 0 && arr[0].IsNumber()) state.lookAt.x = arr[0].GetFloat();
+				if (length > 1 && arr[1].IsNumber()) state.lookAt.y = arr[1].GetFloat();
+				if (length > 2 && arr[2].IsNumber()) state.lookAt.z = arr[2].GetFloat();
+			}
+		}
+		return state;
+	}
+
+
 	static std::vector<FreeCamState> freeCamSlots(1);
+	char newFreeCamSlotName[32]{};
+
+	std::string messageBoxContent{};
+	void ShowMessageBox(const std::string& message) {
+		messageBoxContent = message;
+		ImGui::OpenPopup("MessageBox");
+	}
 
 	void charaParamEditLoop() {
 		if (ImGui::Begin("Character Parameter Edit")) {
@@ -360,16 +417,54 @@ namespace SCGUILoop {
 
 					ImGui::Separator();
 					ImGui::Text("Save Camera State:");
-					
+
+					// export, append; remove all
+					ImGui::Dummy(ImVec2(40, 0));
+					ImGui::SameLine();
+					if (ImGui::Button("Export to clipboard")) {
+						rapidjson::Document doc;
+						doc.SetArray();
+						auto& allocator = doc.GetAllocator();
+						for (auto& state : freeCamSlots) {
+							doc.PushBack(SerializeFreeCamState(state, allocator), allocator);
+						}
+						rapidjson::StringBuffer buffer;
+						rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+						doc.Accept(writer);
+						std::string serialized(buffer.GetString());
+						auto r = WriteClipboard(serialized);
+						ShowMessageBox((r ? "Success" : "Failed"));
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Append from clipboard")) {
+						std::string text;
+						if (!ReadClipboard(&text)) {
+							ShowMessageBox("Failed to read clipboard.");
+						}
+						else {
+							rapidjson::Document doc;
+							doc.Parse(text.c_str());
+							if (doc.IsArray()) {
+								const auto& arr = doc.GetArray();
+								for (auto& value : arr) {
+									auto parsed = DeserializeFreeCameraState(value);
+									freeCamSlots.emplace_back(parsed);
+								}
+							}
+						}
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Remove all saved states")) {
+						freeCamSlots.clear();
+					}
+
 					// Camera Slot
 					for (int i = 0; i < freeCamSlots.size(); ++i) {
 						ImGui::PushID(i);
-						
+
 						// --- Save button ---
-						if (ImGui::Button("S", ImVec2(30, 0))) {
+						if (ImGui::Button("Save")) {
 							freeCamSlots[i].hasData = true;
-							freeCamSlots[i].moveSpeed = BaseCamera::moveStep;
-							freeCamSlots[i].mouseSpeed = g_free_camera_mouse_speed;
 							freeCamSlots[i].fov = SCCamera::baseCamera.fov;
 
 							freeCamSlots[i].pos.x = SCCamera::baseCamera.pos.x;
@@ -383,8 +478,15 @@ namespace SCGUILoop {
 						ImGui::SameLine();
 
 						// --- SLOT BUTTON ---
-						char slotName[32];
-						snprintf(slotName, 32, "Slot %d", i + 1);
+						std::string slotName;
+						if (!freeCamSlots[i].name.empty()) {
+							slotName = freeCamSlots[i].name;
+						}
+						else {
+							char slotNameBuffer[32];
+							snprintf(slotNameBuffer, 32, "Slot %d\0", i + 1);
+							slotName = slotNameBuffer;
+						}
 
 						if (freeCamSlots[i].hasData) {
 							ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.0f, 0.4f, 0.8f, 1.0f)); // Blue
@@ -393,10 +495,8 @@ namespace SCGUILoop {
 							ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.5f, 0.5f, 0.5f, 1.0f)); // Grey
 						}
 
-						if (ImGui::Button(slotName, ImVec2(80, 0))) {
+						if (ImGui::Button(slotName.c_str(), ImVec2(80, 0))) {
 							if (freeCamSlots[i].hasData) {
-								BaseCamera::moveStep = freeCamSlots[i].moveSpeed;
-								g_free_camera_mouse_speed = freeCamSlots[i].mouseSpeed;
 								SCCamera::baseCamera.fov = freeCamSlots[i].fov;
 
 								SCCamera::baseCamera.pos.x = freeCamSlots[i].pos.x;
@@ -412,13 +512,47 @@ namespace SCGUILoop {
 
 						// --- Clear button ---
 						ImGui::SameLine();
-						if (ImGui::Button("C", ImVec2(30, 0))) {
+						if (ImGui::Button("Clear")) {
 							freeCamSlots[i].hasData = false;
+							freeCamSlots[i].name = "";
 						}
+
+						// --- Remove button ---
+						ImGui::SameLine();
+						if (ImGui::Button("Remove")) {
+							freeCamSlots.erase(freeCamSlots.begin() + i);
+						}
+
+						// --- Rename button ---
+						ImGui::SameLine();
+						if (ImGui::Button("Rename")) {
+							std::strncpy(newFreeCamSlotName, slotName.c_str(), sizeof(newFreeCamSlotName));
+							newFreeCamSlotName[sizeof(newFreeCamSlotName) - 1] = '\0';
+							ImGui::OpenPopup("RenameFreecamstateSlot");
+						}
+						if (ImGui::BeginPopupModal("RenameFreecamstateSlot", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+							ImGui::Text("New name:  (up to 31 bytes)");
+							ImGui::InputText("##FcsSlotNameInput", newFreeCamSlotName, IM_ARRAYSIZE(newFreeCamSlotName));
+
+							if (ImGui::Button("OK", ImVec2(120, 0))) {
+								freeCamSlots[i].name = newFreeCamSlotName;
+								ImGui::CloseCurrentPopup();
+							}
+							ImGui::SameLine();
+							if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+								editingOverrideMvUnitIdolSlot = -1;
+								ImGui::CloseCurrentPopup();
+							}
+
+							ImGui::EndPopup();
+						}
+
 						ImGui::PopID();
 					}
 
 					// --- Add New Slot Button ---
+					ImGui::Dummy(ImVec2(40, 0));
+					ImGui::SameLine();
 					if (ImGui::Button("Add New Slot")) {
 						freeCamSlots.emplace_back();
 					}
@@ -459,6 +593,13 @@ namespace SCGUILoop {
 #endif
 			}
 
+		}
+		if (ImGui::BeginPopupModal("MessageBox", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+			ImGui::Text("%s", messageBoxContent.c_str());
+			if (ImGui::Button("OK")) {
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
 		}
 		ImGui::End();
 		if (g_enable_chara_param_edit) charaParamEditLoop();
