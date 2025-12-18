@@ -2135,7 +2135,7 @@ namespace
 	}
 
 	HOOK_ORIG_TYPE LiveMVStartData_ctor_orig;
-	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int renderingDynamicRange, int soundEffectMode) {
+	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, void* cameraworkConfig, bool isVocalSeparatedOn, int renderingDynamicRange, int soundEffectMode) {
 		if (g_override_isVocalSeparatedOn) {
 			if (isVocalSeparatedOn) {
 				printf("isVocalSeparatedOn is already true.\n");
@@ -2146,7 +2146,7 @@ namespace
 			}
 		}
 
-		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraIndex, isVocalSeparatedOn, renderingDynamicRange, soundEffectMode);
+		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraworkConfig, isVocalSeparatedOn, renderingDynamicRange, soundEffectMode);
 		ModifyOnStageIdols(onStageIdols);
 	}
 
