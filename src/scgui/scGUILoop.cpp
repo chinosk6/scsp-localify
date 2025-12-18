@@ -334,69 +334,67 @@ namespace SCGUILoop {
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "影分身术！\n允许在 Live 中选择同一人。\n（此模式的编组数据会上传，请小心你的号）")
 
-				ImGui::Checkbox("Enable Character Parameter Editor", &g_enable_chara_param_edit);
+			ImGui::Checkbox("Enable Character Parameter Editor", &g_enable_chara_param_edit);
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "启用角色身体参数编辑器")
 
-				ImGui::Checkbox("Unlock PIdol And SChara Events", &g_unlock_PIdol_and_SChara_events);
-			ImGui::SameLine();
-			HELP_TOOLTIP("(?)", "解锁 角色 - 一览 中的P卡和S卡事件\nUnlock Idol Event (アイドルイベント) and Support Event (サポートイベント)")
+			ImGui::Checkbox("Unlock Stories", &g_unlock_PIdol_and_SChara_events);
 
-				if (ImGui::CollapsingHeader("Resolution Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-					ImGui::Text("Window Resolution Settings");
+			if (ImGui::CollapsingHeader("Resolution Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ImGui::Text("Window Resolution Settings");
 
-					if (ImGui::Button("720P")) {
-						SCGUIData::screenW = 1280;
-						SCGUIData::screenH = 720;
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("1080P")) {
-						SCGUIData::screenW = 1920;
-						SCGUIData::screenH = 1080;
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("1440P")) {
-						SCGUIData::screenW = 2560;
-						SCGUIData::screenH = 1440;
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("1620P")) {
-						SCGUIData::screenW = 2880;
-						SCGUIData::screenH = 1620;
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("2160P")) {
-						SCGUIData::screenW = 3840;
-						SCGUIData::screenH = 2160;
-					}
-
-					ImGui::InputInt("Width", &SCGUIData::screenW);
-					ImGui::InputInt("Height", &SCGUIData::screenH);
-					ImGui::Checkbox("Full Screen", &SCGUIData::screenFull);
-					if (ImGui::Button("Update Resolution")) {
-						if (SetResolution_orig) {
-							(reinterpret_cast<void (*)(int, int, bool)>HOOK_GET_ORIG(SetResolution))(SCGUIData::screenW, SCGUIData::screenH, SCGUIData::screenFull);
-						}
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("Swap")) {
-						int temp = SCGUIData::screenW;
-						SCGUIData::screenW = SCGUIData::screenH;
-						SCGUIData::screenH = temp;
-						if (SetResolution_orig) {
-							(reinterpret_cast<void (*)(int, int, bool)>HOOK_GET_ORIG(SetResolution))(SCGUIData::screenW, SCGUIData::screenH, SCGUIData::screenFull);
-						}
-					}
-
-					ImGui::Separator();
-
-					INPUT_AND_SLIDER_FLOAT("3D Resolution Scale", &g_3d_resolution_scale, 0.1f, 5.0f);
-					if (g_3d_resolution_scale == 1.0f) {
-						SCCamera::currRenderResolution.x = SCGUIData::screenW;
-						SCCamera::currRenderResolution.y = SCGUIData::screenH;
-					}
-					ImGui::Text("Current 3D Resolution: %d, %d", SCCamera::currRenderResolution.x, SCCamera::currRenderResolution.y);
+				if (ImGui::Button("720P")) {
+					SCGUIData::screenW = 1280;
+					SCGUIData::screenH = 720;
 				}
+				ImGui::SameLine();
+				if (ImGui::Button("1080P")) {
+					SCGUIData::screenW = 1920;
+					SCGUIData::screenH = 1080;
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("1440P")) {
+					SCGUIData::screenW = 2560;
+					SCGUIData::screenH = 1440;
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("1620P")) {
+					SCGUIData::screenW = 2880;
+					SCGUIData::screenH = 1620;
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("2160P")) {
+					SCGUIData::screenW = 3840;
+					SCGUIData::screenH = 2160;
+				}
+
+				ImGui::InputInt("Width", &SCGUIData::screenW);
+				ImGui::InputInt("Height", &SCGUIData::screenH);
+				ImGui::Checkbox("Full Screen", &SCGUIData::screenFull);
+				if (ImGui::Button("Update Resolution")) {
+					if (SetResolution_orig) {
+						(reinterpret_cast<void (*)(int, int, bool)>HOOK_GET_ORIG(SetResolution))(SCGUIData::screenW, SCGUIData::screenH, SCGUIData::screenFull);
+					}
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Swap")) {
+					int temp = SCGUIData::screenW;
+					SCGUIData::screenW = SCGUIData::screenH;
+					SCGUIData::screenH = temp;
+					if (SetResolution_orig) {
+						(reinterpret_cast<void (*)(int, int, bool)>HOOK_GET_ORIG(SetResolution))(SCGUIData::screenW, SCGUIData::screenH, SCGUIData::screenFull);
+					}
+				}
+
+				ImGui::Separator();
+
+				INPUT_AND_SLIDER_FLOAT("3D Resolution Scale", &g_3d_resolution_scale, 0.1f, 5.0f);
+				if (g_3d_resolution_scale == 1.0f) {
+					SCCamera::currRenderResolution.x = SCGUIData::screenW;
+					SCCamera::currRenderResolution.y = SCGUIData::screenH;
+				}
+				ImGui::Text("Current 3D Resolution: %d, %d", SCCamera::currRenderResolution.x, SCCamera::currRenderResolution.y);
+			}
 
 			if (ImGui::CollapsingHeader("Camera Info", ImGuiTreeNodeFlags_DefaultOpen)) {
 				ImGui::InputFloat("Game Camera FOV", &SCGUIData::sysCamFov);

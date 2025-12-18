@@ -704,49 +704,16 @@ namespace
 
 	}
 
-	// NOT HOOK
-	HOOK_ORIG_TYPE PIdolDetailPopupViewModel_Create_orig;
-	void* PIdolDetailPopupViewModel_Create_hook(void* produceIdol, void* costumeSetInfoList, void* idolBase, void* idolParameter, bool isChangeableIdolSkill, bool isChangeableFavorite, void* produceAdvStatusList, bool isPlayableAdv, bool inLive, bool upgradingButtonActive) {
-		auto ret = HOOK_CAST_CALL(void*, PIdolDetailPopupViewModel_Create)(
-			produceIdol, costumeSetInfoList, idolBase, idolParameter, isChangeableIdolSkill, isChangeableFavorite, produceAdvStatusList, isPlayableAdv, inLive, upgradingButtonActive
-			);
-		return ret;
-		/*  // 功能被 ScenarioContentViewModel_ctor_hook 替代
-		static auto get_EventList = reinterpret_cast<void* (*)(void*)>(
-			il2cpp_symbols::get_method_pointer("PRISM.Adapters.dll", "PRISM.Adapters",
-				"PIdolDetailPopupViewModel", "get_EventList", 0)
-			);
-		static auto EventModel_klass = il2cpp_symbols::get_class("PRISM.Adapters.dll", "PRISM.Adapters", "EventModel");
-		static auto Read_field = il2cpp_class_get_field_from_name(EventModel_klass, "<Read>k__BackingField");
-		static auto IsAdvPlayable_field = il2cpp_class_get_field_from_name(EventModel_klass, "<IsAdvPlayable>k__BackingField");
-
-		printf("PIdolDetailPopupViewModel_Create\n");
-
-		auto events = get_EventList(ret);
-
-		il2cpp_symbols::iterate_IEnumerable(events, [](void* event) {
-			const auto read = il2cpp_symbols::read_field<bool>(event, Read_field);
-			const auto isAdvPlayable = il2cpp_symbols::read_field<bool>(event, IsAdvPlayable_field);
-			printf("read: %d, isAdvPlayable: %d\n", read, isAdvPlayable);
-
-			il2cpp_symbols::write_field(event, Read_field, true);
-			});
-
-		return ret;*/
-	}
-
-	HOOK_ORIG_TYPE ScenarioContentViewModel_ctor_orig;
-	void ScenarioContentViewModel_ctor_hook(void* _this, void* scenarioID, Il2CppString* title, Il2CppString* summary, bool isLocked,
-		bool isAdvPlayable, Il2CppString* alias, Il2CppString* characterName, int unlockLevel) {
-
+	HOOK_ORIG_TYPE StoryExtensions_IsLocked_orig;
+	bool StoryExtensions_IsLocked_hook(void* self) {
 		if (g_unlock_PIdol_and_SChara_events) {
-			if (!isLocked) {
-				wprintf(L"Force Unlock Event: %ls\n", title->start_char);
-				isLocked = true;
-			}
+			return false;
 		}
-		return HOOK_CAST_CALL(void, ScenarioContentViewModel_ctor)(_this, scenarioID, title, summary, isLocked, isAdvPlayable, alias, characterName, unlockLevel);
+		else {
+			return HOOK_CAST_CALL(bool, StoryExtensions_IsLocked)(self);
+		}
 	}
+
 
 	HOOK_ORIG_TYPE LocalizationManager_GetTextOrNull_orig;
 	Il2CppString* LocalizationManager_GetTextOrNull_hook(void* _this, Il2CppString* category, int id) {
@@ -2168,7 +2135,7 @@ namespace
 	}
 
 	HOOK_ORIG_TYPE LiveMVStartData_ctor_orig;
-	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, int cameraIndex, bool isVocalSeparatedOn, int renderingDynamicRange, int soundEffectMode) {
+	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, void* cameraworkConfig, bool isVocalSeparatedOn, int renderingDynamicRange, int soundEffectMode) {
 		if (g_override_isVocalSeparatedOn) {
 			if (isVocalSeparatedOn) {
 				printf("isVocalSeparatedOn is already true.\n");
@@ -2179,7 +2146,7 @@ namespace
 			}
 		}
 
-		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraIndex, isVocalSeparatedOn, renderingDynamicRange, soundEffectMode);
+		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraworkConfig, isVocalSeparatedOn, renderingDynamicRange, soundEffectMode);
 		ModifyOnStageIdols(onStageIdols);
 	}
 
@@ -2602,30 +2569,6 @@ namespace
 	void* baseCameraTransform = nullptr;
 	void* baseCamera = nullptr;
 
-	HOOK_ORIG_TYPE Unity_set_position_orig;
-	void Unity_set_position_hook(void* _this, Vector3_t value) {
-		return HOOK_CAST_CALL(void, Unity_set_position)(_this, value);
-	}
-
-	HOOK_ORIG_TYPE Unity_get_position_orig;
-	Vector3_t Unity_get_position_hook(void* _this) {
-		auto data = HOOK_CAST_CALL(Vector3_t, Unity_get_position)(_this);
-
-		if (_this == baseCameraTransform) {
-			if (guiStarting) {
-				SCGUIData::sysCamPos.x = data.x;
-				SCGUIData::sysCamPos.y = data.y;
-				SCGUIData::sysCamPos.z = data.z;
-			}
-			if (g_enable_free_camera) {
-				SCCamera::baseCamera.updateOtherPos(&data);
-				Unity_set_position_hook(_this, data);
-			}
-		}
-
-		return data;
-	}
-
 	HOOK_ORIG_TYPE Unity_set_fieldOfView_orig;
 	void Unity_set_fieldOfView_hook(void* _this, float single) {
 		return HOOK_CAST_CALL(void, Unity_set_fieldOfView)(_this, single);
@@ -2737,6 +2680,50 @@ namespace
 		return ret;
 	}
 
+	HOOK_ORIG_TYPE Unity_set_position_orig;
+	void Unity_set_position_hook(void* _this, Vector3_t value) {
+		return HOOK_CAST_CALL(void, Unity_set_position)(_this, value);
+	}
+
+	HOOK_ORIG_TYPE Unity_get_position_orig;
+	Vector3_t Unity_get_position_hook(void* _this) {
+		auto data = HOOK_CAST_CALL(Vector3_t, Unity_get_position)(_this);
+		if (_this == baseCameraTransform) {
+			auto ret = Unity_get_rotation_hook(_this);
+			if (guiStarting) {
+				SCGUIData::sysCamPos.x = data.x;
+				SCGUIData::sysCamPos.y = data.y;
+				SCGUIData::sysCamPos.z = data.z;
+
+				SCGUIData::sysCamRot.w = ret.w;
+				SCGUIData::sysCamRot.x = ret.x;
+				SCGUIData::sysCamRot.y = ret.y;
+				SCGUIData::sysCamRot.z = ret.z;
+				SCGUIData::updateSysCamLookAt();
+			}
+			if (g_enable_free_camera) {
+				SCCamera::baseCamera.updateOtherPos(&data);
+				Unity_set_position_hook(_this, data);
+
+				ret.w = 0;
+				ret.x = 0;
+				ret.y = 0;
+				ret.z = 0;
+				Unity_set_rotation_hook(_this, ret);
+
+				static auto Vector3_klass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Vector3");
+				Vector3_t* pos = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
+				Vector3_t* up = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
+				up->x = 0;
+				up->y = 1;
+				up->z = 0;
+				Unity_InternalLookAt_hook(_this, *pos, *up);
+			}
+		}
+
+		return data;
+	}
+
 
 	HOOK_ORIG_TYPE get_baseCamera_orig;
 	void* get_baseCamera_hook(void* _this) {
@@ -2758,23 +2745,6 @@ namespace
 		}
 
 		return ret;
-	}
-
-	HOOK_ORIG_TYPE CameraWorkEvent_ApplyCamera_orig;
-	void CameraWorkEvent_ApplyCamera_hook(void* _this) {
-		static auto klass_CameraWorkEvent = il2cpp_symbols_logged::get_class("PRISM.Legacy", "", "CameraWorkEvent");
-		static auto field_CameraWorkEvent_camera = il2cpp_class_get_field_from_name(klass_CameraWorkEvent, "_cameraCache");
-		auto camera = il2cpp_field_get_value_object(field_CameraWorkEvent_camera, _this);
-
-		HOOK_CAST_CALL(void, CameraWorkEvent_ApplyCamera)(_this);
-
-		if (g_enable_free_camera && baseCameraTransform != nullptr && camera == baseCamera) {
-			Unity_get_position_hook(baseCameraTransform);
-			Unity_get_rotation_hook(baseCameraTransform);
-			Vector3_t worldPosition{}, worldUp{};
-			worldUp.y = 1;
-			Unity_InternalLookAt_hook(baseCameraTransform, worldPosition, worldUp);
-		}
 	}
 
 	uintptr_t GetSubject_OnNext_addr() {
@@ -3087,13 +3057,9 @@ namespace
 			"TextLog", "AddLog", 4
 		);
 
-		//auto PIdolDetailPopupViewModel_Create_addr = il2cpp_symbols::get_method_pointer(
-		//	"PRISM.Adapters.dll", "PRISM.Adapters",
-		//	"PIdolDetailPopupViewModel", "Create", 10
-		//);
-		auto ScenarioContentViewModel_ctor_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Adapters.dll", "PRISM.Adapters",
-			"ScenarioContentViewModel", ".ctor", 8
+		auto StoryExtensions_IsLocked_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM.Domain",
+			"StoryExtensions", "IsLocked", 1
 		);
 
 		auto LocalizationManager_GetTextOrNull_addr = il2cpp_symbols::get_method_pointer(
@@ -3116,11 +3082,6 @@ namespace
 		auto get_baseCamera_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"CameraController", "get_BaseCamera", 0
-		);
-
-		auto CameraWorkEvent_ApplyCamera_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Legacy", "",
-			"CameraWorkEvent", "ApplyCamera", 0
 		);
 
 		const auto AssetBundle_LoadAsset_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.AssetBundleModule.dll", "UnityEngine", "AssetBundle", "LoadAsset_Internal", 2);
@@ -3332,15 +3293,13 @@ namespace
 
 #pragma endregion
 		ADD_HOOK(SetResolution, "SetResolution at %p");
-		// ADD_HOOK(PIdolDetailPopupViewModel_Create, "PIdolDetailPopupViewModel_Create at %p");
-		ADD_HOOK(ScenarioContentViewModel_ctor, "ScenarioContentViewModel_ctor at %p");
+		ADD_HOOK_1(StoryExtensions_IsLocked);
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(GetResolutionSize, "GetResolutionSize at %p");
 		ADD_HOOK(AssetBundle_LoadAsset, "AssetBundle_LoadAsset at %p");
 		ADD_HOOK(LiveMVOverlayView_UpdateLyrics, "LiveMVOverlayView_UpdateLyrics at %p");
 		ADD_HOOK(TimelineController_SetLyric, "TimelineController_SetLyric at %p");
 		ADD_HOOK(get_baseCamera, "get_baseCamera at %p");
-		ADD_HOOK(CameraWorkEvent_ApplyCamera, "CameraWorkEvent_ApplyCamera at %p");
 		ADD_HOOK(Unity_get_position, "Unity_get_position at %p");
 		ADD_HOOK(Unity_set_position, "Unity_set_position at %p");
 		ADD_HOOK(Unity_get_fieldOfView, "Unity_get_fieldOfView at %p");
