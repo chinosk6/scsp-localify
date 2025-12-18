@@ -112,6 +112,52 @@ LONG WINAPI seh_filter(EXCEPTION_POINTERS* ep) {
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
+
+bool WriteClipboard(std::string& text) {
+	if (!OpenClipboard(nullptr)) return false;
+	EmptyClipboard();
+
+	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, text.size() + 1);
+	if (!hMem) {
+		CloseClipboard();
+		return false;
+	}
+
+	auto lock = GlobalLock(hMem);
+	if (!lock) {
+		CloseClipboard();
+		return false;
+	}
+	memcpy(lock, text.c_str(), text.size() + 1);
+	GlobalUnlock(hMem);
+
+	SetClipboardData(CF_TEXT, hMem);
+	CloseClipboard();
+	return true;
+}
+
+bool ReadClipboard(std::string* text) {
+	if (!text || !OpenClipboard(nullptr)) return false;
+
+	HANDLE hData = GetClipboardData(CF_TEXT);
+	if (hData == nullptr) {
+		CloseClipboard();
+		return false;
+	}
+
+	char* pszText = static_cast<char*>(GlobalLock(hData));
+	if (pszText == nullptr) {
+		CloseClipboard();
+		return false;
+	}
+
+	*text = pszText;
+	GlobalUnlock(hData);
+	CloseClipboard();
+	return true;
+}
+
+
 void* UnitIdol::field_UnitIdol_charaId = nullptr;
 void* UnitIdol::klass_UnitIdol = nullptr;
 void* UnitIdol::field_UnitIdol_clothId = nullptr;

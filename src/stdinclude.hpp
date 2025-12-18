@@ -68,6 +68,10 @@ namespace debug {
 }
 
 
+bool WriteClipboard(std::string& text);
+bool ReadClipboard(std::string* text);
+
+
 class CharaParam_t {
 public:
 	CharaParam_t(float height, float bust, float head, float arm, float hand) :
