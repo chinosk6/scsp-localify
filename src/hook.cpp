@@ -2569,30 +2569,6 @@ namespace
 	void* baseCameraTransform = nullptr;
 	void* baseCamera = nullptr;
 
-	HOOK_ORIG_TYPE Unity_set_position_orig;
-	void Unity_set_position_hook(void* _this, Vector3_t value) {
-		return HOOK_CAST_CALL(void, Unity_set_position)(_this, value);
-	}
-
-	HOOK_ORIG_TYPE Unity_get_position_orig;
-	Vector3_t Unity_get_position_hook(void* _this) {
-		auto data = HOOK_CAST_CALL(Vector3_t, Unity_get_position)(_this);
-
-		if (_this == baseCameraTransform) {
-			if (guiStarting) {
-				SCGUIData::sysCamPos.x = data.x;
-				SCGUIData::sysCamPos.y = data.y;
-				SCGUIData::sysCamPos.z = data.z;
-			}
-			if (g_enable_free_camera) {
-				SCCamera::baseCamera.updateOtherPos(&data);
-				Unity_set_position_hook(_this, data);
-			}
-		}
-
-		return data;
-	}
-
 	HOOK_ORIG_TYPE Unity_set_fieldOfView_orig;
 	void Unity_set_fieldOfView_hook(void* _this, float single) {
 		return HOOK_CAST_CALL(void, Unity_set_fieldOfView)(_this, single);
@@ -2704,6 +2680,50 @@ namespace
 		return ret;
 	}
 
+	HOOK_ORIG_TYPE Unity_set_position_orig;
+	void Unity_set_position_hook(void* _this, Vector3_t value) {
+		return HOOK_CAST_CALL(void, Unity_set_position)(_this, value);
+	}
+
+	HOOK_ORIG_TYPE Unity_get_position_orig;
+	Vector3_t Unity_get_position_hook(void* _this) {
+		auto data = HOOK_CAST_CALL(Vector3_t, Unity_get_position)(_this);
+		if (_this == baseCameraTransform) {
+			auto ret = Unity_get_rotation_hook(_this);
+			if (guiStarting) {
+				SCGUIData::sysCamPos.x = data.x;
+				SCGUIData::sysCamPos.y = data.y;
+				SCGUIData::sysCamPos.z = data.z;
+
+				SCGUIData::sysCamRot.w = ret.w;
+				SCGUIData::sysCamRot.x = ret.x;
+				SCGUIData::sysCamRot.y = ret.y;
+				SCGUIData::sysCamRot.z = ret.z;
+				SCGUIData::updateSysCamLookAt();
+			}
+			if (g_enable_free_camera) {
+				SCCamera::baseCamera.updateOtherPos(&data);
+				Unity_set_position_hook(_this, data);
+
+				ret.w = 0;
+				ret.x = 0;
+				ret.y = 0;
+				ret.z = 0;
+				Unity_set_rotation_hook(_this, ret);
+
+				static auto Vector3_klass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Vector3");
+				Vector3_t* pos = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
+				Vector3_t* up = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
+				up->x = 0;
+				up->y = 1;
+				up->z = 0;
+				Unity_InternalLookAt_hook(_this, *pos, *up);
+			}
+		}
+
+		return data;
+	}
+
 
 	HOOK_ORIG_TYPE get_baseCamera_orig;
 	void* get_baseCamera_hook(void* _this) {
@@ -2725,23 +2745,6 @@ namespace
 		}
 
 		return ret;
-	}
-
-	HOOK_ORIG_TYPE CameraWorkEvent_ApplyCamera_orig;
-	void CameraWorkEvent_ApplyCamera_hook(void* _this) {
-		static auto klass_CameraWorkEvent = il2cpp_symbols_logged::get_class("PRISM.Legacy", "", "CameraWorkEvent");
-		static auto field_CameraWorkEvent_camera = il2cpp_class_get_field_from_name(klass_CameraWorkEvent, "_cameraCache");
-		auto camera = il2cpp_field_get_value_object(field_CameraWorkEvent_camera, _this);
-
-		HOOK_CAST_CALL(void, CameraWorkEvent_ApplyCamera)(_this);
-
-		if (g_enable_free_camera && baseCameraTransform != nullptr && camera == baseCamera) {
-			Unity_get_position_hook(baseCameraTransform);
-			Unity_get_rotation_hook(baseCameraTransform);
-			Vector3_t worldPosition{}, worldUp{};
-			worldUp.y = 1;
-			Unity_InternalLookAt_hook(baseCameraTransform, worldPosition, worldUp);
-		}
 	}
 
 	uintptr_t GetSubject_OnNext_addr() {
@@ -3081,11 +3084,6 @@ namespace
 			"CameraController", "get_BaseCamera", 0
 		);
 
-		auto CameraWorkEvent_ApplyCamera_addr = il2cpp_symbols::get_method_pointer(
-			"PRISM.Legacy", "",
-			"CameraWorkEvent", "ApplyCamera", 0
-		);
-
 		const auto AssetBundle_LoadAsset_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.AssetBundleModule.dll", "UnityEngine", "AssetBundle", "LoadAsset_Internal", 2);
 
 		auto Unity_get_position_addr = il2cpp_symbols_logged::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Transform", "get_position", 0);
@@ -3302,7 +3300,6 @@ namespace
 		ADD_HOOK(LiveMVOverlayView_UpdateLyrics, "LiveMVOverlayView_UpdateLyrics at %p");
 		ADD_HOOK(TimelineController_SetLyric, "TimelineController_SetLyric at %p");
 		ADD_HOOK(get_baseCamera, "get_baseCamera at %p");
-		ADD_HOOK(CameraWorkEvent_ApplyCamera, "CameraWorkEvent_ApplyCamera at %p");
 		ADD_HOOK(Unity_get_position, "Unity_get_position at %p");
 		ADD_HOOK(Unity_set_position, "Unity_set_position at %p");
 		ADD_HOOK(Unity_get_fieldOfView, "Unity_get_fieldOfView at %p");
