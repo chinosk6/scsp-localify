@@ -2076,27 +2076,11 @@ namespace
 
 
 	HOOK_ORIG_TYPE CostumeChangeViewModel_ctor_orig;
-	void CostumeChangeViewModel_ctor_hook(Il2CppObject* _this, Il2CppObject* parameter, Il2CppObject* previewCostumeSet) {
-		static auto method_CostumeChangeViewModelParameter_get_IsAllDressOrdered = il2cpp_symbols_logged::get_method(
-			"PRISM.Adapters", "PRISM.Adapters.CostumeChange",
-			"CostumeChangeViewModelParameter", "get_IsAllDressOrdered", 0
-		);
-		static auto method_CostumeChangeViewModelParameter_set_IsAllDressOrdered = il2cpp_symbols_logged::get_method(
-			"PRISM.Adapters", "PRISM.Adapters.CostumeChange",
-			"CostumeChangeViewModelParameter", "set_IsAllDressOrdered", 1
-		);
-
+	void CostumeChangeViewModel_ctor_hook(Il2CppObject* _this, Il2CppObject* parameter, int characterId, void* settingCostumeSet, bool isAllDressOrdered, void* defaultCostumeSet) {
 		if (g_show_hidden_costumes) {
-			bool isAllDressOrdered = il2cpp_symbols::unbox<bool>(
-				reflection::Invoke(method_CostumeChangeViewModelParameter_get_IsAllDressOrdered, parameter, nullptr, "get_IsAllDressOrdered")
-			);
-
-			const bool trueValue = true;
-			auto pTrue = &trueValue;
-			reflection::Invoke(method_CostumeChangeViewModelParameter_set_IsAllDressOrdered, parameter, (Il2CppObject**)&pTrue, "set_IsAllDressOrdered");
+			isAllDressOrdered = true;
 		}
-
-		return HOOK_CAST_CALL(void, CostumeChangeViewModel_ctor)(_this, parameter, previewCostumeSet);
+		return HOOK_CAST_CALL(void, CostumeChangeViewModel_ctor)(_this, parameter, characterId, settingCostumeSet, isAllDressOrdered, defaultCostumeSet);
 	}
 
 
@@ -2138,18 +2122,18 @@ namespace
 	}
 
 	HOOK_ORIG_TYPE LiveMVStartData_ctor_orig;
-	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, void* cameraworkConfig, bool isVocalSeparatedOn, int renderingDynamicRange, int soundEffectMode) {
+	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, void* cameraworkConfig, int vocalSeparatedMode, int renderingDynamicRange, int soundEffectMode, bool isSortIdols) {
 		if (g_override_isVocalSeparatedOn) {
-			if (isVocalSeparatedOn) {
-				printf("isVocalSeparatedOn is already true.\n");
-			}
-			else {
-				isVocalSeparatedOn = true;
-				printf("isVocalSeparatedOn is overriden to true.\n");
-			}
+			//if (isVocalSeparatedOn) {
+			//	printf("isVocalSeparatedOn is already true.\n");
+			//}
+			//else {
+			//	isVocalSeparatedOn = true;
+			//	printf("isVocalSeparatedOn is overriden to true.\n");
+			//}
 		}
 
-		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraworkConfig, isVocalSeparatedOn, renderingDynamicRange, soundEffectMode);
+		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraworkConfig, vocalSeparatedMode, renderingDynamicRange, soundEffectMode, isSortIdols);
 		ModifyOnStageIdols(onStageIdols);
 	}
 
@@ -3398,12 +3382,12 @@ namespace
 
 		auto CostumeChangeViewModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Adapters", "PRISM.Adapters.CostumeChange",
-			"CostumeChangeViewModel", ".ctor", 2
+			"CostumeChangeViewModel", ".ctor", 5
 		);
 
 		auto LiveMVStartData_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy", "PRISM.Live",
-			"LiveMVStartData", ".ctor", 6
+			"LiveMVStartData", ".ctor", 7
 		);
 
 		auto RunwayEventStartData_ctor_addr = il2cpp_symbols_logged::get_method_pointer(
