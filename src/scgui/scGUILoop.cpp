@@ -410,7 +410,7 @@ namespace SCGUILoop {
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "在操作窗口中保存用于替换MV播放时的角色信息。\nSave idols' data in control panel to replace them when playing MV.");
 
-			ImGui::Checkbox("Show hidden costumes (override IsAllDressOrdered)", &g_show_hidden_costumes);
+			ImGui::Checkbox("Show hidden costumes (overwrite isAllDressOrdered)", &g_show_hidden_costumes);
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "在进入换装窗口前勾选有效。\nActive only when checked before entering costume changing view.");
 
@@ -668,7 +668,11 @@ namespace SCGUILoop {
 				ImGui::SameLine();
 				ImGui::Checkbox("(cloth)", &g_magicacloth_output_cloth);
 				ImGui::SameLine();
+				HELP_TOOLTIP("(?)", "并非所有服装使用MagicCloth。勾选此选项可以了解哪些服装支持（在切换时）。\nNot all costumes are using MagicaCloth. Checking this can learn what costume is supported (in changing).");
+				ImGui::SameLine();
 				ImGui::Checkbox("(controller)", &g_magicacloth_output_controller);
+				ImGui::SameLine();
+				HELP_TOOLTIP("(?)", "并非所有数值均有效。勾选此选项可以了解修改是否被应用。\nNot all values are valid. Checking this can learn if the modification is applied.");
 
 				if (g_magicacloth_override) {
 					INPUT_AND_SLIDER_FLOAT("Inertia.min", &g_magicacloth_inertia_min, 0.0f, 1.0f);

@@ -2101,7 +2101,7 @@ namespace
 					}
 				}
 			}
-			if (g_save_and_replace_costume_changes && g_overrie_mv_unit_idols) {
+			if (g_overrie_mv_unit_idols) {
 				auto loopMax = idolsLength;
 				if (idolsLength > overridenMvUnitIdols_length) {
 					printf("[WARNING]: `onStageIdols.Length` = %d, greater than expected `overridenMvUnitIdols_length`.\n", idolsLength);
@@ -2124,15 +2124,8 @@ namespace
 	HOOK_ORIG_TYPE LiveMVStartData_ctor_orig;
 	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, void* cameraworkConfig, int vocalSeparatedMode, int renderingDynamicRange, int soundEffectMode, bool isSortIdols) {
 		if (g_override_isVocalSeparatedOn) {
-			//if (isVocalSeparatedOn) {
-			//	printf("isVocalSeparatedOn is already true.\n");
-			//}
-			//else {
-			//	isVocalSeparatedOn = true;
-			//	printf("isVocalSeparatedOn is overriden to true.\n");
-			//}
+			vocalSeparatedMode = 1;
 		}
-
 		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraworkConfig, vocalSeparatedMode, renderingDynamicRange, soundEffectMode, isSortIdols);
 		ModifyOnStageIdols(onStageIdols);
 	}
