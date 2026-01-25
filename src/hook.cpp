@@ -2096,11 +2096,12 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 
 	// Normal 3D Live
 	HOOK_ORIG_TYPE DepthOfFieldClip_CreatePlayable_orig;
-	void* DepthOfFieldClip_CreatePlayable_hook(void* _this, void* graph, void* go, void* mtd) {
+	// Correct Signature for x64 with struct return > 8 bytes:
+	// void* retstr (RCX), void* _this (RDX), void* graph (R8), void* go (R9), void* mtd (Stack)
+	void* DepthOfFieldClip_CreatePlayable_hook(void* retstr, void* _this, void* graph, void* go, void* mtd) {
 		if (!_this) {
-			// If 'this' is null, we cannot call the original instance method.
-			// Return 0 (equivalent to Playable.Null struct with zero handle) to avoid crash.
-			return nullptr; 
+			// If 'this' is null, just call original to handle it (or return retstr if original crashes too)
+			return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(retstr, _this, graph, go, mtd);
 		}
 
 		// Debug logging to trace execution
