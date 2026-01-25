@@ -2096,12 +2096,12 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 
 	// Normal 3D Live
 	HOOK_ORIG_TYPE DepthOfFieldClip_CreatePlayable_orig;
-	// Correct Signature for x64 with struct return > 8 bytes:
-	// void* retstr (RCX), void* _this (RDX), void* graph (R8), void* go (R9), void* mtd (Stack)
-	void* DepthOfFieldClip_CreatePlayable_hook(void* retstr, void* _this, void* graph, void* go, void* mtd) {
+	// Reverted signature: No hidden return buffer. Playable fits in RAX or handled differently.
+	// RCX = _this, RDX = graph, R8 = go
+	void* DepthOfFieldClip_CreatePlayable_hook(void* _this, void* graph, void* go, void* mtd) {
 		if (!_this) {
-			// If 'this' is null, just call original to handle it (or return retstr if original crashes too)
-			return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(retstr, _this, graph, go, mtd);
+			// If 'this' is null, return 0 (Playable.Null)
+			return nullptr; 
 		}
 
 		// Debug logging to trace execution
@@ -2236,7 +2236,7 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 
 			// printf("DepthOfFieldClip_CreatePlayable, focusDistance: %f, aperture: %f, focalLength: %f\n", focusDistance, aperture, focalLength);
 		}
-		return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(retstr, _this, graph, go, mtd);
+		return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(_this, graph, go, mtd);
 	}
 
 	HOOK_ORIG_TYPE DramaSubtitlePlayableAsset_CreatePlayable_orig;
