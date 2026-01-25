@@ -1983,7 +1983,8 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 			// But to be safer, we can try-catch it if possible, or just rely on address check.
 			// For now, we rely on the fact that these are arguments to a function.
 			auto klass = il2cpp_symbols::get_class_from_instance(ptr);
-			return klass == il2cpp_symbols::get_string_class();
+			static auto stringClass = il2cpp_symbols::get_class("mscorlib.dll", "System", "String");
+			return klass == stringClass;
 		};
 
 		// Try to interpret as if there is a hidden return buffer (Standard struct return)
