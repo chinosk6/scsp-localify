@@ -1754,7 +1754,8 @@ namespace il2cpp_timeline {
 	static void* TimelineAsset_klass = nullptr;
 	static void* TrackAsset_klass = nullptr;
 	static void* TimelineClip_klass = nullptr;
-	static MethodInfo* TimelineAsset_get_outputTracks = nullptr;
+	static MethodInfo* TimelineAsset_get_rootTrackCount = nullptr;
+	static MethodInfo* TimelineAsset_GetRootTrack = nullptr;
 	static MethodInfo* TrackAsset_get_clips = nullptr;
 	static MethodInfo* TimelineClip_get_asset = nullptr;
 	static MethodInfo* TimelineClip_get_start = nullptr;
@@ -1766,7 +1767,8 @@ namespace il2cpp_timeline {
 		TimelineClip_klass = il2cpp_symbols::get_class("UnityEngine.Timeline.dll", "UnityEngine.Timeline", "TimelineClip");
 
 		if (TimelineAsset_klass) {
-			TimelineAsset_get_outputTracks = il2cpp_class_get_method_from_name(TimelineAsset_klass, "get_outputTracks", 0);
+			TimelineAsset_get_rootTrackCount = il2cpp_class_get_method_from_name(TimelineAsset_klass, "get_rootTrackCount", 0);
+			TimelineAsset_GetRootTrack = il2cpp_class_get_method_from_name(TimelineAsset_klass, "GetRootTrack", 1);
 		}
 		if (TrackAsset_klass) {
 			TrackAsset_get_clips = il2cpp_class_get_method_from_name(TrackAsset_klass, "get_clips", 0);
@@ -1778,129 +1780,146 @@ namespace il2cpp_timeline {
 	}
 }
 
-	void InjectTimelineTranslation(void* timelineAsset) {
-		if (!timelineAsset) return;
-		il2cpp_timeline::Init();
-		if (!il2cpp_timeline::TimelineAsset_get_outputTracks) return;
-
-		// Iterate Tracks
-		// Safety check for method pointer
-		if (!il2cpp_timeline::TimelineAsset_get_outputTracks->methodPointer) return;
-
-		auto tracksEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_outputTracks, timelineAsset, nullptr, nullptr);
-		
-		il2cpp_symbols::iterate_IEnumerable(tracksEnumerable, [&](void* track) {
-			if (!track) return;
-			
-			// Iterate Clips
-			if (!il2cpp_timeline::TrackAsset_get_clips || !il2cpp_timeline::TrackAsset_get_clips->methodPointer) return;
-			auto clipsEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TrackAsset_get_clips, track, nullptr, nullptr);
-			
-			il2cpp_symbols::iterate_IEnumerable(clipsEnumerable, [&](void* clip) {
-				if (!clip) return;
-
-				if (!il2cpp_timeline::TimelineClip_get_asset || !il2cpp_timeline::TimelineClip_get_asset->methodPointer) return;
-				auto playableAsset = il2cpp_runtime_invoke(il2cpp_timeline::TimelineClip_get_asset, clip, nullptr, nullptr);
-				if (!playableAsset) return;
-
-				// Check if it is DramaSubtitlePlayableAsset
-				static auto DramaSubtitlePlayableAsset_klass = il2cpp_symbols::get_class("PRISM.Interactions.Drama.dll", "PRISM.Interactions.Drama", "DramaSubtitlePlayableAsset");
-				if (!DramaSubtitlePlayableAsset_klass)
-					DramaSubtitlePlayableAsset_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Interactions.Drama", "DramaSubtitlePlayableAsset");
-
-				auto assetKlass = il2cpp_symbols::get_class_from_instance(playableAsset);
-				if (assetKlass == DramaSubtitlePlayableAsset_klass) {
-					// Extract Data
-					static auto behaviour_field = il2cpp_class_get_field_from_name(DramaSubtitlePlayableAsset_klass, "behaviour");
-					if (!behaviour_field) behaviour_field = il2cpp_class_get_field_from_name(DramaSubtitlePlayableAsset_klass, "m_Template");
-
-					if (behaviour_field) {
-						auto behaviour = il2cpp_field_get_value_object(behaviour_field, playableAsset);
-						if (behaviour) {
-							static auto behaviour_klass = il2cpp_symbols::get_class_from_instance(behaviour);
-							static auto uniqueId_field = il2cpp_class_get_field_from_name(behaviour_klass, "uniqueId");
-							if (!uniqueId_field) uniqueId_field = il2cpp_class_get_field_from_name(behaviour_klass, "uuid");
-							static auto text_field = il2cpp_class_get_field_from_name(behaviour_klass, "text");
-							if (!text_field) text_field = il2cpp_class_get_field_from_name(behaviour_klass, "_text");
-
-							if (uniqueId_field && text_field) {
-								Il2CppString* uniqueIdStr = nullptr;
-								il2cpp_field_get_value(behaviour, uniqueId_field, &uniqueIdStr);
-								
-								if (uniqueIdStr) {
-									std::string uidStr = uniqueIdStr->ToUtf8String();
-									if (g_debugMode) printf("[InjectTranslation] Found uniqueId: %s\n", uidStr.c_str());
-									
-									SCLocal::SubtitleData subData;
-									if (SCLocal::getSubtitle(uidStr, subData)) {
-										if (g_debugMode) printf("Translating Drama Subtitle: %s -> %s\n", uidStr.c_str(), subData.translation.c_str());
-
-										std::string finalText;
-										if (subData.config.dualMode && !subData.original.empty()) {
-											// Interleaved Layout: JP line -> ZH line -> JP line -> ZH line ...
-											auto zhLines = splitString(subData.translation);
-											auto jpLines = splitString(subData.original);
-											
-											std::string combinedText = "";
-											size_t maxLines = std::max(zhLines.size(), jpLines.size());
-											
-											for (size_t i = 0; i < maxLines; i++) {
-												if (i > 0) combinedText += "\n";
-												
-												// Japanese Line (Top)
-												if (i < jpLines.size() && !jpLines[i].empty()) {
-													std::string jpLine = jpLines[i];
-													jpLine.erase(std::remove(jpLine.begin(), jpLine.end(), '\r'), jpLine.end());
-													int jpLineHeight = 100 + subData.config.lineSpacing;
-													combinedText += std::format("<line-height={}%><nobr><size={}><color=#CCCCCC>{}</color></size></nobr></line-height>", jpLineHeight, subData.config.jpSize, jpLine);
-													combinedText += "\n"; 
-												}
-												
-												// Chinese Line (Bottom)
-												if (i < zhLines.size() && !zhLines[i].empty()) {
-													std::string zhLine = zhLines[i];
-													zhLine.erase(std::remove(zhLine.begin(), zhLine.end(), '\r'), zhLine.end());
-													std::string zhFormatted = std::format("<line-height=100%><nobr><size={}>{}</size></nobr></line-height>", subData.config.zhSize, zhLine);
-													combinedText += zhFormatted;
-												}
-											}
-											finalText = combinedText;
-										} else {
-											finalText = subData.translation;
-										}
-
-										auto wTranslation = utility::conversions::to_utf16string(finalText);
-										il2cpp_field_set_value(behaviour, text_field, il2cpp_string_new_utf16((const wchar_t*)wTranslation.c_str(), wTranslation.length()));
-									}
-								}
-							}
-						}
-					}
-				}
-			});
-		});
-	}
-
-	void DumpTimeline(void* timelineAsset, const std::string& scenarioId) {
+void InjectTimelineTranslation(void* timelineAsset) {
 	if (!timelineAsset) return;
 	il2cpp_timeline::Init();
-	if (!il2cpp_timeline::TimelineAsset_get_outputTracks) return;
-
-	nlohmann::json dumpArray = nlohmann::json::array();
-	std::unordered_set<std::string> dumpedUuids;
-
-	// Iterate Tracks
-	auto tracksEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_outputTracks, timelineAsset, nullptr, nullptr);
 	
-	il2cpp_symbols::iterate_IEnumerable(tracksEnumerable, [&](void* track) {
-		if (!track) return;
-		
-		// Iterate Clips
+	// Check required methods
+	if (!il2cpp_timeline::TimelineAsset_get_rootTrackCount || !il2cpp_timeline::TimelineAsset_get_rootTrackCount->methodPointer) return;
+	if (!il2cpp_timeline::TimelineAsset_GetRootTrack || !il2cpp_timeline::TimelineAsset_GetRootTrack->methodPointer) return;
+
+	// Iterate Root Tracks using Index
+	int rootTrackCount = 0;
+	auto rootTrackCountObj = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_rootTrackCount, timelineAsset, nullptr, nullptr);
+	if (rootTrackCountObj) {
+		rootTrackCount = *reinterpret_cast<int*>(il2cpp_object_unbox(rootTrackCountObj));
+	}
+
+	for (int i = 0; i < rootTrackCount; i++) {
+		void* args[] = { &i };
+		auto track = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_GetRootTrack, timelineAsset, args, nullptr);
+		if (!track) continue;
+
+		// Iterate Clips (Still using IEnumerable as TrackAsset doesn't seem to have indexer exposed easily in dump)
+		if (!il2cpp_timeline::TrackAsset_get_clips || !il2cpp_timeline::TrackAsset_get_clips->methodPointer) continue;
 		auto clipsEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TrackAsset_get_clips, track, nullptr, nullptr);
 		
 		il2cpp_symbols::iterate_IEnumerable(clipsEnumerable, [&](void* clip) {
 			if (!clip) return;
 
+			if (!il2cpp_timeline::TimelineClip_get_asset || !il2cpp_timeline::TimelineClip_get_asset->methodPointer) return;
+			auto playableAsset = il2cpp_runtime_invoke(il2cpp_timeline::TimelineClip_get_asset, clip, nullptr, nullptr);
+			if (!playableAsset) return;
+
+			// Check if it is DramaSubtitlePlayableAsset
+			static auto DramaSubtitlePlayableAsset_klass = il2cpp_symbols::get_class("PRISM.Interactions.Drama.dll", "PRISM.Interactions.Drama", "DramaSubtitlePlayableAsset");
+			if (!DramaSubtitlePlayableAsset_klass)
+				DramaSubtitlePlayableAsset_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Interactions.Drama", "DramaSubtitlePlayableAsset");
+
+			auto assetKlass = il2cpp_symbols::get_class_from_instance(playableAsset);
+			if (assetKlass == DramaSubtitlePlayableAsset_klass) {
+				// Extract Data
+				static auto behaviour_field = il2cpp_class_get_field_from_name(DramaSubtitlePlayableAsset_klass, "behaviour");
+				if (!behaviour_field) behaviour_field = il2cpp_class_get_field_from_name(DramaSubtitlePlayableAsset_klass, "m_Template");
+
+				if (behaviour_field) {
+					auto behaviour = il2cpp_field_get_value_object(behaviour_field, playableAsset);
+					if (behaviour) {
+						static auto behaviour_klass = il2cpp_symbols::get_class_from_instance(behaviour);
+						static auto uniqueId_field = il2cpp_class_get_field_from_name(behaviour_klass, "uniqueId");
+						if (!uniqueId_field) uniqueId_field = il2cpp_class_get_field_from_name(behaviour_klass, "uuid");
+						static auto text_field = il2cpp_class_get_field_from_name(behaviour_klass, "text");
+						if (!text_field) text_field = il2cpp_class_get_field_from_name(behaviour_klass, "_text");
+
+						if (uniqueId_field && text_field) {
+							Il2CppString* uniqueIdStr = nullptr;
+							il2cpp_field_get_value(behaviour, uniqueId_field, &uniqueIdStr);
+							
+							if (uniqueIdStr) {
+								std::string uidStr = uniqueIdStr->ToUtf8String();
+								if (g_debugMode) printf("[InjectTranslation] Found uniqueId: %s\n", uidStr.c_str());
+								
+								SCLocal::SubtitleData subData;
+								if (SCLocal::getSubtitle(uidStr, subData)) {
+									if (g_debugMode) printf("Translating Drama Subtitle: %s -> %s\n", uidStr.c_str(), subData.translation.c_str());
+
+									std::string finalText;
+									if (subData.config.dualMode && !subData.original.empty()) {
+										// Interleaved Layout: JP line -> ZH line -> JP line -> ZH line ...
+										auto zhLines = splitString(subData.translation);
+										auto jpLines = splitString(subData.original);
+										
+										std::string combinedText = "";
+										size_t maxLines = std::max(zhLines.size(), jpLines.size());
+										
+										for (size_t i = 0; i < maxLines; i++) {
+											if (i > 0) combinedText += "\n";
+											
+											// Japanese Line (Top)
+											if (i < jpLines.size() && !jpLines[i].empty()) {
+												std::string jpLine = jpLines[i];
+												jpLine.erase(std::remove(jpLine.begin(), jpLine.end(), '\r'), jpLine.end());
+												int jpLineHeight = 100 + subData.config.lineSpacing;
+												combinedText += std::format("<line-height={}%><nobr><size={}><color=#CCCCCC>{}</color></size></nobr></line-height>", jpLineHeight, subData.config.jpSize, jpLine);
+												combinedText += "\n"; 
+											}
+											
+											// Chinese Line (Bottom)
+											if (i < zhLines.size() && !zhLines[i].empty()) {
+												std::string zhLine = zhLines[i];
+												zhLine.erase(std::remove(zhLine.begin(), zhLine.end(), '\r'), zhLine.end());
+												std::string zhFormatted = std::format("<line-height=100%><nobr><size={}>{}</size></nobr></line-height>", subData.config.zhSize, zhLine);
+												combinedText += zhFormatted;
+											}
+										}
+										finalText = combinedText;
+									} else {
+										finalText = subData.translation;
+									}
+
+									auto wTranslation = utility::conversions::to_utf16string(finalText);
+									il2cpp_field_set_value(behaviour, text_field, il2cpp_string_new_utf16((const wchar_t*)wTranslation.c_str(), wTranslation.length()));
+								}
+							}
+						}
+					}
+				}
+			}
+		});
+	}
+}
+
+void DumpTimeline(void* timelineAsset, const std::string& scenarioId) {
+	if (!timelineAsset) return;
+	il2cpp_timeline::Init();
+	
+	// Check required methods
+	if (!il2cpp_timeline::TimelineAsset_get_rootTrackCount || !il2cpp_timeline::TimelineAsset_get_rootTrackCount->methodPointer) return;
+	if (!il2cpp_timeline::TimelineAsset_GetRootTrack || !il2cpp_timeline::TimelineAsset_GetRootTrack->methodPointer) return;
+
+	nlohmann::json dumpArray = nlohmann::json::array();
+	std::unordered_set<std::string> dumpedUuids;
+
+	// Iterate Root Tracks using Index
+	int rootTrackCount = 0;
+	auto rootTrackCountObj = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_rootTrackCount, timelineAsset, nullptr, nullptr);
+	if (rootTrackCountObj) {
+		rootTrackCount = *reinterpret_cast<int*>(il2cpp_object_unbox(rootTrackCountObj));
+	}
+
+	for (int i = 0; i < rootTrackCount; i++) {
+		void* args[] = { &i };
+		auto track = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_GetRootTrack, timelineAsset, args, nullptr);
+		if (!track) continue;
+		
+		// Iterate Clips
+		if (!il2cpp_timeline::TrackAsset_get_clips || !il2cpp_timeline::TrackAsset_get_clips->methodPointer) continue;
+		auto clipsEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TrackAsset_get_clips, track, nullptr, nullptr);
+		
+		il2cpp_symbols::iterate_IEnumerable(clipsEnumerable, [&](void* clip) {
+			if (!clip) return;
+
+			if (!il2cpp_timeline::TimelineClip_get_asset || !il2cpp_timeline::TimelineClip_get_asset->methodPointer) return;
 			auto playableAsset = il2cpp_runtime_invoke(il2cpp_timeline::TimelineClip_get_asset, clip, nullptr, nullptr);
 			if (!playableAsset) return;
 
@@ -1958,7 +1977,7 @@ namespace il2cpp_timeline {
 				}
 			}
 		});
-	});
+	}
 
 	if (!dumpArray.empty()) {
 		try {
