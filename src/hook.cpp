@@ -1890,51 +1890,67 @@ std::string g_currentScenarioId = "";
 bool g_shouldDumpCurrentScenario = false;
 
 HOOK_ORIG_TYPE PlayableDirector_Play_orig;
-void PlayableDirector_Play_hook(void* _this, void* asset) {
-	HOOK_CAST_CALL(void, PlayableDirector_Play)(_this, asset);
+	void PlayableDirector_Play_hook(void* _this, void* asset) {
+		HOOK_CAST_CALL(void, PlayableDirector_Play)(_this, asset);
 
-	if (g_shouldDumpCurrentScenario && asset) {
-		// Check if it is a TimelineAsset
-		il2cpp_timeline::Init();
-		auto assetKlass = il2cpp_symbols::get_class_from_instance(asset);
-		if (assetKlass == il2cpp_timeline::TimelineAsset_klass) {
-			// Use captured ID or fallback to asset name
-			std::string dumpId = g_currentScenarioId;
-			if (dumpId.empty()) {
-				// Fallback: Get Asset Name
-				static auto Object_get_name = il2cpp_symbols::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Object", "get_name", 0);
-				auto getName = reinterpret_cast<Il2CppString * (*)(void*)>(Object_get_name);
-				if (getName) {
-					auto nameStr = getName(asset);
-					if (nameStr) dumpId = nameStr->ToUtf8String();
-				}
+		if (g_debugMode) {
+			printf("[PlayableDirector] Play triggered. Asset: %p, ShouldDump: %d\n", asset, g_shouldDumpCurrentScenario);
+		}
+
+		if (g_shouldDumpCurrentScenario && asset) {
+			// Check if it is a TimelineAsset
+			il2cpp_timeline::Init();
+			auto assetKlass = il2cpp_symbols::get_class_from_instance(asset);
+			
+			if (g_debugMode) {
+				auto klassName = il2cpp_class_get_name(assetKlass);
+				printf("[PlayableDirector] Asset Class: %s\n", klassName);
 			}
 
-			if (!dumpId.empty()) {
-				DumpTimeline(asset, dumpId);
-				g_shouldDumpCurrentScenario = false; // Dump only once
+			if (assetKlass == il2cpp_timeline::TimelineAsset_klass) {
+				// Use captured ID or fallback to asset name
+				std::string dumpId = g_currentScenarioId;
+				if (dumpId.empty()) {
+					// Fallback: Get Asset Name
+					static auto Object_get_name = il2cpp_symbols::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Object", "get_name", 0);
+					auto getName = reinterpret_cast<Il2CppString * (*)(void*)>(Object_get_name);
+					if (getName) {
+						auto nameStr = getName(asset);
+						if (nameStr) dumpId = nameStr->ToUtf8String();
+					}
+				}
+
+				if (!dumpId.empty()) {
+					if (g_debugMode) printf("[Dump] Starting dump for ID: %s\n", dumpId.c_str());
+					DumpTimeline(asset, dumpId);
+					g_shouldDumpCurrentScenario = false; // Dump only once
+				} else {
+					if (g_debugMode) printf("[Dump] Skipped: Dump ID is empty.\n");
+				}
+			} else {
+				if (g_debugMode) printf("[Dump] Skipped: Asset is not a TimelineAsset.\n");
 			}
 		}
 	}
-}
 
 HOOK_ORIG_TYPE ScenarioManager_Init_orig;
-void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName) {
-	if (scrName) {
-		g_currentScenarioId = scrName->ToUtf8String();
-		if (g_debugMode) printf("[ScenarioManager] Init Scenario: %s\n", g_currentScenarioId.c_str());
+	void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName) {
+		if (scrName) {
+			g_currentScenarioId = scrName->ToUtf8String();
+			if (g_debugMode) printf("[ScenarioManager] Init Scenario: %s\n", g_currentScenarioId.c_str());
 
-		if (!SCLocal::isScenarioTranslated(g_currentScenarioId)) {
-			SCLocal::addToMissingList(g_currentScenarioId);
-			g_shouldDumpCurrentScenario = true;
-			if (g_debugMode) printf("[Dump] Scenario %s is missing translation. Scheduled for dump.\n", g_currentScenarioId.c_str());
+			if (!SCLocal::isScenarioTranslated(g_currentScenarioId)) {
+				SCLocal::addToMissingList(g_currentScenarioId);
+				g_shouldDumpCurrentScenario = true;
+				if (g_debugMode) printf("[Dump] Scenario %s is missing translation. Scheduled for dump.\n", g_currentScenarioId.c_str());
+			}
+			else {
+				g_shouldDumpCurrentScenario = false;
+				if (g_debugMode) printf("[Dump] Scenario %s is already translated. Skipping dump.\n", g_currentScenarioId.c_str());
+			}
 		}
-		else {
-			g_shouldDumpCurrentScenario = false;
-		}
+		return HOOK_CAST_CALL(void*, ScenarioManager_Init)(retstr, _this, scrName);
 	}
-	return HOOK_CAST_CALL(void*, ScenarioManager_Init)(retstr, _this, scrName);
-}
 
 	void* DataFile_GetBytes_hook(Il2CppString* path) {
 		std::wstring pathStr(path->start_char);
@@ -3125,10 +3141,12 @@ void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName
 	_txt_field_name_->value = _val_value_;
 
 	void ModifyMagicaCloth(Il2CppObject* cloth) {
+		/*
 		if (g_magicacloth_output_cloth) {
 			auto name = il2cpp_symbols::get_unity_gameobject_fullname(cloth);
 			std::cout << "ModifyMagicaCloth: " << name << std::endl;
 		}
+		*/
 
 		if (!g_magicacloth_override) return;
 
