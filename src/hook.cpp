@@ -1790,9 +1790,11 @@ void InjectTimelineTranslation(void* timelineAsset) {
 
 	// Iterate Root Tracks using Index
 	int rootTrackCount = 0;
-	auto rootTrackCountObj = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_rootTrackCount, timelineAsset, nullptr, nullptr);
-	if (rootTrackCountObj) {
-		rootTrackCount = *reinterpret_cast<int*>(il2cpp_object_unbox((Il2CppObject*)rootTrackCountObj));
+	if (il2cpp_timeline::TimelineAsset_get_rootTrackCount && il2cpp_timeline::TimelineAsset_get_rootTrackCount->methodPointer) {
+		auto rootTrackCountObj = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_rootTrackCount, timelineAsset, nullptr, nullptr);
+		if (rootTrackCountObj) {
+			rootTrackCount = *reinterpret_cast<int*>(il2cpp_object_unbox((Il2CppObject*)rootTrackCountObj));
+		}
 	}
 
 	for (int i = 0; i < rootTrackCount; i++) {
@@ -1902,9 +1904,11 @@ void DumpTimeline(void* timelineAsset, const std::string& scenarioId) {
 
 	// Iterate Root Tracks using Index
 	int rootTrackCount = 0;
-	auto rootTrackCountObj = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_rootTrackCount, timelineAsset, nullptr, nullptr);
-	if (rootTrackCountObj) {
-		rootTrackCount = *reinterpret_cast<int*>(il2cpp_object_unbox((Il2CppObject*)rootTrackCountObj));
+	if (il2cpp_timeline::TimelineAsset_get_rootTrackCount && il2cpp_timeline::TimelineAsset_get_rootTrackCount->methodPointer) {
+		auto rootTrackCountObj = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_rootTrackCount, timelineAsset, nullptr, nullptr);
+		if (rootTrackCountObj) {
+			rootTrackCount = *reinterpret_cast<int*>(il2cpp_object_unbox((Il2CppObject*)rootTrackCountObj));
+		}
 	}
 
 	for (int i = 0; i < rootTrackCount; i++) {
