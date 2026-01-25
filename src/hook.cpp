@@ -1945,6 +1945,9 @@ HOOK_ORIG_TYPE ScenarioManager_Init_orig;
 				if (g_debugMode) printf("[Dump] Scenario %s is missing translation. Scheduled for dump.\n", g_currentScenarioId.c_str());
 			}
 			else {
+				// Force dump even if translated for debugging purposes (Temporary)
+				// g_shouldDumpCurrentScenario = true; 
+				
 				g_shouldDumpCurrentScenario = false;
 				if (g_debugMode) printf("[Dump] Scenario %s is already translated. Skipping dump.\n", g_currentScenarioId.c_str());
 			}
