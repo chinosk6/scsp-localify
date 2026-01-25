@@ -2627,6 +2627,21 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 
 	HOOK_ORIG_TYPE MainThreadDispatcher_LateUpdate_orig;
 	void MainThreadDispatcher_LateUpdate_hook(void* _this, void* method) {
+		// Hot Reload (F5)
+		if (GetAsyncKeyState(VK_F5) & 0x8000) {
+			static bool f5_pressed = false;
+			if (!f5_pressed) {
+				f5_pressed = true;
+				printf("[HotReload] Reloading translation data...\n");
+				SCLocal::loadLocalTrans();
+				printf("[HotReload] Done.\n");
+			}
+		}
+		else {
+			static bool f5_pressed = false;
+			f5_pressed = false;
+		}
+
 		try {
 			auto it = mainThreadTasks.begin();
 			while (it != mainThreadTasks.end()) {
