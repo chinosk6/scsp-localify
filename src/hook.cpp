@@ -3650,6 +3650,8 @@ void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName
 			"MvUnitSlotGenerator", "NewMvUnitSlot", 2
 		);
 
+		// CheckVocalSeparatedSatisfy
+		/*
 		auto CheckVocalSeparatedSatisfy_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Live",
 			"MusicData", "CheckVocalSeparatedSatisfy", 1
@@ -3658,6 +3660,7 @@ void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName
 			"PRISM.Legacy.dll", "PRISM.Live",
 			"MusicData", "CheckLimitedVocalSeparatedSatisfy", 2
 		);
+		*/
 
 		auto CriWareErrorHandler_HandleMessage_addr = il2cpp_symbols::get_method_pointer(
 			"CriMw.CriWare.Runtime.dll", "CriWare",
@@ -3722,6 +3725,7 @@ void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName
 			"SwayString", "SetupPoint", 0
 		);
 
+		/*
 		auto CostumeChangeViewModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Adapters", "PRISM.Adapters.CostumeChange",
 			"CostumeChangeViewModel", ".ctor", 2
@@ -3731,6 +3735,7 @@ void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName
 			"PRISM.Legacy", "PRISM.Live",
 			"LiveMVStartData", ".ctor", 6
 		);
+		*/
 
 		auto RunwayEventStartData_ctor_addr = il2cpp_symbols_logged::get_method_pointer(
 			"PRISM.Legacy", "PRISM.RunwayEvent",
@@ -3825,8 +3830,8 @@ void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName
 		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
 		ADD_HOOK(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext, "LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext at %p");
 		ADD_HOOK(MvUnitSlotGenerator_NewMvUnitSlot, "MvUnitSlotGenerator_NewMvUnitSlot at %p");
-		ADD_HOOK(CheckVocalSeparatedSatisfy, "CheckVocalSeparatedSatisfy at %p");
-		ADD_HOOK(CheckLimitedVocalSeparatedSatisfy_2, "CheckLimitedVocalSeparatedSatisfy_2 at %p");
+		//ADD_HOOK(CheckVocalSeparatedSatisfy, "CheckVocalSeparatedSatisfy at %p");
+		//ADD_HOOK(CheckLimitedVocalSeparatedSatisfy_2, "CheckLimitedVocalSeparatedSatisfy_2 at %p");
 		ADD_HOOK(CriWareErrorHandler_HandleMessage, "CriWareErrorHandler_HandleMessage at %p");
 		ADD_HOOK(GGIregualDetector_ShowPopup, "GGIregualDetector_ShowPopup at %p");
 		ADD_HOOK(DMMGameGuard_NPGameMonCallback, "DMMGameGuard_NPGameMonCallback at %p");
@@ -3836,8 +3841,8 @@ void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName
 		ADD_HOOK(set_vsync_count, "set_vsync_count at %p");
 		ADD_HOOK(Unity_Quit, "Unity_Quit at %p");
 
-		ADD_HOOK(CostumeChangeViewModel_ctor, "CostumeChangeViewModel_ctor at %p");
-		ADD_HOOK(LiveMVStartData_ctor, "LiveMVStartData_ctor at %p");
+		//ADD_HOOK(CostumeChangeViewModel_ctor, "CostumeChangeViewModel_ctor at %p");
+		//ADD_HOOK(LiveMVStartData_ctor, "LiveMVStartData_ctor at %p");
 		ADD_HOOK_1(RunwayEventStartData_ctor);
 
 		ADD_HOOK_1(Subject_OnNext);
