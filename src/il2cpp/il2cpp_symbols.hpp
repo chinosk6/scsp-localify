@@ -682,12 +682,22 @@ namespace il2cpp_symbols
 	template <typename T = void*>
 	void iterate_IEnumerable(const void* obj, std::invocable<T> auto&& receiver)
 	{
+		if (!obj) return;
 		const auto klass = get_class_from_instance(obj);
-		const auto getEnumeratorMethod = reinterpret_cast<void* (*)(const void*)>(il2cpp_class_get_method_from_name(klass, "GetEnumerator", 0)->methodPointer);
+		const auto getEnumeratorMethodInfo = il2cpp_class_get_method_from_name(klass, "GetEnumerator", 0);
+		if (!getEnumeratorMethodInfo) return;
+
+		const auto getEnumeratorMethod = reinterpret_cast<void* (*)(const void*)>(getEnumeratorMethodInfo->methodPointer);
 		const auto enumerator = getEnumeratorMethod(obj);
+		if (!enumerator) return;
+
 		const auto enumeratorClass = get_class_from_instance(enumerator);
-		const auto getCurrentMethod = reinterpret_cast<T(*)(void*)>(il2cpp_class_get_method_from_name(enumeratorClass, "get_Current", 0)->methodPointer);
-		const auto moveNextMethod = reinterpret_cast<bool(*)(void*)>(il2cpp_class_get_method_from_name(enumeratorClass, "MoveNext", 0)->methodPointer);
+		const auto getCurrentMethodInfo = il2cpp_class_get_method_from_name(enumeratorClass, "get_Current", 0);
+		const auto moveNextMethodInfo = il2cpp_class_get_method_from_name(enumeratorClass, "MoveNext", 0);
+		if (!getCurrentMethodInfo || !moveNextMethodInfo) return;
+
+		const auto getCurrentMethod = reinterpret_cast<T(*)(void*)>(getCurrentMethodInfo->methodPointer);
+		const auto moveNextMethod = reinterpret_cast<bool(*)(void*)>(moveNextMethodInfo->methodPointer);
 
 		while (moveNextMethod(enumerator))
 		{
