@@ -2097,6 +2097,10 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 	// Normal 3D Live
 	HOOK_ORIG_TYPE DepthOfFieldClip_CreatePlayable_orig;
 	void* DepthOfFieldClip_CreatePlayable_hook(void* retstr, void* _this, void* graph, void* go, void* mtd) {
+		if (!_this) {
+			return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(retstr, _this, graph, go, mtd);
+		}
+
 		// Debug logging to trace execution
 		auto this_klass = il2cpp_symbols::get_class_from_instance(_this);
 		if (g_debugMode) {
