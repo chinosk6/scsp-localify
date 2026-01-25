@@ -1933,26 +1933,100 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 		}
 	}
 
-HOOK_ORIG_TYPE ScenarioManager_Init_orig;
-	void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName) {
-		if (scrName) {
-			g_currentScenarioId = scrName->ToUtf8String();
-			if (g_debugMode) printf("[ScenarioManager] Init Scenario: %s\n", g_currentScenarioId.c_str());
-
-			if (!SCLocal::isScenarioTranslated(g_currentScenarioId)) {
-				SCLocal::addToMissingList(g_currentScenarioId);
-				g_shouldDumpCurrentScenario = true;
-				if (g_debugMode) printf("[Dump] Scenario %s is missing translation. Scheduled for dump.\n", g_currentScenarioId.c_str());
-			}
-			else {
-				// Force dump even if translated for debugging purposes (Temporary)
-				// g_shouldDumpCurrentScenario = true; 
-				
-				g_shouldDumpCurrentScenario = false;
-				if (g_debugMode) printf("[Dump] Scenario %s is already translated. Skipping dump.\n", g_currentScenarioId.c_str());
+	HOOK_ORIG_TYPE PlayableDirector_Play_NoArg_orig;
+	void PlayableDirector_Play_NoArg_hook(void* _this) {
+		if (g_debugMode) printf("[PlayableDirector] Play() [NoArg] triggered. Director: %p\n", _this);
+		
+		// If we missed the asset in Play(asset), we can try to get it from the director here
+		if (g_shouldDumpCurrentScenario) {
+			// Get playableAsset property
+			static auto PlayableDirector_klass = il2cpp_symbols::get_class("UnityEngine.DirectorModule.dll", "UnityEngine.Playables", "PlayableDirector");
+			static auto get_playableAsset_method = il2cpp_class_get_method_from_name(PlayableDirector_klass, "get_playableAsset", 0);
+			
+			if (get_playableAsset_method) {
+				auto get_playableAsset = reinterpret_cast<void* (*)(void*)>(get_playableAsset_method->methodPointer);
+				auto asset = get_playableAsset(_this);
+				if (asset) {
+					if (g_debugMode) printf("[PlayableDirector] Retrieved asset from property: %p\n", asset);
+					// Reuse logic from Play(asset) hook
+					PlayableDirector_Play_hook(_this, asset); 
+					// Note: This calls the hook recursively but with asset, which will trigger the dump logic.
+					// We should be careful not to double-call the original Play(asset) if Play() calls Play(asset) internally.
+					// But Play() usually just plays.
+					
+					// Actually, better to just copy the dump logic here to be safe and avoid side effects.
+					il2cpp_timeline::Init();
+					auto assetKlass = il2cpp_symbols::get_class_from_instance(asset);
+					if (assetKlass == il2cpp_timeline::TimelineAsset_klass) {
+						if (!g_currentScenarioId.empty()) {
+							if (g_debugMode) printf("[Dump] Starting dump from Play() for ID: %s\n", g_currentScenarioId.c_str());
+							DumpTimeline(asset, g_currentScenarioId);
+							g_shouldDumpCurrentScenario = false;
+						}
+					}
+				}
 			}
 		}
-		return HOOK_CAST_CALL(void*, ScenarioManager_Init)(retstr, _this, scrName);
+
+		HOOK_CAST_CALL(void, PlayableDirector_Play_NoArg)(_this);
+	}
+
+	HOOK_ORIG_TYPE ScenarioManager_Init_orig;
+	void* ScenarioManager_Init_hook(void* arg1, void* arg2, void* arg3) {
+		// Debug arguments to determine signature
+		if (g_debugMode) {
+			printf("[ScenarioManager] Init called. Arg1: %p, Arg2: %p, Arg3: %p\n", arg1, arg2, arg3);
+		}
+
+		Il2CppString* scrName = nullptr;
+		void* retstr = arg1;
+		void* _this = arg2;
+
+		// Try to interpret as if there is a hidden return buffer (Standard struct return)
+		// Arg1: retBuf, Arg2: this, Arg3: scrName
+		if (arg3) {
+			scrName = (Il2CppString*)arg3;
+		}
+		
+		// Fallback: Try to interpret as if NO hidden return buffer (Register return)
+		// Arg1: this, Arg2: scrName
+		if (!scrName || (uintptr_t)scrName < 0x10000) { // Simple validity check
+			if (arg2 && (uintptr_t)arg2 > 0x10000) {
+				scrName = (Il2CppString*)arg2;
+				if (g_debugMode) printf("[ScenarioManager] Assuming NO hidden return buffer. Using Arg2 as string.\n");
+			}
+		}
+
+		if (scrName) {
+			// Safety check for string
+			// Il2CppString has a length field at offset 0x10 (usually)
+			// We can try to read it safely or just try ToUtf8String if it looks valid
+			
+			// Assuming it's a valid string pointer
+			std::string scenarioId = "";
+			try {
+				scenarioId = scrName->ToUtf8String();
+			} catch (...) {
+				if (g_debugMode) printf("[ScenarioManager] Error converting string.\n");
+			}
+
+			if (!scenarioId.empty()) {
+				g_currentScenarioId = scenarioId;
+				if (g_debugMode) printf("[ScenarioManager] Init Scenario: %s\n", g_currentScenarioId.c_str());
+
+				if (!SCLocal::isScenarioTranslated(g_currentScenarioId)) {
+					SCLocal::addToMissingList(g_currentScenarioId);
+					g_shouldDumpCurrentScenario = true;
+					if (g_debugMode) printf("[Dump] Scenario %s is missing translation. Scheduled for dump.\n", g_currentScenarioId.c_str());
+				}
+				else {
+					g_shouldDumpCurrentScenario = false;
+					if (g_debugMode) printf("[Dump] Scenario %s is already translated. Skipping dump.\n", g_currentScenarioId.c_str());
+				}
+			}
+		}
+		
+		return HOOK_CAST_CALL(void*, ScenarioManager_Init)(arg1, arg2, arg3);
 	}
 
 	void* DataFile_GetBytes_hook(Il2CppString* path) {
@@ -3582,6 +3656,10 @@ HOOK_ORIG_TYPE ScenarioManager_Init_orig;
 			"UnityEngine.DirectorModule.dll", "UnityEngine.Playables",
 			"PlayableDirector", "Play", 1
 		);
+		auto PlayableDirector_Play_NoArg_addr = il2cpp_symbols::get_method_pointer(
+			"UnityEngine.DirectorModule.dll", "UnityEngine.Playables",
+			"PlayableDirector", "Play", 0
+		);
 
 		/*auto PostProcess_DepthOfFieldClip_CreatePlayable_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "UnityEngine.Rendering.Universal.PostProcess",
@@ -3831,6 +3909,7 @@ HOOK_ORIG_TYPE ScenarioManager_Init_orig;
 		// ADD_HOOK(Live_SetEnableDepthOfField, "Live_SetEnableDepthOfField at %p");
 		ADD_HOOK(DepthOfFieldClip_CreatePlayable, "DepthOfFieldClip_CreatePlayable at %p");
 		ADD_HOOK(PlayableDirector_Play, "PlayableDirector_Play at %p");
+		ADD_HOOK(PlayableDirector_Play_NoArg, "PlayableDirector_Play_NoArg at %p");
 		// ADD_HOOK(DramaSubtitlePlayableAsset_CreatePlayable, "DramaSubtitlePlayableAsset_CreatePlayable at %p");
 		//ADD_HOOK(PostProcess_DepthOfFieldClip_CreatePlayable, "PostProcess_DepthOfFieldClip_CreatePlayable at %p");
 		// ADD_HOOK(Live_Update, "Live_Update at %p");
