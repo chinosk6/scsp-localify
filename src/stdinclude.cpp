@@ -127,19 +127,31 @@ LONG WINAPI seh_filter(EXCEPTION_POINTERS* ep) {
 }
 
 
-LONG WINAPI UnhandledCrashHandler(EXCEPTION_POINTERS* ep) {
-	DWORD code = ep->ExceptionRecord->ExceptionCode;
-	PVOID addr = ep->ExceptionRecord->ExceptionAddress;
+	LONG WINAPI UnhandledCrashHandler(EXCEPTION_POINTERS* ep) {
+		DWORD code = ep->ExceptionRecord->ExceptionCode;
+		PVOID addr = ep->ExceptionRecord->ExceptionAddress;
 
-	// Ensure we have a console or some output
-	if (!GetConsoleWindow()) {
-		AllocConsole();
-		freopen("CONOUT$", "w", stdout);
-		freopen("CONOUT$", "w", stderr);
-	}
+		// Filter out non-fatal exceptions
+		// 0xE06D7363: Visual C++ Exception (used for throw/catch)
+		// 0x40010005: OutputDebugStringA
+		// EXCEPTION_BREAKPOINT (0x80000003): Debugger breakpoint
+		// EXCEPTION_SINGLE_STEP (0x80000004): Debugger single step
+		if (code == 0xE06D7363 || 
+			code == 0x40010005 || 
+			code == EXCEPTION_BREAKPOINT || 
+			code == EXCEPTION_SINGLE_STEP) {
+			return EXCEPTION_CONTINUE_SEARCH;
+		}
 
-	std::cerr << "\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
-	std::cerr << "!!!           CRASH DETECTED             !!!\n";
+		// Ensure we have a console or some output
+		if (!GetConsoleWindow()) {
+			AllocConsole();
+			freopen("CONOUT$", "w", stdout);
+			freopen("CONOUT$", "w", stderr);
+		}
+
+		std::cerr << "\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+		std::cerr << "!!!           CRASH DETECTED             !!!\n";
 	std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
 	std::cerr << "Exception Code: 0x" << std::hex << code << std::dec << "\n";
 	std::cerr << "Address: " << addr << "\n";
