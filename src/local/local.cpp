@@ -311,4 +311,53 @@ namespace SCLocal {
 		}
 		return false;
 	}
+
+	bool isScenarioTranslated(const std::string& scenarioId) {
+		// Expected format: s44_01010100
+		// Path: timeline_json/s44/0101/s44_01010100.json
+		
+		size_t firstUnderscore = scenarioId.find('_');
+		if (firstUnderscore == std::string::npos) return false;
+
+		std::string prefix = scenarioId.substr(0, firstUnderscore);
+		std::string idBody = scenarioId.substr(firstUnderscore + 1);
+
+		if (idBody.length() < 4) return false;
+		std::string subFolder = idBody.substr(0, 4);
+
+		std::filesystem::path filePath = g_localify_base / "timeline_json" / prefix / subFolder / (scenarioId + ".json");
+		return std::filesystem::exists(filePath);
+	}
+
+	void addToMissingList(const std::string& scenarioId) {
+		std::filesystem::path listPath = g_localify_base / "missing_scenarios.json";
+		nlohmann::json jsonList;
+
+		if (std::filesystem::exists(listPath)) {
+			try {
+				std::ifstream file(listPath);
+				jsonList = nlohmann::json::parse(file);
+			} catch (...) {
+				jsonList = nlohmann::json::array();
+			}
+		} else {
+			jsonList = nlohmann::json::array();
+		}
+
+		bool exists = false;
+		for (const auto& item : jsonList) {
+			if (item.is_string() && item.get<std::string>() == scenarioId) {
+				exists = true;
+				break;
+			}
+		}
+
+		if (!exists) {
+			jsonList.push_back(scenarioId);
+			std::ofstream file(listPath);
+			file << jsonList.dump(4);
+			file.close();
+			printf("[Dump] Added %s to missing list.\n", scenarioId.c_str());
+		}
+	}
 }

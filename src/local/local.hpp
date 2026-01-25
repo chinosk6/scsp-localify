@@ -39,4 +39,8 @@ namespace SCLocal {
 
 	// 新的接口：返回完整的 SubtitleData 对象
 	bool getSubtitle(const std::string& key, SubtitleData& outData);
+
+	// Dump Module Helpers
+	bool isScenarioTranslated(const std::string& scenarioId);
+	void addToMissingList(const std::string& scenarioId);
 }

@@ -1859,7 +1859,18 @@ void DumpTimeline(void* timelineAsset, const std::string& scenarioId) {
 
 	if (!dumpArray.empty()) {
 		try {
-			std::filesystem::path dumpDir = g_localify_base / "timeline_json" / "Dump";
+			std::filesystem::path dumpDir;
+			size_t firstUnderscore = scenarioId.find('_');
+			if (firstUnderscore != std::string::npos) {
+				std::string prefix = scenarioId.substr(0, firstUnderscore);
+				std::string idBody = scenarioId.substr(firstUnderscore + 1);
+				std::string subFolder = (idBody.length() >= 4) ? idBody.substr(0, 4) : "misc";
+				dumpDir = g_localify_base / "timeline_json" / prefix / subFolder;
+			}
+			else {
+				dumpDir = g_localify_base / "timeline_json" / "Dump";
+			}
+
 			if (!std::filesystem::exists(dumpDir)) {
 				std::filesystem::create_directories(dumpDir);
 			}
@@ -1868,21 +1879,21 @@ void DumpTimeline(void* timelineAsset, const std::string& scenarioId) {
 			o << dumpArray.dump(4);
 			o.close();
 			printf("[Dump] Exported %llu lines to %ls\n", dumpArray.size(), dumpFile.c_str());
-		} catch (std::exception& e) {
+		}
+		catch (std::exception& e) {
 			printf("[Dump] Error writing file: %s\n", e.what());
 		}
 	}
 }
 
 std::string g_currentScenarioId = "";
+bool g_shouldDumpCurrentScenario = false;
 
 HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 void PlayableDirector_Play_hook(void* _this, void* asset) {
 	HOOK_CAST_CALL(void, PlayableDirector_Play)(_this, asset);
 
-	// Dump logic disabled as per user request
-	/*
-	if (g_auto_dump_all_json && asset) {
+	if (g_shouldDumpCurrentScenario && asset) {
 		// Check if it is a TimelineAsset
 		il2cpp_timeline::Init();
 		auto assetKlass = il2cpp_symbols::get_class_from_instance(asset);
@@ -1901,10 +1912,10 @@ void PlayableDirector_Play_hook(void* _this, void* asset) {
 
 			if (!dumpId.empty()) {
 				DumpTimeline(asset, dumpId);
+				g_shouldDumpCurrentScenario = false; // Dump only once
 			}
 		}
 	}
-	*/
 }
 
 HOOK_ORIG_TYPE ScenarioManager_Init_orig;
@@ -1912,6 +1923,15 @@ void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName
 	if (scrName) {
 		g_currentScenarioId = scrName->ToUtf8String();
 		if (g_debugMode) printf("[ScenarioManager] Init Scenario: %s\n", g_currentScenarioId.c_str());
+
+		if (!SCLocal::isScenarioTranslated(g_currentScenarioId)) {
+			SCLocal::addToMissingList(g_currentScenarioId);
+			g_shouldDumpCurrentScenario = true;
+			if (g_debugMode) printf("[Dump] Scenario %s is missing translation. Scheduled for dump.\n", g_currentScenarioId.c_str());
+		}
+		else {
+			g_shouldDumpCurrentScenario = false;
+		}
 	}
 	return HOOK_CAST_CALL(void*, ScenarioManager_Init)(retstr, _this, scrName);
 }
