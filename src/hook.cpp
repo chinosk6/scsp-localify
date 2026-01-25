@@ -2236,7 +2236,7 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 
 			// printf("DepthOfFieldClip_CreatePlayable, focusDistance: %f, aperture: %f, focalLength: %f\n", focusDistance, aperture, focalLength);
 		}
-		return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(_this, graph, go, mtd);
+		return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(retstr, _this, graph, go, mtd);
 	}
 
 	HOOK_ORIG_TYPE DramaSubtitlePlayableAsset_CreatePlayable_orig;
