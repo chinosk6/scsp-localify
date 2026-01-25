@@ -2096,9 +2096,11 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 
 	// Normal 3D Live
 	HOOK_ORIG_TYPE DepthOfFieldClip_CreatePlayable_orig;
-	void* DepthOfFieldClip_CreatePlayable_hook(void* retstr, void* _this, void* graph, void* go, void* mtd) {
+	void* DepthOfFieldClip_CreatePlayable_hook(void* _this, void* graph, void* go, void* mtd) {
 		if (!_this) {
-			return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(retstr, _this, graph, go, mtd);
+			// If 'this' is null, we cannot call the original instance method.
+			// Return 0 (equivalent to Playable.Null struct with zero handle) to avoid crash.
+			return nullptr; 
 		}
 
 		// Debug logging to trace execution
@@ -2233,7 +2235,7 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 
 			// printf("DepthOfFieldClip_CreatePlayable, focusDistance: %f, aperture: %f, focalLength: %f\n", focusDistance, aperture, focalLength);
 		}
-		return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(retstr, _this, graph, go, mtd);
+		return HOOK_CAST_CALL(void*, DepthOfFieldClip_CreatePlayable)(_this, graph, go, mtd);
 	}
 
 	HOOK_ORIG_TYPE DramaSubtitlePlayableAsset_CreatePlayable_orig;
