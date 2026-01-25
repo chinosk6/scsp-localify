@@ -1948,13 +1948,8 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 				auto asset = get_playableAsset(_this);
 				if (asset) {
 					if (g_debugMode) printf("[PlayableDirector] Retrieved asset from property: %p\n", asset);
-					// Reuse logic from Play(asset) hook
-					PlayableDirector_Play_hook(_this, asset); 
-					// Note: This calls the hook recursively but with asset, which will trigger the dump logic.
-					// We should be careful not to double-call the original Play(asset) if Play() calls Play(asset) internally.
-					// But Play() usually just plays.
 					
-					// Actually, better to just copy the dump logic here to be safe and avoid side effects.
+					// Dump logic (Copied to avoid calling Play(asset) hook which would change game behavior)
 					il2cpp_timeline::Init();
 					auto assetKlass = il2cpp_symbols::get_class_from_instance(asset);
 					if (assetKlass == il2cpp_timeline::TimelineAsset_klass) {
@@ -1979,30 +1974,31 @@ HOOK_ORIG_TYPE PlayableDirector_Play_orig;
 		}
 
 		Il2CppString* scrName = nullptr;
-		void* retstr = arg1;
-		void* _this = arg2;
+		
+		// Helper to safely check if a pointer is a string
+		auto isString = [](void* ptr) -> bool {
+			if (!ptr || (uintptr_t)ptr < 0x10000) return false;
+			// Note: get_class_from_instance can crash if ptr is garbage.
+			// We assume ptr is at least a valid pointer to allocated memory if it's > 0x10000
+			// But to be safer, we can try-catch it if possible, or just rely on address check.
+			// For now, we rely on the fact that these are arguments to a function.
+			auto klass = il2cpp_symbols::get_class_from_instance(ptr);
+			return klass == il2cpp_symbols::get_string_class();
+		};
 
 		// Try to interpret as if there is a hidden return buffer (Standard struct return)
 		// Arg1: retBuf, Arg2: this, Arg3: scrName
-		if (arg3) {
+		if (isString(arg3)) {
 			scrName = (Il2CppString*)arg3;
 		}
-		
 		// Fallback: Try to interpret as if NO hidden return buffer (Register return)
 		// Arg1: this, Arg2: scrName
-		if (!scrName || (uintptr_t)scrName < 0x10000) { // Simple validity check
-			if (arg2 && (uintptr_t)arg2 > 0x10000) {
-				scrName = (Il2CppString*)arg2;
-				if (g_debugMode) printf("[ScenarioManager] Assuming NO hidden return buffer. Using Arg2 as string.\n");
-			}
+		else if (isString(arg2)) {
+			scrName = (Il2CppString*)arg2;
+			if (g_debugMode) printf("[ScenarioManager] Using Arg2 as string.\n");
 		}
 
 		if (scrName) {
-			// Safety check for string
-			// Il2CppString has a length field at offset 0x10 (usually)
-			// We can try to read it safely or just try ToUtf8String if it looks valid
-			
-			// Assuming it's a valid string pointer
 			std::string scenarioId = "";
 			try {
 				scenarioId = scrName->ToUtf8String();
