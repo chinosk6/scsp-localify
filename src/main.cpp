@@ -312,13 +312,52 @@ void reload_all_data() {
 extern std::function<void()> g_on_hook_ready;
 std::function<void()> g_reload_all_data = reload_all_data;
 
-int __stdcall DllMain(HINSTANCE dllModule, DWORD reason, LPVOID)
-{
-	if (reason == DLL_PROCESS_ATTACH)
-	{
-		SetUnhandledExceptionFilter(UnhandledCrashHandler);
+	// Crash Handler
+	LONG WINAPI UnhandledCrashHandler(PEXCEPTION_POINTERS ExceptionInfo) {
+		// Filter out non-fatal exceptions (like C++ exceptions used for control flow)
+		// 0xE06D7363 is the code for C++ exceptions (Visual C++)
+		if (ExceptionInfo->ExceptionRecord->ExceptionCode == 0xE06D7363) {
+			return EXCEPTION_CONTINUE_SEARCH;
+		}
 
-		// the DMM Launcher set start path to system32 wtf????
+		// Filter out debugger exceptions
+		if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT ||
+			ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_SINGLE_STEP) {
+			return EXCEPTION_CONTINUE_SEARCH;
+		}
+
+		printf("\n==================================================\n");
+		printf("CRASH DETECTED (VEH)\n");
+		printf("Exception Code: 0x%08X\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
+		printf("Exception Address: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
+
+		// Attempt to get module name
+		HMODULE hModule = NULL;
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+			(LPCTSTR)ExceptionInfo->ExceptionRecord->ExceptionAddress, &hModule);
+		if (hModule) {
+			char moduleName[MAX_PATH];
+			if (GetModuleFileNameA(hModule, moduleName, MAX_PATH)) {
+				printf("Module: %s\n", moduleName);
+			}
+		}
+
+		printf("==================================================\n");
+		printf("Press any key to exit...\n");
+
+		// Freeze process
+		system("pause");
+		return EXCEPTION_CONTINUE_SEARCH;
+	}
+
+	int __stdcall DllMain(HINSTANCE dllModule, DWORD reason, LPVOID)
+	{
+		if (reason == DLL_PROCESS_ATTACH)
+		{
+			// Install Crash Handler (VEH - First Handler)
+			AddVectoredExceptionHandler(1, UnhandledCrashHandler);
+
+			// the DMM Launcher set start path to system32 wtf????
 		std::string module_name;
 		module_name.resize(MAX_PATH);
 		module_name.resize(GetModuleFileName(nullptr, module_name.data(), MAX_PATH));
