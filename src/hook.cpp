@@ -1784,17 +1784,22 @@ namespace il2cpp_timeline {
 		if (!il2cpp_timeline::TimelineAsset_get_outputTracks) return;
 
 		// Iterate Tracks
+		// Safety check for method pointer
+		if (!il2cpp_timeline::TimelineAsset_get_outputTracks->methodPointer) return;
+
 		auto tracksEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_outputTracks, timelineAsset, nullptr, nullptr);
 		
 		il2cpp_symbols::iterate_IEnumerable(tracksEnumerable, [&](void* track) {
 			if (!track) return;
 			
 			// Iterate Clips
+			if (!il2cpp_timeline::TrackAsset_get_clips || !il2cpp_timeline::TrackAsset_get_clips->methodPointer) return;
 			auto clipsEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TrackAsset_get_clips, track, nullptr, nullptr);
 			
 			il2cpp_symbols::iterate_IEnumerable(clipsEnumerable, [&](void* clip) {
 				if (!clip) return;
 
+				if (!il2cpp_timeline::TimelineClip_get_asset || !il2cpp_timeline::TimelineClip_get_asset->methodPointer) return;
 				auto playableAsset = il2cpp_runtime_invoke(il2cpp_timeline::TimelineClip_get_asset, clip, nullptr, nullptr);
 				if (!playableAsset) return;
 
