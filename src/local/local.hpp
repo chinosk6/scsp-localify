@@ -43,4 +43,5 @@ namespace SCLocal {
 	// Dump Module Helpers
 	bool isScenarioTranslated(const std::string& scenarioId);
 	void addToMissingList(const std::string& scenarioId);
+	bool appendDumpEntry(const std::string& scenarioId, const std::string& uuid, const std::string& original, const std::string& name);
 }

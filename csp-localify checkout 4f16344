@@ -1,0 +1,100 @@
+e4dbf62 Mon Jan 26 03:16:07 2026 Fix: Add missing null check for TimelineAsset_get_rootTrackCount before invocation
+4e5d2f5 Mon Jan 26 03:10:34 2026 Fix: Cast void* to Il2CppObject* before unboxing in hook.cpp
+b87b30f Mon Jan 26 03:08:46 2026 Refactor: Switch to index-based iteration for Timeline Tracks to avoid IEnumerable pitfalls
+e06e710 Mon Jan 26 03:03:31 2026 Fix: Add safety checks for method pointers before invoking il2cpp_runtime_invoke in InjectTimelineTranslation
+a3c53b3 Mon Jan 26 02:57:55 2026 Fix: Add null checks in iterate_IEnumerable to prevent crash on null enumerable or missing methods
+f7e2c9c Mon Jan 26 02:52:14 2026 Refactor: Move translation injection to PlayableDirector.Play, removing unstable DepthOfFieldClip.CreatePlayable hook
+01baadf Mon Jan 26 02:34:30 2026 Fix: Re-apply hidden return buffer signature for DepthOfFieldClip_CreatePlayable_hook based on crash analysis
+e04018d Mon Jan 26 02:29:16 2026 Fix: Revert signature change for DepthOfFieldClip_CreatePlayable_hook as registers confirm no hidden return buffer
+a7762cc Mon Jan 26 02:21:56 2026 Fix: Pass missing retstr argument to DepthOfFieldClip_CreatePlayable original call
+af9e61e Mon Jan 26 02:18:47 2026 Fix: Correct DepthOfFieldClip_CreatePlayable_hook signature to include hidden return buffer
+c688774 Mon Jan 26 02:09:41 2026 Fix: Correct DepthOfFieldClip_CreatePlayable_hook signature and add null check for _this
+14e05fa Mon Jan 26 02:05:20 2026 Fix: Add null check for _this in DepthOfFieldClip_CreatePlayable_hook to prevent access violation
+e9d5c27 Sun Jan 25 23:20:38 2026 Fix: Ignore known C++ exceptions in UnhandledCrashHandler to prevent false positives during startup
+e0241b1 Sun Jan 25 23:15:33 2026 Fix: Replace undefined get_string_class with manual lookup in hook.cpp
+e6c0b35 Sun Jan 25 23:14:24 2026 Fix: Improve safety of ScenarioManager_Init_hook and fix PlayableDirector_Play_NoArg_hook recursion
+57cbe64 Sun Jan 25 23:11:02 2026 Fix: Remove duplicate UnhandledCrashHandler definition in main.cpp
+6221aae Sun Jan 25 23:06:55 2026 Fix: Correctly implement crash handler in main.cpp using VEH
+4f16344 Sun Jan 25 22:57:15 2026 Feat: Add crash handler and F5 hot reload
+8c9cf64 Sun Jan 25 22:52:29 2026 Fix: Add fallback for ScenarioManager hook signature and hook PlayableDirector.Play(void)
+628cb19 Sun Jan 25 22:49:39 2026 Fix: Ensure ScenarioManager_Init_hook logic is correct
+479e12a Sun Jan 25 22:44:06 2026 Fix: Silence MagicaCloth logs and add debug logs for Dump module
+55375ab Sun Jan 25 22:37:14 2026 Fix: Disable hooks causing method not found errors
+aa73628 Sun Jan 25 22:28:54 2026 Feat: Implement auto-dump workflow for missing scenarios
+12e674d Sun Jan 25 21:04:45 2026 Refactor: Rename Output_JSON to timeline_json and disable auto-dump
+73e1733 Sun Jan 25 20:58:31 2026 Fix: Resolve il2cpp_runtime_invoke namespace error
+a46728d Tue Jan 20 04:32:36 2026 Feature: Dual subtitle support & Data loading refactor (2026-01-19)
+8c52daf Tue Jan 20 02:15:53 2026 Checkpoint: Implemented basic UUID-based timeline hook
+cddff20 Tue Jan 6 22:59:05 2026 Merge pull request #90 from Muitsonz/main
+d46fb95 Tue Jan 6 22:52:50 2026 update readme
+7d70ace Tue Jan 6 20:49:47 2026 update gui
+bb28c2b Tue Jan 6 17:31:31 2026 merge 'magica-cloth' into 'main'
+cd5e828 Mon Jan 5 00:04:05 2026 fix #75 and #87
+5d50d84 Mon Dec 29 15:11:49 2025 update readme and default key binding for freecamera ascending
+ade90d7 Sun Dec 28 19:59:07 2025 gui update - default clipplane values (#85) - include clipplane values in serializable freecamera data - idol overwriting serializable
+992cd0c Sun Dec 28 18:40:26 2025 customizable key binding for free caemra (#85)
+bcac4cb Sun Dec 21 22:08:39 2025 allow editing clipplane values
+0ad8359 Thu Dec 18 23:01:00 2025 fix for game v2.9.0
+c058c16 Sun Dec 7 23:45:54 2025 update gui for freecamstate
+e5f4be0 Sun Dec 7 23:42:30 2025 Merge pull request #78 from dar4545/temp
+f7d8d6d Sat Nov 22 20:56:09 2025 - Added a "Swap" button in Resolution Settings to toggle width and height. - Added save slots to save the current Free Camera states and apply saved states. Use [S] to save, [Slot *] to apply and [C] to clear states. - Added an "Add New Slot" button to allow expanding save slots.
+89261f7 Tue Nov 18 10:26:42 2025 add texture extracting & replacing; fix costume not applied in runway
+6dcc1af Tue Nov 18 01:15:58 2025 fix #10
+043dc84 Sun Nov 16 23:48:19 2025 add gui control for asset extracting
+e48d961 Thu Oct 30 22:26:28 2025 merge branch 'texture' into 'main'
+6caad64 Sat Nov 15 20:41:39 2025 fix #74 (costume related issues of v2.8.0)
+2c6fb0c Fri Nov 14 11:42:35 2025 fix costume related issues of v2.8.0
+4e74918 Mon Nov 10 16:11:02 2025 fix failed hook `LiveMVStartData..ctor`; report font loading error only once
+b926bd9 Mon Nov 10 12:57:02 2025 update networking hooks for v2.8.0
+00d9ee3 Sat Oct 25 10:09:23 2025 add safetyhook submodule
+9abf940 Sat Oct 25 00:51:04 2025 add preprocessor `__SAFETYHOOK` to use safetyhook instead of minhook
+daa0b6a Fri Oct 24 16:34:30 2025 rename GUI option "unlock everything" to "show hidden costumes"
+1b61382 Tue Oct 21 23:47:04 2025 #5: fix uncontrolled movings of free camera
+5bf7669 Thu Oct 16 23:15:59 2025 fix network hooks
+9871270 Thu Oct 16 08:27:52 2025 fix: font loading, crashing about free camera, unlocking costumes not worked; add: override mv unit manually
+29a464c Mon Sep 29 14:02:19 2025 update readme
+a498a33 Mon Sep 29 10:37:17 2025 Merge pull request #65 from Muitsonz/main
+4996475 Sun Sep 28 23:01:39 2025 fix #5
+ae1b30b Sat Sep 27 23:47:22 2025 #5: fix hooks
+9d020e9 Sat Sep 27 20:37:12 2025 #2: allow same idols in new logic (same hook point to #1)
+ba6eabb Fri Sep 26 00:39:00 2025 update ci.yml
+41f7107 Thu Sep 25 22:58:35 2025 fix #4; #2: fix crashing
+268d50c Thu Sep 25 00:40:20 2025 fix #3
+ee906da Sat Sep 13 15:36:38 2025 add a macro to enable networking tracking for safety asserting
+3d20264 Thu Sep 11 22:35:39 2025 append missing file for #1
+a3d3980 Sun Sep 7 18:43:07 2025 #1 add gui control
+537b36a Sat Sep 6 10:29:45 2025 update to conan 2 & vs 2022
+285dbb2 Thu Sep 4 22:55:19 2025 #1 main feature impl
+8d68353 Tue Jul 29 07:49:47 2025 fix api hook failure for character assebling
+fc36b8a Thu Mar 20 08:04:23 2025 fixed crash
+68d1f60 Thu Feb 27 06:03:48 2025 fixed blur in HDR lives
+0e3f42f Thu Feb 27 05:19:23 2025 fix crash in game version `2.0` #44
+74712a8 Sun Feb 16 20:21:26 2025 fixed `Character Parameter Editor` #43
+b887b52 Thu Nov 14 05:20:06 2024 fix crash #41
+3c28591 Wed Oct 30 21:47:31 2024 fix same idol limit for `LimitedVocal` #24
+fdd5ec9 Tue Aug 20 11:26:40 2024 fix hooks #35
+ae99c7a Thu Jul 18 20:45:19 2024 fix uncaptured character parameters #26
+90d33d8 Thu Jul 18 19:20:33 2024 remove same idol limit for `LimitedVocal` #24
+82593d0 Thu Jul 18 17:10:11 2024 fix hook `1.9.0` #32
+8f2f97f Mon Jul 1 21:47:07 2024 add resolution config #25, fix start resolution #29
+bf0a406 Sun Jun 9 21:20:15 2024 update ci
+7ffd44e Sun Jun 9 21:08:24 2024 add fallback resource dump #27
+553965f Fri May 10 23:21:17 2024 add resource version print #22
+f6c5e6f Sun May 5 11:38:55 2024 save sway offset #19
+b6d35fd Sun May 5 10:38:41 2024 Add: Unlock Idol Event and Support Event #20
+8e81d97 Sat May 4 22:17:07 2024 add 3D resolution scale configure #17
+6b1dc99 Fri Apr 5 21:03:06 2024 update hook.cpp
+e9c45ca Fri Apr 5 16:30:58 2024 fix `Live Allow Same Idol` feature #13
+1a25f4c Tue Apr 2 01:38:17 2024 update README link
+dcba8bb Tue Apr 2 01:35:40 2024 update README
+1d4df09 Tue Apr 2 01:32:36 2024 Update README & fix error popup - issue #11
+a169053 Mon Apr 1 17:56:48 2024 add NULL handling
+86ca4ce Mon Apr 1 17:28:31 2024 dump more scenario files. issue #8, #10
+6cac160 Sun Mar 3 20:01:02 2024 增加 SwayString 参数调整
+683b648 Fri Mar 1 18:41:56 2024 修复换头功能失效
+9f825e5 Mon Feb 26 14:11:40 2024 Update README
+60dff8e Thu Feb 1 10:03:26 2024 优化 `localify.json` 的加载逻辑
+d85d669 Mon Jan 29 11:37:02 2024 update submodule
+ee516e3 Fri Jan 26 20:57:57 2024 支持调整自定义字体大小
+1443629 Fri Jan 26 16:15:38 2024 增加角色参数编辑器
+2e3c2a0 Tue Jan 23 18:52:42 2024 优化代码结构，增加头饰解锁

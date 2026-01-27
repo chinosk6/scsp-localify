@@ -1,0 +1,108 @@
+* [33m8c52daf[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/timeline-hook-v2[m[33m)[m Checkpoint: Implemented basic UUID-based timeline hook
+*   [33mcddff20[m[33m ([m[1;33mtag: [m[1;33mv1.3.6[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Merge pull request #90 from Muitsonz/main
+[32m|[m[33m\[m  
+[32m|[m * [33md46fb95[m update readme
+[32m|[m * [33m7d70ace[m update gui
+[32m|[m * [33mbb28c2b[m merge 'magica-cloth' into 'main'
+[32m|[m * [33mcd5e828[m fix #75 and #87
+[32m|[m * [33m5d50d84[m update readme and default key binding for freecamera ascending
+[32m|[m * [33made90d7[m gui update - default clipplane values (#85) - include clipplane values in serializable freecamera data - idol overwriting serializable
+[32m|[m * [33m992cd0c[m customizable key binding for free caemra (#85)
+[32m|[m * [33mbcac4cb[m allow editing clipplane values
+[32m|[m[32m/[m  
+* [33m0ad8359[m[33m ([m[1;33mtag: [m[1;33mv1.3.5[m[33m)[m fix for game v2.9.0
+* [33mc058c16[m update gui for freecamstate
+*   [33me5f4be0[m Merge pull request #78 from dar4545/temp
+[34m|[m[35m\[m  
+[34m|[m * [33mf7d8d6d[m - Added a "Swap" button in Resolution Settings to toggle width and height. - Added save slots to save the current Free Camera states and apply saved states. Use [S] to save, [Slot *] to apply and [C] to clear states. - Added an "Add New Slot" button to allow expanding save slots.
+[34m|[m[34m/[m  
+*   [33m89261f7[m[33m ([m[1;33mtag: [m[1;33mv1.3.4[m[33m)[m add texture extracting & replacing; fix costume not applied in runway
+[36m|[m[1;31m\[m  
+[36m|[m * [33m6dcc1af[m fix #10
+[36m|[m * [33m043dc84[m add gui control for asset extracting
+[36m|[m * [33me48d961[m merge branch 'texture' into 'main'
+[36m|[m[36m/[m  
+*   [33m6caad64[m[33m ([m[1;33mtag: [m[1;33mv1.3.3[m[33m)[m fix #74 (costume related issues of v2.8.0)
+[1;32m|[m[1;33m\[m  
+[1;32m|[m * [33m2c6fb0c[m fix costume related issues of v2.8.0
+[1;32m|[m * [33m4e74918[m fix failed hook `LiveMVStartData..ctor`; report font loading error only once
+[1;32m|[m * [33mb926bd9[m update networking hooks for v2.8.0
+[1;32m|[m[1;32m/[m  
+* [33m00d9ee3[m[33m ([m[1;33mtag: [m[1;33mv1.3.2[m[33m)[m add safetyhook submodule
+* [33m9abf940[m add preprocessor `__SAFETYHOOK` to use safetyhook instead of minhook
+* [33mdaa0b6a[m rename GUI option "unlock everything" to "show hidden costumes"
+* [33m1b61382[m #5: fix uncontrolled movings of free camera
+* [33m5bf7669[m fix network hooks
+* [33m9871270[m[33m ([m[1;33mtag: [m[1;33mv1.3.1[m[33m)[m fix: font loading, crashing about free camera, unlocking costumes not worked; add: override mv unit manually
+* [33m29a464c[m update readme
+*   [33ma498a33[m[33m ([m[1;33mtag: [m[1;33mv1.3.0[m[33m)[m Merge pull request #65 from Muitsonz/main
+[1;34m|[m[1;35m\[m  
+[1;34m|[m * [33m4996475[m fix #5
+[1;34m|[m * [33mae1b30b[m #5: fix hooks
+[1;34m|[m * [33m9d020e9[m #2: allow same idols in new logic (same hook point to #1)
+[1;34m|[m * [33mba6eabb[m update ci.yml
+[1;34m|[m * [33m41f7107[m fix #4; #2: fix crashing
+[1;34m|[m * [33m268d50c[m fix #3
+[1;34m|[m * [33mee906da[m add a macro to enable networking tracking for safety asserting
+[1;34m|[m * [33m3d20264[m append missing file for #1
+[1;34m|[m * [33ma3d3980[m #1 add gui control
+[1;34m|[m * [33m537b36a[m update to conan 2 & vs 2022
+[1;34m|[m * [33m285dbb2[m #1 main feature impl
+[1;34m|[m * [33m8d68353[m fix api hook failure for character assebling
+[1;34m|[m[1;34m/[m  
+* [33mfc36b8a[m[33m ([m[1;33mtag: [m[1;33mv1.1.0[m[33m)[m fixed crash
+* [33m68d1f60[m[33m ([m[1;33mtag: [m[1;33mv1.0.0[m[33m)[m fixed blur in HDR lives
+* [33m0e3f42f[m fix crash in game version `2.0` #44
+* [33m74712a8[m fixed `Character Parameter Editor` #43
+* [33mb887b52[m fix crash #41
+* [33m3c28591[m fix same idol limit for `LimitedVocal` #24
+* [33mfdd5ec9[m[33m ([m[1;33mtag: [m[1;33mv0.0.8[m[33m)[m fix hooks #35
+* [33mae99c7a[m[33m ([m[1;33mtag: [m[1;33mv0.0.7[m[33m)[m fix uncaptured character parameters #26
+* [33m90d33d8[m remove same idol limit for `LimitedVocal` #24
+* [33m82593d0[m fix hook `1.9.0` #32
+* [33m8f2f97f[m[33m ([m[1;33mtag: [m[1;33mv0.0.6[m[33m)[m add resolution config #25, fix start resolution #29
+* [33mbf0a406[m update ci
+* [33m7ffd44e[m add fallback resource dump #27
+* [33m553965f[m add resource version print #22
+* [33mf6c5e6f[m[33m ([m[1;33mtag: [m[1;33mv0.0.5[m[33m)[m save sway offset #19
+* [33mb6d35fd[m Add: Unlock Idol Event and Support Event #20
+* [33m8e81d97[m add 3D resolution scale configure #17
+* [33m6b1dc99[m update hook.cpp
+* [33me9c45ca[m fix `Live Allow Same Idol` feature #13
+* [33m1a25f4c[m update README link
+* [33mdcba8bb[m update README
+* [33m1d4df09[m Update README & fix error popup - issue #11
+* [33ma169053[m add NULL handling
+* [33m86ca4ce[m dump more scenario files. issue #8, #10
+* [33m6cac160[m[33m ([m[1;33mtag: [m[1;33mv0.0.4[m[33m)[m 增加 SwayString 参数调整
+* [33m683b648[m 修复换头功能失效
+* [33m9f825e5[m Update README
+* [33m60dff8e[m 优化 `localify.json` 的加载逻辑
+* [33md85d669[m[33m ([m[1;33mtag: [m[1;33mv0.0.3[m[33m)[m update submodule
+* [33mee516e3[m 支持调整自定义字体大小
+* [33m1443629[m 增加角色参数编辑器
+* [33m2e3c2a0[m 优化代码结构，增加头饰解锁
+* [33m8a1b5b1[m 接头霸王！
+* [33md774412[m 增加热重载配置
+* [33mc449a65[m 优化 dump；修复歌词本地化失效
+* [33m566d5b9[m update st
+* [33mea6428a[m[33m ([m[1;33mtag: [m[1;33mv0.0.2[m[33m)[m 修复部分情况下字体渲染卡顿
+* [33m01a478d[m 修复更新后字体替换不生效的问题
+* [33m15bbeb2[m[33m ([m[1;33mtag: [m[1;33mv0.0.1[m[33m)[m 更新译文链接
+* [33m9e2eb8f[m update README
+* [33m528a459[m update readme.md
+* [33m288fb54[m update hook.cpp
+* [33mf3f15d6[m update ci
+* [33m9b96972[m update readme.md
+* [33m8ada020[m 添加翻译子模块
+* [33me607b7f[m 支持自由摄像机
+* [33m2e4b69b[m 添加 GUI，支持调整分辨率
+* [33m9b90445[m disable log
+* [33md09d7ea[m 修复部分系统未成功加载的问题
+* [33md3eb75c[m update readme
+* [33m0e0b72c[m update hook.cpp
+* [33m1e1d1d7[m update ci
+* [33m09945b6[m remove unnecessary hooks
+* [33m970b06b[m add ci, resource
+* [33mcb35c33[m init commit
+* [33m21a070a[m Initial commit

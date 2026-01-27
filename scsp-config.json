@@ -1,0 +1,22 @@
+{
+  "enable": true,
+  "enableLogger": true,
+  "dumpStaticEntries": ture,
+  "dumpUntransLyrics": false,
+  "dumpUntransLocal2": false,
+  "asyncLoad": true,
+  "maxFps": 144,
+  "unlock_PIdol_and_SChara_events": false,
+  "save_costume_changes": false,
+  "override_mv_unit_idols": false,
+  "baseFreeCamera": {
+    "enable": false,
+    "moveStep": 50.0,
+    "mouseSpeed": 35.0
+  },
+  "resolution": {
+    "w": 1280,
+    "h": 720,
+    "isFull": false
+  }
+}

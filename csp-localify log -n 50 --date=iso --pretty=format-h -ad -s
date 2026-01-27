@@ -1,0 +1,20 @@
+[33me4dbf62[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/timeline-hook-v2[m[33m)[m Fix: Add missing null check for TimelineAsset_get_rootTrackCount before invocation
+[33m4e5d2f5[m Fix: Cast void* to Il2CppObject* before unboxing in hook.cpp
+[33mb87b30f[m Refactor: Switch to index-based iteration for Timeline Tracks to avoid IEnumerable pitfalls
+[33me06e710[m Fix: Add safety checks for method pointers before invoking il2cpp_runtime_invoke in InjectTimelineTranslation
+[33ma3c53b3[m Fix: Add null checks in iterate_IEnumerable to prevent crash on null enumerable or missing methods
+[33mf7e2c9c[m Refactor: Move translation injection to PlayableDirector.Play, removing unstable DepthOfFieldClip.CreatePlayable hook
+[33m01baadf[m Fix: Re-apply hidden return buffer signature for DepthOfFieldClip_CreatePlayable_hook based on crash analysis
+[33me04018d[m Fix: Revert signature change for DepthOfFieldClip_CreatePlayable_hook as registers confirm no hidden return buffer
+[33ma7762cc[m Fix: Pass missing retstr argument to DepthOfFieldClip_CreatePlayable original call
+[33maf9e61e[m Fix: Correct DepthOfFieldClip_CreatePlayable_hook signature to include hidden return buffer
+[33mc688774[m Fix: Correct DepthOfFieldClip_CreatePlayable_hook signature and add null check for _this
+[33m14e05fa[m Fix: Add null check for _this in DepthOfFieldClip_CreatePlayable_hook to prevent access violation
+[33me9d5c27[m Fix: Ignore known C++ exceptions in UnhandledCrashHandler to prevent false positives during startup
+[33me0241b1[m Fix: Replace undefined get_string_class with manual lookup in hook.cpp
+[33me6c0b35[m Fix: Improve safety of ScenarioManager_Init_hook and fix PlayableDirector_Play_NoArg_hook recursion
+[33m57cbe64[m Fix: Remove duplicate UnhandledCrashHandler definition in main.cpp
+[33m6221aae[m Fix: Correctly implement crash handler in main.cpp using VEH
+[33m4f16344[m Feat: Add crash handler and F5 hot reload
+[33m8c9cf64[m Fix: Add fallback for ScenarioManager hook signature and hook PlayableDirector.Play(void)
+[33m628cb19[m Fix: Ensure ScenarioManager_Init_hook logic is correct

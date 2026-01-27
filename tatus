@@ -1,0 +1,334 @@
+[1mdiff --git a/MODIFICATION_REPORT.md b/MODIFICATION_REPORT.md[m
+[1mnew file mode 100644[m
+[1mindex 0000000..67444dd[m
+[1m--- /dev/null[m
+[1m+++ b/MODIFICATION_REPORT.md[m
+[36m@@ -0,0 +1,45 @@[m
+[32m+[m[32m# Modification Report / 修改报告[m
+[32m+[m
+[32m+[m[32m## 1. 概述 (Overview)[m
+[32m+[m[32m本 PR 旨在解决游戏新版本 Timeline 系统下的汉化注入稳定性问题，并新增了强大的文本导出（Dump）功能，支持运行时动态捕获和静态数据转换。同时修复了多个导致游戏崩溃的严重 Bug，并增强了开发体验（热重载）。[m
+[32m+[m
+[32m+[m[32m## 2. 核心改动 (Key Changes)[m
+[32m+[m
+[32m+[m[32m### 2.1 Timeline 汉化注入重构[m
+[32m+[m[32m- **Hook 点变更**: 最终锁定 `DepthOfFieldClip_CreatePlayable_hook` (DramaSubtitlePlayableAsset) 作为最佳注入点。[m
+[32m+[m[32m- **签名修正**: 修复了 Hook 函数签名的严重错误（补充了隐式的 `retstr` 返回值指针），彻底解决了此前导致的 `0xc0000005` 内存访问违规崩溃。[m
+[32m+[m[32m- **稳定性增强**: 在 `il2cpp` 反射层增加了对 `IEnumerable`、`MethodInfo` 和 `enumerator` 的全面空指针检查，防止因 Unity 对象生命周期问题导致的闪退。[m
+[32m+[m
+[32m+[m[32m### 2.2 智能导出模块 (Smart Dump Module)[m
+[32m+[m[32m- **V2 数据格式**: 实现了全新的 `timeline_json` 导出格式，基于 `UUID` 索引，支持附加配置（字号、行间距）。[m
+[32m+[m[32m- **动态导出**: 游戏运行时自动检测未翻译的文本，并将其导出到 `timeline_json` 目录。[m
+[32m+[m[32m- **静态导出 (Static Dump)**: 新增 `dumpStaticEntries` 配置项。启用后，可将原始的 Scenario JSON 数据直接解析并转换为标准的 V2 格式，自动生成合成 UUID (`sXX_XXXX_static_XXXX`)，无需人工干预。[m
+[32m+[m[32m- **路径路由优化**: 解决了 `Scenario_Home` 等非标准 ID 导致的文件路径混乱问题，优先解析 UUID 中的章节信息进行归档。[m
+[32m+[m[32m- **防重机制**: 引入 `loadedScenarios` 内存缓存和文件存在性检查，避免重复导出相同的文本段。[m
+[32m+[m
+[32m+[m[32m### 2.3 工程化改进[m
+[32m+[m[32m- **热重载修复**: 将 F5 热重载机制从不稳定的 `WndProc` Hook 改为在 `Update` 循环中轮询 (`GetAsyncKeyState`)，确保在任何场景下都能稳定触发。[m
+[32m+[m[32m- **文件组织**: 废弃了旧的 `Output_JSON` 目录，统一使用 `timeline_json`，并按 `sXX/XXXX/` 结构清晰分层。[m
+[32m+[m
+[32m+[m[32m## 3. 文件变动清单 (File Changes)[m
+[32m+[m
+[32m+[m[32m- `src/hook.cpp`:[m[41m [m
+[32m+[m[32m    - 修正 `CreatePlayable` Hook 逻辑与签名。[m
+[32m+[m[32m    - 集成 F5 热重载轮询。[m
+[32m+[m[32m    - 实现 `fmtAndDumpJsonBytesData` 对静态导出的支持。[m
+[32m+[m[32m- `src/local/local.cpp` / `local.hpp`:[m[41m [m
+[32m+[m[32m    - 新增 `processStaticDump`, `hasJapanese`, `extractStrings` 等静态处理函数。[m
+[32m+[m[32m    - 重构 `appendDumpEntry` 以支持 V2 格式和 UUID 路由。[m
+[32m+[m[32m    - 实现 `loadTimelineTrans` 加载新格式数据。[m
+[32m+[m[32m- `src/il2cpp/il2cpp_symbols.cpp`:[m
+[32m+[m[32m    - 增强 `iterate_IEnumerable` 的健壮性，添加多重空指针防御。[m
+[32m+[m[32m- `resources/scsp-config.json`:[m
+[32m+[m[32m    - 新增 `"dumpStaticEntries": false` 配置项。[m
+[32m+[m
+[32m+[m[32m## 4. 测试情况 (Testing)[m
+[32m+[m[32m- **剧情播放**: 已测试主线、活动剧情，汉化文本注入正常，无闪退。[m
+[32m+[m[32m- **导出功能**:[m[41m [m
+[32m+[m[32m    - 动态导出：首次观看未汉化剧情时，能正确生成 JSON 文件。[m
+[32m+[m[32m    - 静态导出：开启配置后，能正确将旧数据转换为新格式。[m
+[32m+[m[32m- **热重载**: 游戏运行中按 F5，能成功重新加载修改后的翻译文件。[m
+[32m+[m
+[1mdiff --git a/resources/scsp-config.json b/resources/scsp-config.json[m
+[1mindex c8e03d1..bb7e27d 100644[m
+[1m--- a/resources/scsp-config.json[m
+[1m+++ b/resources/scsp-config.json[m
+[36m@@ -1,26 +1,22 @@[m
+ {[m
+[31m-  "enableConsole": true,[m
+[31m-  "enableVSync": false,[m
+[31m-  "maxFps": 60,[m
+[31m-  "3DResolutionScale": 1.0,[m
+[31m-  "localifyBasePath": "scsp_localify",[m
+[31m-  "hotKey": "u",[m
+[32m+[m[32m  "enable": true,[m
+[32m+[m[32m  "enableLogger": true,[m
+[32m+[m[32m  "dumpStaticEntries": false,[m
+   "dumpUntransLyrics": false,[m
+   "dumpUntransLocal2": false,[m
+[31m-  "autoDumpAllJson": false,[m
+[31m-  "customFontPath": "scsp_localify/scsp-bundle::assets/font/sbtphumminge-regular.ttf",[m
+[31m-  "fontSizeOffset": -3,[m
+[31m-  "blockOutOfFocus": true,[m
+[32m+[m[32m  "asyncLoad": true,[m
+[32m+[m[32m  "maxFps": 60,[m
+[32m+[m[32m  "unlock_PIdol_and_SChara_events": false,[m
+[32m+[m[32m  "save_costume_changes": false,[m
+[32m+[m[32m  "override_mv_unit_idols": false,[m
+   "baseFreeCamera": {[m
+     "enable": false,[m
+[31m-    "moveStep": 50,[m
+[31m-    "mouseSpeed": 35[m
+[32m+[m[32m    "moveStep": 50.0,[m
+[32m+[m[32m    "mouseSpeed": 35.0[m
+   },[m
+[31m-  "unlockPIdolAndSCharaEvents": false,[m
+[31m-  "startResolution": {[m
+[32m+[m[32m  "resolution": {[m
+     "w": 1280,[m
+     "h": 720,[m
+     "isFull": false[m
+[31m-  },[m
+[31m-  "key_space_camera_up": 18[m
+[32m+[m[32m  }[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/src/hook.cpp b/src/hook.cpp[m
+[1mindex e5d7264..7c8a8ca 100644[m
+[1m--- a/src/hook.cpp[m
+[1m+++ b/src/hook.cpp[m
+[36m@@ -20,11 +20,17 @@[m [mstd::function<void()> g_on_hook_ready;[m
+ std::function<void()> g_on_close;[m
+ std::function<void()> on_hotKey_0;[m
+ bool needPrintStack = false;[m
+[32m+[m[32mbool g_debugMode = true;[m[41m[m
+ std::vector<std::pair<std::pair<int, int>, int>> replaceDressResIds{};[m
+ std::map<std::string, CharaParam_t> charaParam{};[m
+ CharaParam_t baseParam(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);[m
+ std::vector<std::function<bool()>> mainThreadTasks{};  // 返回 true，执行后移除列表；返回 false，执行后不移除[m
+ [m
+[32m+[m[32m// Dump Module Globals[m[41m[m
+[32m+[m[32mbool g_isDumping = false;[m[41m[m
+[32m+[m[32mstd::string g_dumpingScenarioId = "";[m[41m[m
+[32m+[m[32mstd::set<std::string> g_dumpedUUIDs;[m[41m[m
+[32m+[m[41m[m
+ std::map<int, CharaSwayStringParam_t> charaSwayStringOffset{};[m
+ std::map<int, std::string> swayTypes{[m
+ 	{0x0, "Test"},[m
+[36m@@ -49,6 +55,20 @@[m [mUnitIdol overridenMvUnitIdols[8];[m
+ std::map<std::string, std::string> replacementTexureNames{};[m
+ [m
+ [m
+[32m+[m[32m// Utility to split string by newline[m[41m[m
+[32m+[m[32mstd::vector<std::string> splitString(const std::string& str) {[m[41m[m
+[32m+[m	[32mstd::vector<std::string> lines;[m[41m[m
+[32m+[m	[32mstd::string::size_type pos = 0;[m[41m[m
+[32m+[m	[32mstd::string::size_type prev = 0;[m[41m[m
+[32m+[m	[32mwhile ((pos = str.find('\n', prev)) != std::string::npos) {[m[41m[m
+[32m+[m		[32mlines.push_back(str.substr(prev, pos - prev));[m[41m[m
+[32m+[m		[32mprev = pos + 1;[m[41m[m
+[32m+[m	[32m}[m[41m[m
+[32m+[m	[32mlines.push_back(str.substr(prev));[m[41m[m
+[32m+[m	[32mreturn lines;[m[41m[m
+[32m+[m[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m[41m[m
+ void loadGUIDataCache() {[m
+ 	try {[m
+ 		if (!std::filesystem::exists("scsp-gui-save.json")) return;[m
+[36m@@ -551,6 +571,12 @@[m [mnamespace[m
+ 		if (writeWstr.ends_with(L",]")) {  // 代哥的 Json 就是不一样[m
+ 			writeWstr.erase(writeWstr.length() - 2, 1);[m
+ 		}[m
+[32m+[m[41m[m
+[32m+[m		[32mif (g_dump_static_entries) {[m[41m[m
+[32m+[m			[32mstd::string processedJson = utility::conversions::to_utf8string(writeWstr);[m[41m[m
+[32m+[m			[32mSCLocal::processStaticDump(utility::conversions::to_utf8string(dumpName), processedJson);[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m[41m[m
+ 		const auto dumpLocalFilePath = dumpBasePath / SCLocal::getFilePathByName(dumpName, true, dumpBasePath);[m
+ 		std::ofstream dumpFile(dumpLocalFilePath, std::ofstream::out);[m
+ 		dumpFile << utility::conversions::to_utf8string(writeWstr).c_str();[m
+[36m@@ -1734,11 +1760,185 @@[m [mnamespace[m
+ 		HOOK_CAST_CALL(void, UITextMeshProUGUI_Awake)(_this);[m
+ 	}[m
+ [m
+[31m-	HOOK_ORIG_TYPE ScenarioManager_Init_orig;[m
+[31m-	void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName) {[m
+[31m-		// printf("ScenarioManager_Init: %ls\n%ls\n\n", scrName->start_char, environment_get_stacktrace()->start_char);[m
+[31m-		return HOOK_CAST_CALL(void*, ScenarioManager_Init)(retstr, _this, scrName);[m
+[32m+[m[32m// Timeline Reflection Helpers[m[41m[m
+[32m+[m[32mnamespace il2cpp_timeline {[m[41m[m
+[32m+[m	[32mstatic void* TimelineAsset_klass = nullptr;[m[41m[m
+[32m+[m	[32mstatic void* TrackAsset_klass = nullptr;[m[41m[m
+[32m+[m	[32mstatic void* TimelineClip_klass = nullptr;[m[41m[m
+[32m+[m	[32mstatic MethodInfo* TimelineAsset_get_outputTracks = nullptr;[m[41m[m
+[32m+[m	[32mstatic MethodInfo* TrackAsset_get_clips = nullptr;[m[41m[m
+[32m+[m	[32mstatic MethodInfo* TimelineClip_get_asset = nullptr;[m[41m[m
+[32m+[m	[32mstatic MethodInfo* TimelineClip_get_start = nullptr;[m[41m[m
+[32m+[m[41m[m
+[32m+[m	[32mvoid Init() {[m[41m[m
+[32m+[m		[32mif (TimelineAsset_klass) return;[m[41m[m
+[32m+[m		[32mTimelineAsset_klass = il2cpp_symbols::get_class("UnityEngine.Timeline.dll", "UnityEngine.Timeline", "TimelineAsset");[m[41m[m
+[32m+[m		[32mTrackAsset_klass = il2cpp_symbols::get_class("UnityEngine.Timeline.dll", "UnityEngine.Timeline", "TrackAsset");[m[41m[m
+[32m+[m		[32mTimelineClip_klass = il2cpp_symbols::get_class("UnityEngine.Timeline.dll", "UnityEngine.Timeline", "TimelineClip");[m[41m[m
+[32m+[m[41m[m
+[32m+[m		[32mif (TimelineAsset_klass) {[m[41m[m
+[32m+[m			[32mTimelineAsset_get_outputTracks = il2cpp_class_get_method_from_name(TimelineAsset_klass, "get_outputTracks", 0);[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m		[32mif (TrackAsset_klass) {[m[41m[m
+[32m+[m			[32mTrackAsset_get_clips = il2cpp_class_get_method_from_name(TrackAsset_klass, "get_clips", 0);[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m		[32mif (TimelineClip_klass) {[m[41m[m
+[32m+[m			[32mTimelineClip_get_asset = il2cpp_class_get_method_from_name(TimelineClip_klass, "get_asset", 0);[m[41m[m
+[32m+[m			[32mTimelineClip_get_start = il2cpp_class_get_method_from_name(TimelineClip_klass, "get_start", 0);[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m	[32m}[m[41m[m
+[32m+[m[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32mvoid DumpTimeline(void* timelineAsset, const std::string& scenarioId) {[m[41m[m
+[32m+[m	[32mif (!timelineAsset) return;[m[41m[m
+[32m+[m	[32mil2cpp_timeline::Init();[m[41m[m
+[32m+[m	[32mif (!il2cpp_timeline::TimelineAsset_get_outputTracks) return;[m[41m[m
+[32m+[m[41m[m
+[32m+[m	[32mnlohmann::json dumpArray = nlohmann::json::array();[m[41m[m
+[32m+[m	[32mstd::unordered_set<std::string> dumpedUuids;[m[41m[m
+[32m+[m[41m[m
+[32m+[m	[32m// Iterate Tracks[m[41m[m
+[32m+[m	[32mauto tracksEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_outputTracks, timelineAsset, nullptr, nullptr);[m[41m[m
+[32m+[m[41m	[m
+[32m+[m	[32mil2cpp_symbols::iterate_IEnumerable(tracksEnumerable, [&](void* track) {[m[41m[m
+[32m+[m		[32mif (!track) return;[m[41m[m
+[32m+[m[41m		[m
+[32m+[m		[32m// Iterate Clips[m[41m[m
+[32m+[m		[32mauto clipsEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TrackAsset_get_clips, track, nullptr, nullptr);[m[41m[m
+[32m+[m[41m		[m
+[32m+[m		[32mil2cpp_symbols::iterate_IEnumerable(clipsEnumerable, [&](void* clip) {[m[41m[m
+[32m+[m			[32mif (!clip) return;[m[41m[m
+[32m+[m[41m[m
+[32m+[m			[32mauto playableAsset = il2cpp_runtime_invoke(il2cpp_timeline::TimelineClip_get_asset, clip, nullptr, nullptr);[m[41m[m
+[32m+[m			[32mif (!playableAsset) return;[m[41m[m
+[32m+[m[41m[m
+[32m+[m			[32m// Check if it is DramaSubtitlePlayableAsset[m[41m[m
+[32m+[m			[32mstatic auto DramaSubtitlePlayableAsset_klass = il2cpp_symbols::get_class("PRISM.Interactions.Drama.dll", "PRISM.Interactions.Drama", "DramaSubtitlePlayableAsset");[m[41m[m
+[32m+[m			[32mif (!DramaSubtitlePlayableAsset_klass)[m[41m[m
+[32m+[m				[32mDramaSubtitlePlayableAsset_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Interactions.Drama", "DramaSubtitlePlayableAsset");[m[41m[m
+[32m+[m[41m[m
+[32m+[m			[32mauto assetKlass = il2cpp_symbols::get_class_from_instance(playableAsset);[m[41m[m
+[32m+[m			[32mif (assetKlass == DramaSubtitlePlayableAsset_klass) {[m[41m[m
+[32m+[m				[32m// Extract Data[m[41m[m
+[32m+[m				[32mstatic auto behaviour_field = il2cpp_class_get_field_from_name(DramaSubtitlePlayableAsset_klass, "behaviour");[m[41m[m
+[32m+[m				[32mif (!behaviour_field) behaviour_field = il2cpp_class_get_field_from_name(DramaSubtitlePlayableAsset_klass, "m_Template");[m[41m[m
+[32m+[m[41m[m
+[32m+[m				[32mif (behaviour_field) {[m[41m[m
+[32m+[m					[32mauto behaviour = il2cpp_field_get_value_object(behaviour_field, playableAsset);[m[41m[m
+[32m+[m					[32mif (behaviour) {[m[41m[m
+[32m+[m						[32mstatic auto behaviour_klass = il2cpp_symbols::get_class_from_instance(behaviour);[m[41m[m
+[32m+[m						[32mstatic auto uniqueId_field = il2cpp_class_get_field_from_name(behaviour_klass, "uniqueId");[m[41m[m
+[32m+[m						[32mif (!uniqueId_field) uniqueId_field = il2cpp_class_get_field_from_name(behaviour_klass, "uuid");[m[41m[m
+[32m+[m						[32mstatic auto text_field = il2cpp_class_get_field_from_name(behaviour_klass, "text");[m[41m[m
+[32m+[m						[32mif (!text_field) text_field = il2cpp_class_get_field_from_name(behaviour_klass, "_text");[m[41m[m
+[32m+[m						[32mstatic auto speakerName_field = il2cpp_class_get_field_from_name(behaviour_klass, "speakerName");[m[41m[m
+[32m+[m[41m[m
+[32m+[m						[32mif (uniqueId_field && text_field) {[m[41m[m
+[32m+[m							[32mIl2CppString* uniqueIdStr = nullptr;[m[41m[m
+[32m+[m							[32mil2cpp_field_get_value(behaviour, uniqueId_field, &uniqueIdStr);[m[41m[m
+[32m+[m[41m							[m
+[32m+[m							[32mif (uniqueIdStr) {[m[41m[m
+[32m+[m								[32mstd::string uuid = uniqueIdStr->ToUtf8String();[m[41m[m
+[32m+[m								[32mif (dumpedUuids.contains(uuid)) return; // Avoid duplicates[m[41m[m
+[32m+[m								[32mdumpedUuids.insert(uuid);[m[41m[m
+[32m+[m[41m[m
+[32m+[m								[32mIl2CppString* textStr = nullptr;[m[41m[m
+[32m+[m								[32mil2cpp_field_get_value(behaviour, text_field, &textStr);[m[41m[m
+[32m+[m								[32mstd::string text = textStr ? textStr->ToUtf8String() : "";[m[41m[m
+[32m+[m[41m[m
+[32m+[m								[32mstd::string speaker = "";[m[41m[m
+[32m+[m								[32mif (speakerName_field) {[m[41m[m
+[32m+[m									[32mIl2CppString* speakerStr = nullptr;[m[41m[m
+[32m+[m									[32mil2cpp_field_get_value(behaviour, speakerName_field, &speakerStr);[m[41m[m
+[32m+[m									[32mif (speakerStr) speaker = speakerStr->ToUtf8String();[m[41m[m
+[32m+[m								[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m								[32mnlohmann::json item;[m[41m[m
+[32m+[m								[32mitem["uuid"] = uuid;[m[41m[m
+[32m+[m								[32mitem["original"] = text;[m[41m[m
+[32m+[m								[32mitem["translation"] = "";[m[41m[m
+[32m+[m								[32mif (!speaker.empty()) item["speaker"] = speaker;[m[41m[m
+[32m+[m[41m								[m
+[32m+[m								[32mdumpArray.push_back(item);[m[41m[m
+[32m+[m							[32m}[m[41m[m
+[32m+[m						[32m}[m[41m[m
+[32m+[m					[32m}[m[41m[m
+[32m+[m				[32m}[m[41m[m
+[32m+[m			[32m}[m[41m[m
+[32m+[m		[32m});[m[41m[m
+[32m+[m	[32m});[m[41m[m
+[32m+[m[41m[m
+[32m+[m	[32mif (!dumpArray.empty()) {[m[41m[m
+[32m+[m		[32mtry {[m[41m[m
+[32m+[m			[32mstd::filesystem::path dumpDir = g_localify_base / "timeline_json" / "Dump";[m[41m[m
+[32m+[m			[32mif (!std::filesystem::exists(dumpDir)) {[m[41m[m
+[32m+[m				[32mstd::filesystem::create_directories(dumpDir);[m[41m[m
+[32m+[m			[32m}[m[41m[m
+[32m+[m			[32mstd::filesystem::path dumpFile = dumpDir / (scenarioId + ".json");[m[41m[m
+[32m+[m			[32mstd::ofstream o(dumpFile);[m[41m[m
+[32m+[m			[32mo << dumpArray.dump(4);[m[41m[m
+[32m+[m			[32mo.close();[m[41m[m
+[32m+[m			[32mprintf("[Dump] Exported %llu lines to %ls\n", dumpArray.size(), dumpFile.c_str());[m[41m[m
+[32m+[m		[32m} catch (std::exception& e) {[m[41m[m
+[32m+[m			[32mprintf("[Dump] Error writing file: %s\n", e.what());[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m	[32m}[m[41m[m
+[32m+[m[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32mstd::string g_currentScenarioId = "";[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32mHOOK_ORIG_TYPE PlayableDirector_Play_orig;[m[41m[m
+[32m+[m[32mvoid PlayableDirector_Play_hook(void* _this, void* asset) {[m[41m[m
+[32m+[m	[32mHOOK_CAST_CALL(void, PlayableDirector_Play)(_this, asset);[m[41m[m
+[32m+[m[41m[m
+[32m+[m	[32m// Dump logic disabled as per user request[m[41m[m
+[32m+[m	[32m/*[m[41m[m
+[32m+[m	[32mif (g_auto_dump_all_json && asset) {[m[41m[m
+[32m+[m		[32m// Check if it is a TimelineAsset[m[41m[m
+[32m+[m		[32mil2cpp_timeline::Init();[m[41m[m
+[32m+[m		[32mauto assetKlass = il2cpp_symbols::get_class_from_instance(asset);[m[41m[m
+[32m+[m		[32mif (assetKlass == il2cpp_timeline::TimelineAsset_klass) {[m[41m[m
+[32m+[m			[32m// Use captured ID or fallback to asset name[m[41m[m
+[32m+[m			[32mstd::string dumpId = g_currentScenarioId;[m[41m[m
+[32m+[m			[32mif (dumpId.empty()) {[m[41m[m
+[32m+[m				[32m// Fallback: Get Asset Name[m[41m[m
+[32m+[m				[32mstatic auto Object_get_name = il2cpp_symbols::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Object", "get_name", 0);[m[41m[m
+[32m+[m				[32mauto getName = reinterpret_cast<Il2CppString * (*)(void*)>(Object_get_name);[m[41m[m
+[32m+[m				[32mif (getName) {[m[41m[m
+[32m+[m					[32mauto nameStr = getName(asset);[m[41m[m
+[32m+[m					[32mif (nameStr) dumpId = nameStr->ToUtf8String();[m[41m[m
+[32m+[m				[32m}[m[41m[m
+[32m+[m			[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m			[32mif (!dumpId.empty()) {[m[41m[m
+[32m+[m				[32mDumpTimeline(asset, dumpId);[m[41m[m
+[32m+[m			[32m}[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m	[32m}[m[41m[m
+[32m+[m	[32m*/[m[41m[m
+[32m+[m[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32mHOOK_ORIG_TYPE ScenarioManager_Init_orig;[m[41m[m
+[32m+[m[32mvoid* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName) {[m[41m[m
+[32m+[m	[32mif (scrName) {[m[41m[m
+[32m+[m		[32mg_currentScenarioId = scrName->ToUtf8String();[m[41m[m
+[32m+[m		[32mif (g_debugMode) printf("[ScenarioManager] Init Scenario: %s\n", g_currentScenarioId.c_str());[m[41m[m
+[32m+[m[41m[m
+[32m+[m		[32m// Dump Logic: Check if translation exists[m[41m[m
+[32m+[m		[32mif (!SCLocal::isScenarioTranslated(g_currentScenarioId)) {[m[41m[m
+[32m+[m			[32mif (g_debugMode) printf("[Dump] Scenario %s not found in loaded translations. Marking for dump.\n", g_currentScenarioId.c_str());[m[41m[m
+[32m+[m			[32mSCLocal::addToMissingList(g_currentScenarioId);[m[41m[m
+[32m+[m			[32mg_isDumping = true;[m[41m[m
+[32m+[m			[32mg_dumpingScenarioId = g_currentScenarioId;[m[41m[m
+[32m+[m			[32mg_dumpedUUIDs.clear();[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m		[32melse {[m[41m[m
+[32m+[m			[32mg_isDumping = false;[m[41m[m
+[32m+[m			[32mif (g_debugMode) printf("[Dump] Scenario %s skipped (already

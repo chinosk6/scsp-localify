@@ -1,0 +1,313 @@
+[1mdiff --git a/src/hook.cpp b/src/hook.cpp[m
+[1mindex e5d7264..7c8a8ca 100644[m
+[1m--- a/src/hook.cpp[m
+[1m+++ b/src/hook.cpp[m
+[36m@@ -20,11 +20,17 @@[m [mstd::function<void()> g_on_hook_ready;[m
+ std::function<void()> g_on_close;[m
+ std::function<void()> on_hotKey_0;[m
+ bool needPrintStack = false;[m
+[32m+[m[32mbool g_debugMode = true;[m[41m[m
+ std::vector<std::pair<std::pair<int, int>, int>> replaceDressResIds{};[m
+ std::map<std::string, CharaParam_t> charaParam{};[m
+ CharaParam_t baseParam(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);[m
+ std::vector<std::function<bool()>> mainThreadTasks{};  // 返回 true，执行后移除列表；返回 false，执行后不移除[m
+ [m
+[32m+[m[32m// Dump Module Globals[m[41m[m
+[32m+[m[32mbool g_isDumping = false;[m[41m[m
+[32m+[m[32mstd::string g_dumpingScenarioId = "";[m[41m[m
+[32m+[m[32mstd::set<std::string> g_dumpedUUIDs;[m[41m[m
+[32m+[m[41m[m
+ std::map<int, CharaSwayStringParam_t> charaSwayStringOffset{};[m
+ std::map<int, std::string> swayTypes{[m
+ 	{0x0, "Test"},[m
+[36m@@ -49,6 +55,20 @@[m [mUnitIdol overridenMvUnitIdols[8];[m
+ std::map<std::string, std::string> replacementTexureNames{};[m
+ [m
+ [m
+[32m+[m[32m// Utility to split string by newline[m[41m[m
+[32m+[m[32mstd::vector<std::string> splitString(const std::string& str) {[m[41m[m
+[32m+[m	[32mstd::vector<std::string> lines;[m[41m[m
+[32m+[m	[32mstd::string::size_type pos = 0;[m[41m[m
+[32m+[m	[32mstd::string::size_type prev = 0;[m[41m[m
+[32m+[m	[32mwhile ((pos = str.find('\n', prev)) != std::string::npos) {[m[41m[m
+[32m+[m		[32mlines.push_back(str.substr(prev, pos - prev));[m[41m[m
+[32m+[m		[32mprev = pos + 1;[m[41m[m
+[32m+[m	[32m}[m[41m[m
+[32m+[m	[32mlines.push_back(str.substr(prev));[m[41m[m
+[32m+[m	[32mreturn lines;[m[41m[m
+[32m+[m[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m[41m[m
+ void loadGUIDataCache() {[m
+ 	try {[m
+ 		if (!std::filesystem::exists("scsp-gui-save.json")) return;[m
+[36m@@ -551,6 +571,12 @@[m [mnamespace[m
+ 		if (writeWstr.ends_with(L",]")) {  // 代哥的 Json 就是不一样[m
+ 			writeWstr.erase(writeWstr.length() - 2, 1);[m
+ 		}[m
+[32m+[m[41m[m
+[32m+[m		[32mif (g_dump_static_entries) {[m[41m[m
+[32m+[m			[32mstd::string processedJson = utility::conversions::to_utf8string(writeWstr);[m[41m[m
+[32m+[m			[32mSCLocal::processStaticDump(utility::conversions::to_utf8string(dumpName), processedJson);[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m[41m[m
+ 		const auto dumpLocalFilePath = dumpBasePath / SCLocal::getFilePathByName(dumpName, true, dumpBasePath);[m
+ 		std::ofstream dumpFile(dumpLocalFilePath, std::ofstream::out);[m
+ 		dumpFile << utility::conversions::to_utf8string(writeWstr).c_str();[m
+[36m@@ -1734,11 +1760,185 @@[m [mnamespace[m
+ 		HOOK_CAST_CALL(void, UITextMeshProUGUI_Awake)(_this);[m
+ 	}[m
+ [m
+[31m-	HOOK_ORIG_TYPE ScenarioManager_Init_orig;[m
+[31m-	void* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName) {[m
+[31m-		// printf("ScenarioManager_Init: %ls\n%ls\n\n", scrName->start_char, environment_get_stacktrace()->start_char);[m
+[31m-		return HOOK_CAST_CALL(void*, ScenarioManager_Init)(retstr, _this, scrName);[m
+[32m+[m[32m// Timeline Reflection Helpers[m[41m[m
+[32m+[m[32mnamespace il2cpp_timeline {[m[41m[m
+[32m+[m	[32mstatic void* TimelineAsset_klass = nullptr;[m[41m[m
+[32m+[m	[32mstatic void* TrackAsset_klass = nullptr;[m[41m[m
+[32m+[m	[32mstatic void* TimelineClip_klass = nullptr;[m[41m[m
+[32m+[m	[32mstatic MethodInfo* TimelineAsset_get_outputTracks = nullptr;[m[41m[m
+[32m+[m	[32mstatic MethodInfo* TrackAsset_get_clips = nullptr;[m[41m[m
+[32m+[m	[32mstatic MethodInfo* TimelineClip_get_asset = nullptr;[m[41m[m
+[32m+[m	[32mstatic MethodInfo* TimelineClip_get_start = nullptr;[m[41m[m
+[32m+[m[41m[m
+[32m+[m	[32mvoid Init() {[m[41m[m
+[32m+[m		[32mif (TimelineAsset_klass) return;[m[41m[m
+[32m+[m		[32mTimelineAsset_klass = il2cpp_symbols::get_class("UnityEngine.Timeline.dll", "UnityEngine.Timeline", "TimelineAsset");[m[41m[m
+[32m+[m		[32mTrackAsset_klass = il2cpp_symbols::get_class("UnityEngine.Timeline.dll", "UnityEngine.Timeline", "TrackAsset");[m[41m[m
+[32m+[m		[32mTimelineClip_klass = il2cpp_symbols::get_class("UnityEngine.Timeline.dll", "UnityEngine.Timeline", "TimelineClip");[m[41m[m
+[32m+[m[41m[m
+[32m+[m		[32mif (TimelineAsset_klass) {[m[41m[m
+[32m+[m			[32mTimelineAsset_get_outputTracks = il2cpp_class_get_method_from_name(TimelineAsset_klass, "get_outputTracks", 0);[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m		[32mif (TrackAsset_klass) {[m[41m[m
+[32m+[m			[32mTrackAsset_get_clips = il2cpp_class_get_method_from_name(TrackAsset_klass, "get_clips", 0);[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m		[32mif (TimelineClip_klass) {[m[41m[m
+[32m+[m			[32mTimelineClip_get_asset = il2cpp_class_get_method_from_name(TimelineClip_klass, "get_asset", 0);[m[41m[m
+[32m+[m			[32mTimelineClip_get_start = il2cpp_class_get_method_from_name(TimelineClip_klass, "get_start", 0);[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m	[32m}[m[41m[m
+[32m+[m[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32mvoid DumpTimeline(void* timelineAsset, const std::string& scenarioId) {[m[41m[m
+[32m+[m	[32mif (!timelineAsset) return;[m[41m[m
+[32m+[m	[32mil2cpp_timeline::Init();[m[41m[m
+[32m+[m	[32mif (!il2cpp_timeline::TimelineAsset_get_outputTracks) return;[m[41m[m
+[32m+[m[41m[m
+[32m+[m	[32mnlohmann::json dumpArray = nlohmann::json::array();[m[41m[m
+[32m+[m	[32mstd::unordered_set<std::string> dumpedUuids;[m[41m[m
+[32m+[m[41m[m
+[32m+[m	[32m// Iterate Tracks[m[41m[m
+[32m+[m	[32mauto tracksEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TimelineAsset_get_outputTracks, timelineAsset, nullptr, nullptr);[m[41m[m
+[32m+[m[41m	[m
+[32m+[m	[32mil2cpp_symbols::iterate_IEnumerable(tracksEnumerable, [&](void* track) {[m[41m[m
+[32m+[m		[32mif (!track) return;[m[41m[m
+[32m+[m[41m		[m
+[32m+[m		[32m// Iterate Clips[m[41m[m
+[32m+[m		[32mauto clipsEnumerable = il2cpp_runtime_invoke(il2cpp_timeline::TrackAsset_get_clips, track, nullptr, nullptr);[m[41m[m
+[32m+[m[41m		[m
+[32m+[m		[32mil2cpp_symbols::iterate_IEnumerable(clipsEnumerable, [&](void* clip) {[m[41m[m
+[32m+[m			[32mif (!clip) return;[m[41m[m
+[32m+[m[41m[m
+[32m+[m			[32mauto playableAsset = il2cpp_runtime_invoke(il2cpp_timeline::TimelineClip_get_asset, clip, nullptr, nullptr);[m[41m[m
+[32m+[m			[32mif (!playableAsset) return;[m[41m[m
+[32m+[m[41m[m
+[32m+[m			[32m// Check if it is DramaSubtitlePlayableAsset[m[41m[m
+[32m+[m			[32mstatic auto DramaSubtitlePlayableAsset_klass = il2cpp_symbols::get_class("PRISM.Interactions.Drama.dll", "PRISM.Interactions.Drama", "DramaSubtitlePlayableAsset");[m[41m[m
+[32m+[m			[32mif (!DramaSubtitlePlayableAsset_klass)[m[41m[m
+[32m+[m				[32mDramaSubtitlePlayableAsset_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Interactions.Drama", "DramaSubtitlePlayableAsset");[m[41m[m
+[32m+[m[41m[m
+[32m+[m			[32mauto assetKlass = il2cpp_symbols::get_class_from_instance(playableAsset);[m[41m[m
+[32m+[m			[32mif (assetKlass == DramaSubtitlePlayableAsset_klass) {[m[41m[m
+[32m+[m				[32m// Extract Data[m[41m[m
+[32m+[m				[32mstatic auto behaviour_field = il2cpp_class_get_field_from_name(DramaSubtitlePlayableAsset_klass, "behaviour");[m[41m[m
+[32m+[m				[32mif (!behaviour_field) behaviour_field = il2cpp_class_get_field_from_name(DramaSubtitlePlayableAsset_klass, "m_Template");[m[41m[m
+[32m+[m[41m[m
+[32m+[m				[32mif (behaviour_field) {[m[41m[m
+[32m+[m					[32mauto behaviour = il2cpp_field_get_value_object(behaviour_field, playableAsset);[m[41m[m
+[32m+[m					[32mif (behaviour) {[m[41m[m
+[32m+[m						[32mstatic auto behaviour_klass = il2cpp_symbols::get_class_from_instance(behaviour);[m[41m[m
+[32m+[m						[32mstatic auto uniqueId_field = il2cpp_class_get_field_from_name(behaviour_klass, "uniqueId");[m[41m[m
+[32m+[m						[32mif (!uniqueId_field) uniqueId_field = il2cpp_class_get_field_from_name(behaviour_klass, "uuid");[m[41m[m
+[32m+[m						[32mstatic auto text_field = il2cpp_class_get_field_from_name(behaviour_klass, "text");[m[41m[m
+[32m+[m						[32mif (!text_field) text_field = il2cpp_class_get_field_from_name(behaviour_klass, "_text");[m[41m[m
+[32m+[m						[32mstatic auto speakerName_field = il2cpp_class_get_field_from_name(behaviour_klass, "speakerName");[m[41m[m
+[32m+[m[41m[m
+[32m+[m						[32mif (uniqueId_field && text_field) {[m[41m[m
+[32m+[m							[32mIl2CppString* uniqueIdStr = nullptr;[m[41m[m
+[32m+[m							[32mil2cpp_field_get_value(behaviour, uniqueId_field, &uniqueIdStr);[m[41m[m
+[32m+[m[41m							[m
+[32m+[m							[32mif (uniqueIdStr) {[m[41m[m
+[32m+[m								[32mstd::string uuid = uniqueIdStr->ToUtf8String();[m[41m[m
+[32m+[m								[32mif (dumpedUuids.contains(uuid)) return; // Avoid duplicates[m[41m[m
+[32m+[m								[32mdumpedUuids.insert(uuid);[m[41m[m
+[32m+[m[41m[m
+[32m+[m								[32mIl2CppString* textStr = nullptr;[m[41m[m
+[32m+[m								[32mil2cpp_field_get_value(behaviour, text_field, &textStr);[m[41m[m
+[32m+[m								[32mstd::string text = textStr ? textStr->ToUtf8String() : "";[m[41m[m
+[32m+[m[41m[m
+[32m+[m								[32mstd::string speaker = "";[m[41m[m
+[32m+[m								[32mif (speakerName_field) {[m[41m[m
+[32m+[m									[32mIl2CppString* speakerStr = nullptr;[m[41m[m
+[32m+[m									[32mil2cpp_field_get_value(behaviour, speakerName_field, &speakerStr);[m[41m[m
+[32m+[m									[32mif (speakerStr) speaker = speakerStr->ToUtf8String();[m[41m[m
+[32m+[m								[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m								[32mnlohmann::json item;[m[41m[m
+[32m+[m								[32mitem["uuid"] = uuid;[m[41m[m
+[32m+[m								[32mitem["original"] = text;[m[41m[m
+[32m+[m								[32mitem["translation"] = "";[m[41m[m
+[32m+[m								[32mif (!speaker.empty()) item["speaker"] = speaker;[m[41m[m
+[32m+[m[41m								[m
+[32m+[m								[32mdumpArray.push_back(item);[m[41m[m
+[32m+[m							[32m}[m[41m[m
+[32m+[m						[32m}[m[41m[m
+[32m+[m					[32m}[m[41m[m
+[32m+[m				[32m}[m[41m[m
+[32m+[m			[32m}[m[41m[m
+[32m+[m		[32m});[m[41m[m
+[32m+[m	[32m});[m[41m[m
+[32m+[m[41m[m
+[32m+[m	[32mif (!dumpArray.empty()) {[m[41m[m
+[32m+[m		[32mtry {[m[41m[m
+[32m+[m			[32mstd::filesystem::path dumpDir = g_localify_base / "timeline_json" / "Dump";[m[41m[m
+[32m+[m			[32mif (!std::filesystem::exists(dumpDir)) {[m[41m[m
+[32m+[m				[32mstd::filesystem::create_directories(dumpDir);[m[41m[m
+[32m+[m			[32m}[m[41m[m
+[32m+[m			[32mstd::filesystem::path dumpFile = dumpDir / (scenarioId + ".json");[m[41m[m
+[32m+[m			[32mstd::ofstream o(dumpFile);[m[41m[m
+[32m+[m			[32mo << dumpArray.dump(4);[m[41m[m
+[32m+[m			[32mo.close();[m[41m[m
+[32m+[m			[32mprintf("[Dump] Exported %llu lines to %ls\n", dumpArray.size(), dumpFile.c_str());[m[41m[m
+[32m+[m		[32m} catch (std::exception& e) {[m[41m[m
+[32m+[m			[32mprintf("[Dump] Error writing file: %s\n", e.what());[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m	[32m}[m[41m[m
+[32m+[m[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32mstd::string g_currentScenarioId = "";[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32mHOOK_ORIG_TYPE PlayableDirector_Play_orig;[m[41m[m
+[32m+[m[32mvoid PlayableDirector_Play_hook(void* _this, void* asset) {[m[41m[m
+[32m+[m	[32mHOOK_CAST_CALL(void, PlayableDirector_Play)(_this, asset);[m[41m[m
+[32m+[m[41m[m
+[32m+[m	[32m// Dump logic disabled as per user request[m[41m[m
+[32m+[m	[32m/*[m[41m[m
+[32m+[m	[32mif (g_auto_dump_all_json && asset) {[m[41m[m
+[32m+[m		[32m// Check if it is a TimelineAsset[m[41m[m
+[32m+[m		[32mil2cpp_timeline::Init();[m[41m[m
+[32m+[m		[32mauto assetKlass = il2cpp_symbols::get_class_from_instance(asset);[m[41m[m
+[32m+[m		[32mif (assetKlass == il2cpp_timeline::TimelineAsset_klass) {[m[41m[m
+[32m+[m			[32m// Use captured ID or fallback to asset name[m[41m[m
+[32m+[m			[32mstd::string dumpId = g_currentScenarioId;[m[41m[m
+[32m+[m			[32mif (dumpId.empty()) {[m[41m[m
+[32m+[m				[32m// Fallback: Get Asset Name[m[41m[m
+[32m+[m				[32mstatic auto Object_get_name = il2cpp_symbols::get_method_pointer("UnityEngine.CoreModule.dll", "UnityEngine", "Object", "get_name", 0);[m[41m[m
+[32m+[m				[32mauto getName = reinterpret_cast<Il2CppString * (*)(void*)>(Object_get_name);[m[41m[m
+[32m+[m				[32mif (getName) {[m[41m[m
+[32m+[m					[32mauto nameStr = getName(asset);[m[41m[m
+[32m+[m					[32mif (nameStr) dumpId = nameStr->ToUtf8String();[m[41m[m
+[32m+[m				[32m}[m[41m[m
+[32m+[m			[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m			[32mif (!dumpId.empty()) {[m[41m[m
+[32m+[m				[32mDumpTimeline(asset, dumpId);[m[41m[m
+[32m+[m			[32m}[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m	[32m}[m[41m[m
+[32m+[m	[32m*/[m[41m[m
+[32m+[m[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m[32mHOOK_ORIG_TYPE ScenarioManager_Init_orig;[m[41m[m
+[32m+[m[32mvoid* ScenarioManager_Init_hook(void* retstr, void* _this, Il2CppString* scrName) {[m[41m[m
+[32m+[m	[32mif (scrName) {[m[41m[m
+[32m+[m		[32mg_currentScenarioId = scrName->ToUtf8String();[m[41m[m
+[32m+[m		[32mif (g_debugMode) printf("[ScenarioManager] Init Scenario: %s\n", g_currentScenarioId.c_str());[m[41m[m
+[32m+[m[41m[m
+[32m+[m		[32m// Dump Logic: Check if translation exists[m[41m[m
+[32m+[m		[32mif (!SCLocal::isScenarioTranslated(g_currentScenarioId)) {[m[41m[m
+[32m+[m			[32mif (g_debugMode) printf("[Dump] Scenario %s not found in loaded translations. Marking for dump.\n", g_currentScenarioId.c_str());[m[41m[m
+[32m+[m			[32mSCLocal::addToMissingList(g_currentScenarioId);[m[41m[m
+[32m+[m			[32mg_isDumping = true;[m[41m[m
+[32m+[m			[32mg_dumpingScenarioId = g_currentScenarioId;[m[41m[m
+[32m+[m			[32mg_dumpedUUIDs.clear();[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m		[32melse {[m[41m[m
+[32m+[m			[32mg_isDumping = false;[m[41m[m
+[32m+[m			[32mif (g_debugMode) printf("[Dump] Scenario %s skipped (already translated).\n", g_currentScenarioId.c_str());[m[41m[m
+[32m+[m		[32m}[m[41m[m
+ 	}[m
+[32m+[m	[32mreturn HOOK_CAST_CALL(void*, ScenarioManager_Init)(retstr, _this, scrName);[m[41m[m
+[32m+[m[32m}[m[41m[m
+ [m
+ 	void* DataFile_GetBytes_hook(Il2CppString* path) {[m
+ 		std::wstring pathStr(path->start_char);[m
+[36m@@ -1811,6 +2011,125 @@[m [mnamespace[m
+ 	// Normal 3D Live[m
+ 	HOOK_ORIG_TYPE DepthOfFieldClip_CreatePlayable_orig;[m
+ 	void* DepthOfFieldClip_CreatePlayable_hook(void* retstr, void* _this, void* graph, void* go, void* mtd) {[m
+[32m+[m		[32m// Debug logging to trace execution[m[41m[m
+[32m+[m		[32mauto this_klass = il2cpp_symbols::get_class_from_instance(_this);[m[41m[m
+[32m+[m		[32mif (g_debugMode) {[m[41m[m
+[32m+[m			[32mauto klass_name = il2cpp_class_get_name(this_klass);[m[41m[m
+[32m+[m			[32mprintf("[CreatePlayable_hook] Called for class: %s\n", klass_name);[m[41m[m
+[32m+[m		[32m}[m[41m[m
+[32m+[m[41m[m
+[32m+[m		[32m// Logic for DramaSubtitlePlayableAsset (Merged due to shared address/method folding)[m[41m[m
+[32m+[m		[32mstatic auto DramaSubtitlePlayableAsset_klass = il2cpp_symbols::get_class("PRISM.Interactions.Drama.dll", "PRISM.Interactions.Drama", "DramaSubtitlePlayableAsset");[m[41m[m
+[32m+[m		[32mif (!DramaSubtitlePlayableAsset_klass)[m[41m[m
+[32m+[m			[32mDramaSubtitlePlayableAsset_klass = il2cpp_symbols::get_class("PRISM.Legacy.dll", "PRISM.Interactions.Drama", "DramaSubtitlePlayableAsset");[m[41m[m
+[32m+[m[41m[m
+[32m+[m		[32mif (DramaSubtitlePlayableAsset_klass) {[m[41m[m
+[32m+[m			[32mif (this_klass == DramaSubtitlePlayableAsset_klass) {[m[41m[m
+[32m+[m				[32mif (g_debugMode) printf("[CreatePlayable_hook] Matched DramaSubtitlePlayableAsset!\n");[m[41m[m
+[32m+[m				[32mstatic auto behaviour_field = il2cpp_class_get_field_from_name(DramaSubtitlePlayableAsset_klass, "behaviour");[m[41m[m
+[32m+[m				[32mif (!behaviour_field) behaviour_field = il2cpp_class_get_field_from_name(DramaSubtitlePlayableAsset_klass, "m_Template");[m[41m[m
+[32m+[m[41m[m
+[32m+[m				[32mif (behaviour_field) {[m[41m[m
+[32m+[m					[32mauto behaviour = il2cpp_field_get_value_object(behaviour_field, _this);[m[41m[m
+[32m+[m					[32mif (behaviour) {[m[41m[m
+[32m+[m						[32mstatic auto behaviour_klass = il2cpp_symbols::get_class_from_instance(behaviour);[m[41m[m
+[32m+[m						[32mstatic auto uniqueId_field = il2cpp_class_get_field_from_name(behaviour_klass, "uniqueId");[m[41m[m
+[32m+[m						[32mif (!uniqueId_field) uniqueId_field = il2cpp_class_get_field_from_name(behaviour_klass, "uuid");[m[41m[m
+[32m+[m[41m[m
+[32m+[m						[32mstatic auto text_field = il2cpp_class_get_field_from_name(behaviour_klass, "text");[m[41m[m
+[32m+[m						[32mif (!text_field) text_field = il2cpp_class_get_field_from_name(behaviour_klass, "_text");[m[41m[m
+[32m+[m[41m[m
+[32m+[m						[32mif (uniqueId_field && text_field) {[m[41m[m
+[32m+[m							[32mIl2CppString* uniqueId = nullptr;[m[41m[m
+[32m+[m							[32mil2cpp_field_get_value(behaviour, uniqueId_field, &uniqueId);[m[41m[m
+[32m+[m[41m[m
+[32m+[m							[32mif (uniqueId) {[m[41m[m
+[32m+[m								[32mstd::string uidStr = uniqueId->ToUtf8String();[m[41m[m
+[32m+[m								[32mif (g_debugMode) printf("[CreatePlayable_hook] Found uniqueId: %s\n", uidStr.c_str());[m[41m[m
+[32m+[m								[32mSCLocal::SubtitleData subData;[m[41m[m
+[32m+[m								[32mif (SCLocal::getSubtitle(uidStr, subData)) {[m[41m[m
+[32m+[m									[32mif (g_debugMode) printf("Translating Drama Subtitle: %s -> %s\n", uidStr.c_str(), subData.translation.c_str());[m[41m[m
+[32m+[m[41m[m
+[32m+[m									[32mstd::string finalText;[m[41m[m
+[32m+[m									[32mif (subData.config.dualMode && !subData.original.empty()) {[m[41m[m
+[32m+[m										[32m// Interleaved Layout: JP line -> ZH line -> JP line -> ZH line ...[m[41m[m
+[32m+[m										[32m// Using splitString helper to break text into lines[m[41m[m
+[32m+[m[41m										[m
+[32m+[m										[32mauto zhLines = splitString(subData.translation);[m[41m[m
+[32m+[m										[32mauto jpLines = splitString(subData.original);[m[41m[m
+[32m+[m[41m										[m
+[32m+[m										[32mstd::string combinedText = "";[m[41m[m
+[32m+[m										[32msize_t maxLines = std::max(zhLines.size(), jpLines.size());[m[41m[m
+[32m+[m[41m										[m
+[32m+[m										[32mfor (size_t i = 0; i < maxLines; i++) {[m[41m[m
+[32m+[m											[32mif (i > 0) combinedText += "\n";[m[41m[m
+[32m+[m[41m											[m
+[32m+[m											[32m// Japanese Line (Top) - Only if available[m[41m[m
+[32m+[m											[32mif (i < jpLines.size() && !jpLines[i].empty()) {[m[41m[m
+[32m+[m												[32mstd::string jpLine = jpLines[i];[m[41m[m
+[32m+[m												[32mjpLine.erase(std::remove(jpLine.begin(), jpLine.end(), '\r'), jpLine.end());[m[41m[m
+[32m+[m[41m												[m
+[32m+[m												[32m// Use nobr to force single line for this segment[m[41m[m
+[32m+[m												[32m// Apply line-height adjustment to JP line to control gap with ZH line below[m[41m[m
+[32m+[m												[32m// lineSpacing is treated as percentage offset. E.g. -20 means 80% line height.[m[41m[m
+[32m+[m												[32mint jpLineHeight = 100 + subData.config.lineSpacing;[m[41m[m
+[32m+[m												[32mcombinedText += std::format("<line-height={}%><nobr

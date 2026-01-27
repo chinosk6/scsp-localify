@@ -46,7 +46,7 @@ namespace SCLocal {
 	}
 
 	void loadTimelineTrans() {
-		std::filesystem::path timelinePath = g_localify_base / "timeline_json";
+		std::filesystem::path timelinePath = g_localify_base / "translate_data";
 
 		if (!std::filesystem::exists(timelinePath) || !std::filesystem::is_directory(timelinePath)) {
 			printf("Timeline translation directory not found: %ls\n", timelinePath.c_str());
@@ -314,7 +314,7 @@ namespace SCLocal {
 
 	bool isScenarioTranslated(const std::string& scenarioId) {
 		// Expected format: s44_01010100
-		// Path: timeline_json/s44/0101/s44_01010100.json
+		// Path: translate_data/s44/0101/s44_01010100.json
 		
 		size_t firstUnderscore = scenarioId.find('_');
 		if (firstUnderscore == std::string::npos) return false;
@@ -325,7 +325,7 @@ namespace SCLocal {
 		if (idBody.length() < 4) return false;
 		std::string subFolder = idBody.substr(0, 4);
 
-		std::filesystem::path filePath = g_localify_base / "timeline_json" / prefix / subFolder / (scenarioId + ".json");
+		std::filesystem::path filePath = g_localify_base / "translate_data" / prefix / subFolder / (scenarioId + ".json");
 		return std::filesystem::exists(filePath);
 	}
 
@@ -359,5 +359,101 @@ namespace SCLocal {
 			file.close();
 			printf("[Dump] Added %s to missing list.\n", scenarioId.c_str());
 		}
+	}
+
+	bool appendDumpEntry(const std::string& scenarioId, const std::string& uuid, const std::string& original, const std::string& name) {
+		if (uuid.empty()) return false;
+
+		std::string sXX, XXXX;
+		std::string targetFileName;
+		bool standardFormat = false;
+
+		// UUID format check: sXX_XXXXXXXX_...
+		if (uuid.length() >= 12 && uuid[0] == 's' && isdigit(uuid[1]) && isdigit(uuid[2]) && uuid[3] == '_') {
+			sXX = uuid.substr(0, 3);
+			XXXX = uuid.substr(4, 4);
+
+			// Only split sections for Event Stories (s42)
+			bool isMultiSection = (sXX == "s42");
+
+			// Check for _YY_ pattern (section index) at index 12 (e.g. s42_01040300_00)
+			// Length check: 3(sXX) + 1(_) + 8(XXXXXXXX) + 1(_) + 2(YY) = 15
+			if (isMultiSection && uuid.length() >= 15 && uuid[12] == '_' && isdigit(uuid[13]) && isdigit(uuid[14])) {
+				targetFileName = uuid.substr(0, 15); 
+			} else {
+				targetFileName = uuid.substr(0, 12); // e.g. s44_01010105
+			}
+			standardFormat = true;
+		}
+
+		if (!standardFormat) {
+			targetFileName = "dump_unknown";
+			if (!scenarioId.empty()) targetFileName = scenarioId;
+		}
+
+		// Path construction
+		// translate_data/sXX/XXXX/targetFileName.json
+		std::filesystem::path dumpPath = g_localify_base / "translate_data";
+		if (standardFormat) {
+			dumpPath /= sXX;
+			dumpPath /= XXXX;
+		} else {
+			dumpPath /= "misc";
+		}
+		
+		std::filesystem::create_directories(dumpPath);
+		std::filesystem::path filePath = dumpPath / (targetFileName + ".json");
+
+		// Load existing
+		nlohmann::json jsonArray;
+		if (std::filesystem::exists(filePath)) {
+			try {
+				std::ifstream file(filePath);
+				jsonArray = nlohmann::json::parse(file);
+				file.close();
+			} catch (...) {
+				jsonArray = nlohmann::json::array();
+			}
+		} else {
+			jsonArray = nlohmann::json::array();
+		}
+
+		// Check if UUID exists
+		bool found = false;
+		for (auto& item : jsonArray) {
+			if (item.contains("uuid") && item["uuid"] == uuid) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			nlohmann::json newItem;
+			newItem["uuid"] = uuid;
+			newItem["original"] = original;
+			newItem["translation"] = "";
+			newItem["name"] = name;
+			
+			// Add config template
+			nlohmann::json config;
+			config["zhSize"] = 38;
+			config["jpSize"] = 24;
+			config["lineSpacing"] = -10;
+			config["dualMode"] = true;
+			newItem["config"] = config;
+
+			jsonArray.push_back(newItem);
+
+			// Write back
+			try {
+				std::ofstream outFile(filePath);
+				outFile << jsonArray.dump(4);
+				outFile.close();
+				return true;
+			} catch (std::exception& e) {
+				printf("[Dump] Failed to write %s: %s\n", filePath.string().c_str(), e.what());
+			}
+		}
+		return false;
 	}
 }

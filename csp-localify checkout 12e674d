@@ -1,0 +1,20 @@
+4f16344 Sun Jan 25 22:57:15 2026 Feat: Add crash handler and F5 hot reload
+8c9cf64 Sun Jan 25 22:52:29 2026 Fix: Add fallback for ScenarioManager hook signature and hook PlayableDirector.Play(void)
+628cb19 Sun Jan 25 22:49:39 2026 Fix: Ensure ScenarioManager_Init_hook logic is correct
+479e12a Sun Jan 25 22:44:06 2026 Fix: Silence MagicaCloth logs and add debug logs for Dump module
+55375ab Sun Jan 25 22:37:14 2026 Fix: Disable hooks causing method not found errors
+aa73628 Sun Jan 25 22:28:54 2026 Feat: Implement auto-dump workflow for missing scenarios
+12e674d Sun Jan 25 21:04:45 2026 Refactor: Rename Output_JSON to timeline_json and disable auto-dump
+73e1733 Sun Jan 25 20:58:31 2026 Fix: Resolve il2cpp_runtime_invoke namespace error
+a46728d Tue Jan 20 04:32:36 2026 Feature: Dual subtitle support & Data loading refactor (2026-01-19)
+8c52daf Tue Jan 20 02:15:53 2026 Checkpoint: Implemented basic UUID-based timeline hook
+cddff20 Tue Jan 6 22:59:05 2026 Merge pull request #90 from Muitsonz/main
+d46fb95 Tue Jan 6 22:52:50 2026 update readme
+7d70ace Tue Jan 6 20:49:47 2026 update gui
+bb28c2b Tue Jan 6 17:31:31 2026 merge 'magica-cloth' into 'main'
+cd5e828 Mon Jan 5 00:04:05 2026 fix #75 and #87
+5d50d84 Mon Dec 29 15:11:49 2025 update readme and default key binding for freecamera ascending
+ade90d7 Sun Dec 28 19:59:07 2025 gui update - default clipplane values (#85) - include clipplane values in serializable freecamera data - idol overwriting serializable
+992cd0c Sun Dec 28 18:40:26 2025 customizable key binding for free caemra (#85)
+bcac4cb Sun Dec 21 22:08:39 2025 allow editing clipplane values
+0ad8359 Thu Dec 18 23:01:00 2025 fix for game v2.9.0
