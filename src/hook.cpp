@@ -2160,22 +2160,22 @@ namespace
 	}
 
 	HOOK_ORIG_TYPE LiveMVStartData_ctor_orig;
-	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, void* cameraworkConfig, int vocalSeparatedMode, int renderingDynamicRange, int soundEffectMode, bool isSortIdols) {
+	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* sceneName, void* onStageIdols, void* cameraworkConfig, int vocalSeparatedMode, int renderingDynamicRange, int soundEffectMode, bool isSortIdols) {
 		if (g_override_isVocalSeparatedOn) {
 			vocalSeparatedMode = 1;
 		}
-		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, onStageIdols, cameraworkConfig, vocalSeparatedMode, renderingDynamicRange, soundEffectMode, isSortIdols);
+		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, sceneName, onStageIdols, cameraworkConfig, vocalSeparatedMode, renderingDynamicRange, soundEffectMode, isSortIdols);
 		ModifyOnStageIdols(onStageIdols);
 	}
 
 	HOOK_ORIG_TYPE RunwayEventStartData_ctor_orig;
-	void RunwayEventStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols) {
+	void RunwayEventStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, int soundEffectMode) {
 		if (onStageIdols != nullptr) {
 			if (0 == strcmp("UnitIdolWithMstCostume[]", ((Il2CppObject*)onStageIdols)->klass->name)) {
 				ModifyOnStageIdols(onStageIdols);
 			}
 		}
-		HOOK_CAST_CALL(void, RunwayEventStartData_ctor)(_this, mvStage, onStageIdols);
+		HOOK_CAST_CALL(void, RunwayEventStartData_ctor)(_this, mvStage, onStageIdols, soundEffectMode);
 	}
 
 
@@ -2938,17 +2938,17 @@ namespace
 
 	void (*fp_CostumeChangeViewModel_Apply)(void* _this);
 
-	HOOK_DEF(void, CostumeChangeViewModel__ctor)(void* _this, void* parameter, int characterId, void* settingCostumeSet, bool isAllDressOrdered, void* defaultCostumeSet) {
+	HOOK_DEF(void, CostumeChangeViewModel__ctor)(void* _this, void* parameter, int characterId, void* settingCostumeSet, bool isAllDressOrdered, bool isEnableDressOrderTab, void* defaultCostumeSet) {
 		if (g_show_hidden_costumes) {
 			isAllDressOrdered = true;
 		}
-		HOOK_CAST_CALL(void, CostumeChangeViewModel__ctor)(_this, parameter, characterId, settingCostumeSet, isAllDressOrdered, defaultCostumeSet);
+		HOOK_CAST_CALL(void, CostumeChangeViewModel__ctor)(_this, parameter, characterId, settingCostumeSet, isAllDressOrdered, isEnableDressOrderTab, defaultCostumeSet);
 	}
 
-	HOOK_DEF(bool, CostumeChangeViewModel_CanDecide1)(void* _this, uint16_t nullableBool_overrideIsAllDressOrdered) {
+	HOOK_DEF(bool, CostumeChangeViewModel_CanDecide0)(void* _this) {
 		return g_apply_costumes_automatically
 			? false
-			: HOOK_CAST_CALL(bool, CostumeChangeViewModel_CanDecide1)(_this, nullableBool_overrideIsAllDressOrdered);
+			: HOOK_CAST_CALL(bool, CostumeChangeViewModel_CanDecide0)(_this);
 	}
 
 	HOOK_DEF(bool, CostumeChangeViewModel_CanDecide2)(void* _this, int partType, bool isAllDressOrdered) {
@@ -3461,17 +3461,17 @@ namespace
 
 		auto CostumeChangeViewModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Adapters", "PRISM.Adapters.CostumeChange",
-			"CostumeChangeViewModel", ".ctor", 5
+			"CostumeChangeViewModel", ".ctor", 6
 		);
 
 		auto LiveMVStartData_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy", "PRISM.Live",
-			"LiveMVStartData", ".ctor", 7
+			"LiveMVStartData", ".ctor", 8
 		);
 
 		auto RunwayEventStartData_ctor_addr = il2cpp_symbols_logged::get_method_pointer(
 			"PRISM.Legacy", "PRISM.RunwayEvent",
-			"RunwayEventStartData", ".ctor", 2
+			"RunwayEventStartData", ".ctor", 3
 		);
 
 		auto Subject_OnNext_addr = GetSubject_OnNext_addr();
@@ -3518,12 +3518,12 @@ namespace
 
 		auto CostumeChangeViewModel__ctor_addr = il2cpp_symbols_logged::get_method_pointer(
 			"PRISM.Adapters.dll", "PRISM.Adapters.CostumeChange",
-			"CostumeChangeViewModel", ".ctor", 5
+			"CostumeChangeViewModel", ".ctor", 6
 		);
 
-		auto CostumeChangeViewModel_CanDecide1_addr = il2cpp_symbols_logged::get_method_pointer(
+		auto CostumeChangeViewModel_CanDecide0_addr = il2cpp_symbols_logged::get_method_pointer(
 			"PRISM.Adapters.dll", "PRISM.Adapters.CostumeChange",
-			"CostumeChangeViewModel", "CanDecide", 1
+			"CostumeChangeViewModel", "CanDecide", 0
 		);
 
 		auto CostumeChangeViewModel_CanDecide2_addr = il2cpp_symbols_logged::get_method_pointer(
@@ -3604,7 +3604,7 @@ namespace
 		ADD_HOOK_1(MagicaClothController_Awake);
 
 		ADD_HOOK_1(CostumeChangeViewModel__ctor);
-		ADD_HOOK_1(CostumeChangeViewModel_CanDecide1);
+		ADD_HOOK_1(CostumeChangeViewModel_CanDecide0);
 		ADD_HOOK_1(CostumeChangeViewModel_CanDecide2);
 		ADD_HOOK_ADDR(PRISM.Adapters.dll, PRISM.Adapters.CostumeChange, CostumeChangeViewModel, RefreshViewModels, 0);
 		ADD_HOOK_ADDR(PRISM.Adapters.dll, PRISM.Adapters.CostumeChange, CostumeChangeViewModel, ModifyPreview, 1);
