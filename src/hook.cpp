@@ -2922,17 +2922,19 @@ namespace
 			printf("MagicaClothController_Awake_hook\n");
 		}
 
-		static auto klass = il2cpp_symbols_logged::get_class("PRISM.Module.CustomMagicaCloth.dll", "PRISM.Module.CustomMagicaCloth", "MagicaClothController");
-		static auto method_get_Inertia = il2cpp_class_get_method_from_name(klass, "get_Inertia", 0);
-		auto method_get_Radius = il2cpp_class_get_method_from_name(klass, "get_Radius", 0);
+		if (g_magicacloth_override) {
+			static auto klass = il2cpp_symbols_logged::get_class("PRISM.Module.CustomMagicaCloth.dll", "PRISM.Module.CustomMagicaCloth", "MagicaClothController");
+			static auto method_get_Inertia = il2cpp_class_get_method_from_name(klass, "get_Inertia", 0);
+			auto method_get_Radius = il2cpp_class_get_method_from_name(klass, "get_Radius", 0);
 
-		auto inertia = method_get_Inertia->Invoke<managed::MagicaCloth2::BodyParamFloatProperty*>(_this, {});
-		inertia->MinValue = g_magicacloth_inertia_min;
-		inertia->MaxValue = g_magicacloth_inertia_max;
+			auto inertia = method_get_Inertia->Invoke<managed::MagicaCloth2::BodyParamFloatProperty*>(_this, {});
+			inertia->MinValue = g_magicacloth_inertia_min;
+			inertia->MaxValue = g_magicacloth_inertia_max;
 
-		auto radius = method_get_Radius->Invoke<managed::MagicaCloth2::BodyParamFloatProperty*>(_this, {});
-		radius->MinValue = g_magicacloth_radius_min;
-		radius->MaxValue = g_magicacloth_radius_max;
+			auto radius = method_get_Radius->Invoke<managed::MagicaCloth2::BodyParamFloatProperty*>(_this, {});
+			radius->MinValue = g_magicacloth_radius_min;
+			radius->MaxValue = g_magicacloth_radius_max;
+		}
 	}
 
 
