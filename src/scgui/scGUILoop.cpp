@@ -736,9 +736,11 @@ namespace SCGUILoop {
 			}
 
 			if (ImGui::CollapsingHeader("Assets", ImGuiTreeNodeFlags_DefaultOpen)) {
-				ImGui::Checkbox("Use quick probing for unknown shaders", &g_shader_quickprobing);
+				ImGui::Checkbox("Use unsafe probing for unknown shaders", &g_shader_unsafe_probing);
+				HELP_TOOLTIP("(?)", "对不认识的渲染程序使用unsafe实现迅速检查，但随游戏引擎版本更新有崩溃风险。\nUse unsafe probing for unknown shaders extream quickly, with crash risk after game engine updates.");
+				ImGui::Checkbox("Use quick probing for unknown shaders (when not unsafe)", &g_shader_quickprobing);
 				ImGui::SameLine();
-				HELP_TOOLTIP("(?)", "对不认识的渲染程序启用快速探测。\nUse quick probing for unknwon shaders. (quick upper: 8192)");
+				HELP_TOOLTIP("(?)", "（在非unsafe模式下）对不认识的渲染程序启用快速探测。\nUse quick probing for unknown shaders. (quick upper: 8192; only available in not unsafe mode)");
 				ImGui::Checkbox("Output asset names", &g_loadasset_output);
 				ImGui::SameLine();
 				HELP_TOOLTIP("(?)", "在资源加载时输出资源和资源包的名称。\nOutput assets' name and AssetBundle's name when loaded.");

@@ -14,6 +14,8 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/filewritestream.h>
 
+#include "tools/unsafe.hpp"
+
 //using namespace std;
 
 std::function<void()> g_on_hook_ready;
@@ -935,6 +937,28 @@ namespace
 			printf("[INFO] Shader data won't be saved for a quick probing.\n");
 		}
 	}
+	bool DetectShaderTextureIdsUnsafe(const std::string& shaderName, Il2CppObject* material, std::vector<int>& propIds) {
+		bool isFirst = true;
+		for (auto id : propIds) {
+			if (!isFirst) std::cout << ", ";
+			std::cout << id;
+			isFirst = false;
+		}
+		std::cout << "}" << std::endl;
+
+		auto success = material_texture_ids_sim::enumerate_texture_property_name_ids_from_managed_material(
+			material, propIds
+		);
+
+		isFirst = true;
+		for (auto id : propIds) {
+			if (!isFirst) std::cout << ", ";
+			std::cout << id;
+			isFirst = false;
+		}
+		std::cout << "}" << std::endl;
+		return success;
+	}
 
 	bool TryLoadShaderData(const std::string& shaderName) {
 		auto filepath = g_localify_base / "shaders" / shaderName;
@@ -1173,7 +1197,13 @@ namespace
 				std::vector<int> propIds{};
 				uint32_t upper = g_shader_quickprobing ? 8192 : 0;
 				printf("Detecting shader '%s'... (%i)\n", shaderName.c_str(), upper);
-				DetectShaderTextureIds(shaderName, material, propIds, upper);
+				if (!(g_shader_unsafe_probing && DetectShaderTextureIdsUnsafe(shaderName, material, propIds))) {
+					if (g_shader_unsafe_probing) {
+						printf("Failed to probe unsafely. Fall back to normal probing...\n");
+						propIds.clear();
+					}
+					DetectShaderTextureIds(shaderName, material, propIds, upper);
+				}
 				shaderPropIds.emplace(shaderName, propIds);
 				it = shaderPropIds.find(shaderName);
 			}

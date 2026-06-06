@@ -386,6 +386,7 @@ extern bool g_reenable_clipPlane;
 extern float g_nearClipPlane;
 extern float g_farClipPlane;
 extern bool g_shader_quickprobing;
+extern bool g_shader_unsafe_probing;
 extern bool g_loadasset_output;
 extern bool g_extract_asset;
 extern bool g_extract_asset_image;

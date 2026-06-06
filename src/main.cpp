@@ -55,6 +55,7 @@ bool g_reenable_clipPlane = true;
 float g_nearClipPlane = 0;
 float g_farClipPlane = 2;
 bool g_shader_quickprobing = true;
+bool g_shader_unsafe_probing = true;
 bool g_loadasset_output = false;
 bool g_extract_asset = false;
 bool g_extract_asset_image = false;
