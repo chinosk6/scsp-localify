@@ -113,6 +113,7 @@ namespace SCGUILoop {
 		if (idol.CharaId >= 0) {
 			obj.AddMember("clothId", rapidjson::Value(idol.ClothId), allocator);
 			obj.AddMember("hairId", rapidjson::Value(idol.HairId), allocator);
+			obj.AddMember("mstCostumeId", rapidjson::Value(idol.MstCostumeId), allocator);
 
 			rapidjson::Value accessoryIds(rapidjson::kArrayType);
 			for (int i = 0; i < idol.AccessoryIdsLength; ++i) {
@@ -129,6 +130,7 @@ namespace SCGUILoop {
 		if (idol.CharaId >= 0) {
 			if (v.HasMember("clothId") && v["clothId"].IsInt()) idol.ClothId = v["clothId"].GetInt();
 			if (v.HasMember("hairId") && v["hairId"].IsInt()) idol.HairId = v["hairId"].GetInt();
+			if (v.HasMember("mstCostumeId") && v["mstCostumeId"].IsInt()) idol.MstCostumeId = v["mstCostumeId"].GetInt();
 			if (v.HasMember("accessoryIds") && v["accessoryIds"].IsArray()) {
 				const auto& arr = v["accessoryIds"].GetArray();
 				if ((idol.AccessoryIdsLength = arr.Size()) > 0) {

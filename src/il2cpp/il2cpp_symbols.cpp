@@ -449,6 +449,14 @@ namespace il2cpp_symbols_logged {
 		return p;
 	}
 
+	MethodInfo* get_method(const void* klass, const char* name, int argsCount) {
+		auto p = il2cpp_class_get_method_from_name((void*)klass, name, argsCount);
+		if (p == 0) {
+			std::cout << "[ERROR] `il2cpp_symbols::get_method(" << klass << ", " << name << ", " << argsCount << ", " << ")` returned NULL." << std::endl;
+		}
+		return p;
+	}
+
 	MethodInfo* get_method(const char* assemblyName, const char* namespaze, const char* klassName, const char* name, int argsCount) {
 		auto p = il2cpp_symbols::get_method(assemblyName, namespaze, klassName, name, argsCount);
 		if (p == 0) {

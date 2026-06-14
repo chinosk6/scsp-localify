@@ -749,6 +749,7 @@ namespace il2cpp_symbols_logged {
 	void* get_class(const char* assemblyName, const char* namespaze, const char* klassName);
 	Il2CppClass* get_class_corlib(const char* namespaze, const char* klassName);
 	FieldInfo* il2cpp_class_get_field_from_name(void* klass, const char* name);
+	MethodInfo* get_method(const void* klass, const char* name, int argsCount);
 	MethodInfo* get_method(const char* assemblyName, const char* namespaze, const char* klassName, const char* name, int argsCount);
 	MethodInfo* get_method_corlib(const char* namespaze, const char* klassName, const char* name, int argsCount);
 	uintptr_t get_method_pointer(const char* assemblyName, const char* namespaze, const char* klassName, const char* name, int argsCount);

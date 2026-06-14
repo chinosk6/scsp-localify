@@ -2175,7 +2175,7 @@ namespace
 					printf("[WARNING]: `onStageIdols.Length` = %d, greater than expected `overridenMvUnitIdols_length`.\n", idolsLength);
 					loopMax = overridenMvUnitIdols_length;
 				}
-				for (int i = 0; i < idolsLength; ++i) {
+				for (int i = 0; i < loopMax; ++i) {
 					if (!overridenMvUnitIdols[i].IsEmpty()) {
 						auto item = (managed::UnitIdol*)il2cpp_symbols::array_get_value(onStageIdols, i);
 						overridenMvUnitIdols[i].ApplyTo(item);
@@ -2195,17 +2195,23 @@ namespace
 			vocalSeparatedMode = 1;
 		}
 		HOOK_CAST_CALL(void*, LiveMVStartData_ctor)(_this, mvStage, sceneName, onStageIdols, cameraworkConfig, vocalSeparatedMode, vocalSeparatedSoloIndex, renderingDynamicRange, soundEffectMode, isSortIdols);
-		ModifyOnStageIdols(onStageIdols);
 	}
 
-	HOOK_ORIG_TYPE RunwayEventStartData_ctor_orig;
-	void RunwayEventStartData_ctor_hook(void* _this, void* mvStage, void* onStageIdols, int soundEffectMode) {
+	void* GetLiveStartDataOnStageIdols(Il2CppObject* data) {
+		if (data == nullptr) return nullptr;
+		auto method_get_OnStageIdols = il2cpp_symbols_logged::get_method(
+			il2cpp_object_get_class(data), "get_OnStageIdols", 0
+		);
+		return method_get_OnStageIdols->Invoke(data, {});
+	}
+
+	HOOK_ORIG_TYPE LiveStartDataExtensions_PreLoadAsync_orig;
+	void* LiveStartDataExtensions_PreLoadAsync_hook(void* retstr, Il2CppObject* data, uint16_t usePortraitCameraworkRaw, const MethodInfo* method) {
+		auto onStageIdols = GetLiveStartDataOnStageIdols(data);
 		if (onStageIdols != nullptr) {
-			if (0 == strcmp("UnitIdolWithMstCostume[]", ((Il2CppObject*)onStageIdols)->klass->name)) {
-				ModifyOnStageIdols(onStageIdols);
-			}
+			ModifyOnStageIdols(onStageIdols);
 		}
-		HOOK_CAST_CALL(void, RunwayEventStartData_ctor)(_this, mvStage, onStageIdols, soundEffectMode);
+		return HOOK_CAST_CALL(void*, LiveStartDataExtensions_PreLoadAsync)(retstr, data, usePortraitCameraworkRaw, method);
 	}
 
 
@@ -2816,6 +2822,27 @@ namespace
 
 		return method_Subject_OnNext->methodPointer;
 	}
+
+	void ReadPreviewMstCostume(Il2CppObject* viewModel, UnitIdol& unitIdol) {
+		static auto method_get_PreviewCostumeSet = il2cpp_symbols_logged::get_method(
+			"PRISM.Adapters.dll", "PRISM.Adapters.CostumeChange",
+			"CostumeChangeViewModel", "get_PreviewCostumeSet", 0
+		);
+		static auto method_get_Costume = il2cpp_symbols_logged::get_method(
+			"PRISM.Legacy.dll", "PRISM.Domain",
+			"CostumeSetData", "get_Costume", 0
+		);
+
+		auto previewCostumeSet = method_get_PreviewCostumeSet->Invoke(viewModel, {});
+		auto costume = method_get_Costume->Invoke(previewCostumeSet, {});
+
+		auto method_get_MstCostumeId = il2cpp_symbols_logged::get_method(
+			il2cpp_object_get_class(costume), "get_MstCostumeId", 0
+		);
+		auto mstCostumeId = method_get_MstCostumeId->Invoke(costume, {})->unbox_value<int>();
+		unitIdol.MstCostumeId = mstCostumeId;
+	}
+
 	HOOK_ORIG_TYPE Subject_OnNext_orig;
 	void Subject_OnNext_hook(void* _this, void* value, void* mi) {
 		HOOK_CAST_CALL(void, Subject_OnNext)(_this, value, mi);
@@ -2837,6 +2864,10 @@ namespace
 
 				UnitIdol data;
 				data.ReadFrom(idol);
+				// `GetPreviewUnitIdol` only returns a base UnitIdol without MstCostume
+				// an extra call to fill `MstCostumeId` is required
+				ReadPreviewMstCostume((Il2CppObject*)value, data);
+
 				std::cout << "Saved UnitIdel = ";
 				data.Print(std::cout);
 
@@ -3501,9 +3532,10 @@ namespace
 			"LiveMVStartData", ".ctor", 9
 		);
 
-		auto RunwayEventStartData_ctor_addr = il2cpp_symbols_logged::get_method_pointer(
-			"PRISM.Legacy", "PRISM.RunwayEvent",
-			"RunwayEventStartData", ".ctor", 3
+
+		auto LiveStartDataExtensions_PreLoadAsync_addr = il2cpp_symbols_logged::get_method_pointer(
+			"PRISM.Legacy.dll", "PRISM.Live",
+			"LiveStartDataExtensions", "PreLoadAsync", 2
 		);
 
 		auto Subject_OnNext_addr = GetSubject_OnNext_addr();
@@ -3624,7 +3656,7 @@ namespace
 		ADD_HOOK(Unity_Quit, "Unity_Quit at %p");
 
 		ADD_HOOK(LiveMVStartData_ctor, "LiveMVStartData_ctor at %p");
-		ADD_HOOK_1(RunwayEventStartData_ctor);
+		ADD_HOOK_1(LiveStartDataExtensions_PreLoadAsync);
 
 		ADD_HOOK_1(Subject_OnNext);
 		ADD_HOOK_1(MagicaCloth_BuildAndRun);

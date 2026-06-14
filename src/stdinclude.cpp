@@ -395,6 +395,14 @@ void UnitIdol::ReadFrom(managed::UnitIdol* managed) {
 		int32_t value = *rawPtr;
 		AccessoryIds[i] = value;
 	}
+
+	auto mstField = GetMstCostumeField(managed);
+	if (mstField != nullptr) {
+		uint64_t mstCostume = 0;
+		il2cpp_field_get_value(managed, mstField, &mstCostume);
+		// get the lower int (Item1) from managed `(int, int)`
+		MstCostumeId = (int)mstCostume;
+	}
 }
 
 void UnitIdol::ApplyTo(managed::UnitIdol* managed) {
@@ -410,6 +418,13 @@ void UnitIdol::ApplyTo(managed::UnitIdol* managed) {
 		il2cpp_symbols::array_set_value(accessoryIds, boxed, i);
 	}
 	il2cpp_field_set_value_object(managed, field_UnitIdol_accessoryIds, accessoryIds);
+
+	auto mstField = GetMstCostumeField(managed);
+	if (mstField != nullptr && MstCostumeId >= 0) {
+		// combine the managed `(int, int)` data
+		auto mstCostume = (((uint64_t)CharaId) << 32) + MstCostumeId;
+		il2cpp_field_set_value(managed, mstField, &mstCostume);
+	}
 }
 
 void UnitIdol::Clear() {
@@ -420,6 +435,7 @@ void UnitIdol::Clear() {
 		delete[] AccessoryIds;
 	AccessoryIds = nullptr;
 	AccessoryIdsLength = 0;
+	MstCostumeId = -1;
 }
 
 bool UnitIdol::IsEmpty() const {
@@ -440,7 +456,9 @@ void UnitIdol::Print(std::ostream& os) const {
 			first = false;
 		}
 	}
-	os << "] }" << std::endl;
+	os << "], "
+		<< "\"MstCostumeId\": " << MstCostumeId
+		<< " }" << std::endl;
 }
 
 std::string UnitIdol::ToString() const {
@@ -462,6 +480,7 @@ void UnitIdol::LoadJson(const char* json) {
 	JSON_READ_INT(CharaId);
 	JSON_READ_INT(HairId);
 	JSON_READ_INT(ClothId);
+	JSON_READ_INT(MstCostumeId);
 	if (doc.HasMember("AccessoryIds") && doc["AccessoryIds"].IsArray()) {
 		const rapidjson::Value& arr = doc["AccessoryIds"];
 		delete[] AccessoryIds;
