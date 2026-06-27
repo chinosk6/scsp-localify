@@ -2381,19 +2381,23 @@ namespace
 		checkCostumeListReply(_this, ret, "mstAccessoryId_");
 		return ret;
 	}
+#endif
 
 	HOOK_ORIG_TYPE LiveMVUnitConfirmationModel_ctor_orig;
 	void LiveMVUnitConfirmationModel_ctor_hook(void* _this, void* musicData, void* saveData, void* unitListReply, void* costumeService) {
-		confirmationingModel = true;
-		cacheDressMap.clear();
-		cacheHairMap.clear();
-		cacheAccessoryMap.clear();
-
+		MstCostumeSnapshot::ResetAllRecords();
 		HOOK_CAST_CALL(void, LiveMVUnitConfirmationModel_ctor)(_this, musicData, saveData, unitListReply, costumeService);
-		confirmationingModel = false;
 		return;
+
+		//confirmationingModel = true;
+		//cacheDressMap.clear();
+		//cacheHairMap.clear();
+		//cacheAccessoryMap.clear();
+		//
+		//HOOK_CAST_CALL(void, LiveMVUnitConfirmationModel_ctor)(_this, musicData, saveData, unitListReply, costumeService);
+		//confirmationingModel = false;
+		//return;
 	}
-#endif
 
 	void updateSwayStringPoint(void* _this) {
 		if (!g_enable_chara_param_edit) return;
@@ -3010,9 +3014,6 @@ namespace
 	void (*fp_CostumeChangeViewModel_Apply)(void* _this);
 
 	HOOK_DEF(void, CostumeChangeViewModel__ctor)(void* _this, void* parameter, int characterId, void* settingCostumeSet, bool isAllDressOrdered, bool isEnableDressOrderTab, void* defaultCostumeSet) {
-		// clear all modifications before loading or exceptions will be thrown due to invalid data
-		MstCostumeSnapshot::ResetAllRecords();
-
 		if (g_show_hidden_costumes) {
 			isAllDressOrdered = true;
 		}
@@ -3650,7 +3651,7 @@ namespace
 		//ADD_HOOK(GetCostumeListReply_get_CostumeList, "GetCostumeListReply_get_CostumeList at %p");
 		//ADD_HOOK(GetCostumeListReply_get_HairstyleList, "GetCostumeListReply_get_HairstyleList at %p");
 		//ADD_HOOK(GetCostumeListReply_get_AccessoryList, "GetCostumeListReply_get_AccessoryList at %p");
-		//ADD_HOOK(LiveMVUnitConfirmationModel_ctor, "LiveMVUnitConfirmationModel_ctor at %p");
+		ADD_HOOK(LiveMVUnitConfirmationModel_ctor, "LiveMVUnitConfirmationModel_ctor at %p");
 		ADD_HOOK(SwayString_SetupPoint, "SwayString_SetupPoint at %p");
 		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
 		ADD_HOOK(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext, "LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext at %p");
