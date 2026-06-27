@@ -231,6 +231,31 @@ public:
 
 
 namespace managed { struct UnitIdol {}; }
+struct MstCostumeSnapshot {
+	static void* klass_MstCostume;
+	static MethodInfo* method_MstCostume_get_Id;
+	static MethodInfo* method_MstCostume_get_MstCharacterInfoId;
+	static MethodInfo* method_MstCostume_get_CostumeType;
+	static MethodInfo* method_MstCostume_get_ResourceId;
+	static MethodInfo* method_MstCostume_set_Id;
+	static MethodInfo* method_MstCostume_set_MstCharacterInfoId;
+	static MethodInfo* method_MstCostume_set_CostumeType;
+	static MethodInfo* method_MstCostume_set_ResourceId;
+
+	static void InitReflectionSymbols();
+	static void ResetAllRecords();
+
+	void* CostumeHandle = nullptr;
+	int Id = -1;
+	int MstCharacterInfoId = -1;
+	int CostumeType = -1;
+	int ResourceId = -1;
+
+	void Load(Il2CppObject* costume);
+	void Reset();
+	void Dispose();
+};
+
 struct UnitIdol {
 	static void* klass_UnitIdol;
 	static void* field_UnitIdol_charaId;
@@ -238,33 +263,23 @@ struct UnitIdol {
 	static void* field_UnitIdol_hairId;
 	static void* field_UnitIdol_accessoryIds;
 
-	static void InitUnitIdol(void* unitIdolInstance) {
-		if (field_UnitIdol_accessoryIds == nullptr) {
-			klass_UnitIdol = il2cpp_symbols::get_class_from_instance(unitIdolInstance);
-			field_UnitIdol_charaId = il2cpp_class_get_field_from_name(klass_UnitIdol, "charaId");
-			field_UnitIdol_clothId = il2cpp_class_get_field_from_name(klass_UnitIdol, "clothId");
-			field_UnitIdol_hairId = il2cpp_class_get_field_from_name(klass_UnitIdol, "hairId");
-			field_UnitIdol_accessoryIds = il2cpp_class_get_field_from_name(klass_UnitIdol, "accessoryIds");
-		}
-	}
+	static void InitUnitIdol(void* unitIdolInstance);
 
-	// get the `MstCostume` FieldInfo if the given managed object contains such field; otherwise, returns nullptr
-	static FieldInfo* GetMstCostumeField(managed::UnitIdol* managed) {
-		return il2cpp_class_get_field_from_name(
-			il2cpp_symbols::get_class_from_instance(managed),
-			"<MstCostume>k__BackingField"
-		);
-	}
 
 	int CharaId = -1;
 	int ClothId = 0;
 	int HairId = 0;
 	int* AccessoryIds = nullptr;
 	int AccessoryIdsLength = 0;
-	int MstCostumeId = -1;
+
+	bool CostumeStatusLoaded = false;
+	int CostumeMstCostumeId = -1;
+	int CostumeMstCharacterInfoId = -1;
+	int CostumeType = -1;
+	int CostumeResourceId = -1;
 
 	void ReadFrom(managed::UnitIdol* managed);
-	void ApplyTo(managed::UnitIdol* managed);
+	void ApplyTo(managed::UnitIdol* managed, bool applyMstDataWhenPossible);
 
 	void Clear();
 	bool IsEmpty() const;

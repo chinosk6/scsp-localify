@@ -371,11 +371,101 @@ void LocalTransform::WriteLocalScale(Il2CppObject* transform) {
 }
 
 
-void* UnitIdol::field_UnitIdol_charaId = nullptr;
+std::vector<MstCostumeSnapshot> recordedMstCostumeSnapshots{};
+
+void* MstCostumeSnapshot::klass_MstCostume = nullptr;
+MethodInfo* MstCostumeSnapshot::method_MstCostume_get_Id = nullptr;
+MethodInfo* MstCostumeSnapshot::method_MstCostume_get_MstCharacterInfoId = nullptr;
+MethodInfo* MstCostumeSnapshot::method_MstCostume_get_CostumeType = nullptr;
+MethodInfo* MstCostumeSnapshot::method_MstCostume_get_ResourceId = nullptr;
+MethodInfo* MstCostumeSnapshot::method_MstCostume_set_Id = nullptr;
+MethodInfo* MstCostumeSnapshot::method_MstCostume_set_MstCharacterInfoId = nullptr;
+MethodInfo* MstCostumeSnapshot::method_MstCostume_set_CostumeType = nullptr;
+MethodInfo* MstCostumeSnapshot::method_MstCostume_set_ResourceId = nullptr;
+
+void MstCostumeSnapshot::InitReflectionSymbols() {
+	if (klass_MstCostume == nullptr) {
+		klass_MstCostume = il2cpp_symbols_logged::get_class(
+			"PRISM.Definitions.dll", "PRISM.Definitions", "MstCostume"
+		);
+
+		method_MstCostume_get_Id = il2cpp_symbols_logged::get_method(klass_MstCostume, "get_Id", 0);
+		method_MstCostume_get_MstCharacterInfoId = il2cpp_symbols_logged::get_method(klass_MstCostume, "get_MstCharacterInfoId", 0);
+		method_MstCostume_get_CostumeType = il2cpp_symbols_logged::get_method(klass_MstCostume, "get_CostumeType", 0);
+		method_MstCostume_get_ResourceId = il2cpp_symbols_logged::get_method(klass_MstCostume, "get_ResourceId", 0);
+
+		method_MstCostume_set_Id = il2cpp_symbols_logged::get_method(klass_MstCostume, "set_Id", 1);
+		method_MstCostume_set_MstCharacterInfoId = il2cpp_symbols_logged::get_method(klass_MstCostume, "set_MstCharacterInfoId", 1);
+		method_MstCostume_set_CostumeType = il2cpp_symbols_logged::get_method(klass_MstCostume, "set_CostumeType", 1);
+		method_MstCostume_set_ResourceId = il2cpp_symbols_logged::get_method(klass_MstCostume, "set_ResourceId", 1);
+	}
+}
+
+void MstCostumeSnapshot::Load(Il2CppObject* costume) {
+	InitReflectionSymbols();
+
+	CostumeHandle = il2cpp_gchandle_new(costume, false);
+
+	Id = method_MstCostume_get_Id->Invoke(costume, {})->unbox_value<int>();
+	MstCharacterInfoId = method_MstCostume_get_MstCharacterInfoId->Invoke(costume, {})->unbox_value<int>();
+	CostumeType = method_MstCostume_get_CostumeType->Invoke(costume, {})->unbox_value<int>();
+	ResourceId = method_MstCostume_get_ResourceId->Invoke(costume, {})->unbox_value<int>();
+}
+
+void MstCostumeSnapshot::Reset() {
+	InitReflectionSymbols();
+
+	if (CostumeHandle == nullptr) {
+		return;
+	}
+	auto costume = (Il2CppObject*)il2cpp_gchandle_get_target(CostumeHandle);
+	if (costume == nullptr) {
+		Dispose();
+		return;
+	}
+
+	method_MstCostume_set_Id->InvokeAsVoid(costume, { (Il2CppObject*)&Id });
+	method_MstCostume_set_MstCharacterInfoId->InvokeAsVoid(costume, { (Il2CppObject*)&MstCharacterInfoId });
+	method_MstCostume_set_CostumeType->InvokeAsVoid(costume, { (Il2CppObject*)&CostumeType });
+	method_MstCostume_set_ResourceId->InvokeAsVoid(costume, { (Il2CppObject*)&ResourceId });
+}
+
+void MstCostumeSnapshot::Dispose() {
+	if (CostumeHandle != nullptr) {
+		il2cpp_gchandle_free(CostumeHandle);
+		CostumeHandle = nullptr;
+		Id = -1;
+		MstCharacterInfoId = -1;
+		CostumeType = -1;
+		ResourceId = -1;
+	}
+}
+
+void MstCostumeSnapshot::ResetAllRecords() {
+	auto count = recordedMstCostumeSnapshots.size();
+	for (auto it = recordedMstCostumeSnapshots.rbegin(); it != recordedMstCostumeSnapshots.rend(); ++it) {
+		it->Reset();
+		it->Dispose();
+	}
+	recordedMstCostumeSnapshots.clear();
+}
+
+
 void* UnitIdol::klass_UnitIdol = nullptr;
+void* UnitIdol::field_UnitIdol_charaId = nullptr;
 void* UnitIdol::field_UnitIdol_clothId = nullptr;
 void* UnitIdol::field_UnitIdol_hairId = nullptr;
 void* UnitIdol::field_UnitIdol_accessoryIds = nullptr;
+
+void UnitIdol::InitUnitIdol(void* unitIdolInstance) {
+	if (field_UnitIdol_accessoryIds == nullptr) {
+		klass_UnitIdol = il2cpp_symbols::get_class_from_instance(unitIdolInstance);
+		field_UnitIdol_charaId = il2cpp_class_get_field_from_name(klass_UnitIdol, "charaId");
+		field_UnitIdol_clothId = il2cpp_class_get_field_from_name(klass_UnitIdol, "clothId");
+		field_UnitIdol_hairId = il2cpp_class_get_field_from_name(klass_UnitIdol, "hairId");
+		field_UnitIdol_accessoryIds = il2cpp_class_get_field_from_name(klass_UnitIdol, "accessoryIds");
+	}
+}
 
 void UnitIdol::ReadFrom(managed::UnitIdol* managed) {
 	if (AccessoryIds != nullptr) {
@@ -395,17 +485,9 @@ void UnitIdol::ReadFrom(managed::UnitIdol* managed) {
 		int32_t value = *rawPtr;
 		AccessoryIds[i] = value;
 	}
-
-	auto mstField = GetMstCostumeField(managed);
-	if (mstField != nullptr) {
-		uint64_t mstCostume = 0;
-		il2cpp_field_get_value(managed, mstField, &mstCostume);
-		// get the lower int (Item1) from managed `(int, int)`
-		MstCostumeId = (int)mstCostume;
-	}
 }
 
-void UnitIdol::ApplyTo(managed::UnitIdol* managed) {
+void UnitIdol::ApplyTo(managed::UnitIdol* managed, bool applyMstDataWhenPossible) {
 	InitUnitIdol(managed);
 	il2cpp_field_set_value(managed, field_UnitIdol_charaId, &CharaId);
 	il2cpp_field_set_value(managed, field_UnitIdol_clothId, &ClothId);
@@ -419,11 +501,25 @@ void UnitIdol::ApplyTo(managed::UnitIdol* managed) {
 	}
 	il2cpp_field_set_value_object(managed, field_UnitIdol_accessoryIds, accessoryIds);
 
-	auto mstField = GetMstCostumeField(managed);
-	if (mstField != nullptr && MstCostumeId >= 0) {
-		// combine the managed `(int, int)` data
-		auto mstCostume = (((uint64_t)CharaId) << 32) + MstCostumeId;
-		il2cpp_field_set_value(managed, mstField, &mstCostume);
+	if (applyMstDataWhenPossible && CostumeStatusLoaded) {
+		static auto method_get_MstCostume = il2cpp_class_get_method_from_name(klass_UnitIdol, "get_MstCostume", 0);
+		static auto method_set_MstCostume = il2cpp_class_get_method_from_name(klass_UnitIdol, "set_MstCostume", 1);
+
+		if (method_get_MstCostume != nullptr && method_set_MstCostume != nullptr) {
+			auto mstCostume = method_get_MstCostume->Invoke((Il2CppObject*)managed, {});
+			if (mstCostume != nullptr) {
+				MstCostumeSnapshot snapshot;
+				snapshot.Load(mstCostume);
+				recordedMstCostumeSnapshots.push_back(snapshot);
+
+				MstCostumeSnapshot::InitReflectionSymbols();
+
+				MstCostumeSnapshot::method_MstCostume_set_Id->InvokeAsVoid(mstCostume, { (Il2CppObject*)&CostumeMstCostumeId });
+				MstCostumeSnapshot::method_MstCostume_set_MstCharacterInfoId->InvokeAsVoid(mstCostume, { (Il2CppObject*)&CostumeMstCharacterInfoId });
+				MstCostumeSnapshot::method_MstCostume_set_CostumeType->InvokeAsVoid(mstCostume, { (Il2CppObject*)&CostumeType });
+				MstCostumeSnapshot::method_MstCostume_set_ResourceId->InvokeAsVoid(mstCostume, { (Il2CppObject*)&CostumeResourceId });
+			}
+		}
 	}
 }
 
@@ -435,7 +531,11 @@ void UnitIdol::Clear() {
 		delete[] AccessoryIds;
 	AccessoryIds = nullptr;
 	AccessoryIdsLength = 0;
-	MstCostumeId = -1;
+	CostumeStatusLoaded = false;
+	CostumeMstCostumeId = -1;
+	CostumeMstCharacterInfoId = -1;
+	CostumeType = -1;
+	CostumeResourceId = -1;
 }
 
 bool UnitIdol::IsEmpty() const {
@@ -456,9 +556,14 @@ void UnitIdol::Print(std::ostream& os) const {
 			first = false;
 		}
 	}
-	os << "], "
-		<< "\"MstCostumeId\": " << MstCostumeId
-		<< " }" << std::endl;
+	os << "]";
+	if (CostumeStatusLoaded) {
+		os << ", \"MstCostumeId\": " << CostumeMstCostumeId
+			<< ", \"MstCharacterInfoId\": " << CostumeMstCharacterInfoId
+			<< ", \"CostumeType\": " << CostumeType
+			<< ", \"ResourceId\": " << CostumeResourceId;
+	}
+	os << " }" << std::endl;
 }
 
 std::string UnitIdol::ToString() const {
@@ -480,7 +585,6 @@ void UnitIdol::LoadJson(const char* json) {
 	JSON_READ_INT(CharaId);
 	JSON_READ_INT(HairId);
 	JSON_READ_INT(ClothId);
-	JSON_READ_INT(MstCostumeId);
 	if (doc.HasMember("AccessoryIds") && doc["AccessoryIds"].IsArray()) {
 		const rapidjson::Value& arr = doc["AccessoryIds"];
 		delete[] AccessoryIds;
@@ -494,6 +598,11 @@ void UnitIdol::LoadJson(const char* json) {
 			}
 		}
 	}
+	JSON_READ_INT(CostumeMstCostumeId);
+	JSON_READ_INT(CostumeMstCharacterInfoId);
+	JSON_READ_INT(CostumeType);
+	JSON_READ_INT(CostumeResourceId);
+	CostumeStatusLoaded = CostumeMstCostumeId >= 0 && CostumeMstCharacterInfoId >= 0;
 	return;
 }
 

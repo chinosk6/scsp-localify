@@ -113,7 +113,12 @@ namespace SCGUILoop {
 		if (idol.CharaId >= 0) {
 			obj.AddMember("clothId", rapidjson::Value(idol.ClothId), allocator);
 			obj.AddMember("hairId", rapidjson::Value(idol.HairId), allocator);
-			obj.AddMember("mstCostumeId", rapidjson::Value(idol.MstCostumeId), allocator);
+			if (idol.CostumeStatusLoaded) {
+				obj.AddMember("costumeMstCostumeId", rapidjson::Value(idol.CostumeMstCostumeId), allocator);
+				obj.AddMember("costumeMstCharacterInfoId", rapidjson::Value(idol.CostumeMstCharacterInfoId), allocator);
+				obj.AddMember("costumeType", rapidjson::Value(idol.CostumeType), allocator);
+				obj.AddMember("costumeResourceId", rapidjson::Value(idol.CostumeResourceId), allocator);
+			}
 
 			rapidjson::Value accessoryIds(rapidjson::kArrayType);
 			for (int i = 0; i < idol.AccessoryIdsLength; ++i) {
@@ -130,7 +135,11 @@ namespace SCGUILoop {
 		if (idol.CharaId >= 0) {
 			if (v.HasMember("clothId") && v["clothId"].IsInt()) idol.ClothId = v["clothId"].GetInt();
 			if (v.HasMember("hairId") && v["hairId"].IsInt()) idol.HairId = v["hairId"].GetInt();
-			if (v.HasMember("mstCostumeId") && v["mstCostumeId"].IsInt()) idol.MstCostumeId = v["mstCostumeId"].GetInt();
+			if (v.HasMember("costumeMstCostumeId") && v["costumeMstCostumeId"].IsInt()) idol.CostumeMstCostumeId = v["costumeMstCostumeId"].GetInt();
+			if (v.HasMember("costumeMstCharacterInfoId") && v["costumeMstCharacterInfoId"].IsInt()) idol.CostumeMstCharacterInfoId = v["costumeMstCharacterInfoId"].GetInt();
+			if (v.HasMember("costumeType") && v["costumeType"].IsInt()) idol.CostumeType = v["costumeType"].GetInt();
+			if (v.HasMember("costumeResourceId") && v["costumeResourceId"].IsInt()) idol.CostumeResourceId = v["costumeResourceId"].GetInt();
+			idol.CostumeStatusLoaded = idol.CostumeMstCostumeId >= 0 && idol.CostumeMstCharacterInfoId >= 0;
 			if (v.HasMember("accessoryIds") && v["accessoryIds"].IsArray()) {
 				const auto& arr = v["accessoryIds"].GetArray();
 				if ((idol.AccessoryIdsLength = arr.Size()) > 0) {

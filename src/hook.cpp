@@ -2164,7 +2164,7 @@ namespace
 
 					auto it = savedCostumes.find(idol.CharaId);
 					if (it != savedCostumes.end()) {
-						it->second.ApplyTo(item);
+						it->second.ApplyTo(item, true);
 						std::cout << "CharaId " << it->first << " has been modified." << std::endl;
 					}
 				}
@@ -2178,7 +2178,7 @@ namespace
 				for (int i = 0; i < loopMax; ++i) {
 					if (!overridenMvUnitIdols[i].IsEmpty()) {
 						auto item = (managed::UnitIdol*)il2cpp_symbols::array_get_value(onStageIdols, i);
-						overridenMvUnitIdols[i].ApplyTo(item);
+						overridenMvUnitIdols[i].ApplyTo(item, true);
 						printf("MV unit idol [%d] is overriden.\n", i);
 					}
 				}
@@ -2823,7 +2823,7 @@ namespace
 		return method_Subject_OnNext->methodPointer;
 	}
 
-	void ReadPreviewMstCostume(Il2CppObject* viewModel, UnitIdol& unitIdol) {
+	void ReadPreviewCostumeStatus(Il2CppObject* viewModel, UnitIdol& unitIdol) {
 		static auto method_get_PreviewCostumeSet = il2cpp_symbols_logged::get_method(
 			"PRISM.Adapters.dll", "PRISM.Adapters.CostumeChange",
 			"CostumeChangeViewModel", "get_PreviewCostumeSet", 0
@@ -2833,14 +2833,22 @@ namespace
 			"CostumeSetData", "get_Costume", 0
 		);
 
+		static auto klass_CostumeStatus = il2cpp_symbols_logged::get_class(
+			"PRISM.Module.Networking.dll", "PRISM.Module.Networking.Stub.Status", "CostumeStatus"
+		);
+		static auto method_get_MstCostumeId = il2cpp_symbols_logged::get_method(klass_CostumeStatus, "get_MstCostumeId", 0);
+		static auto method_get_MstCharacterInfoId = il2cpp_symbols_logged::get_method(klass_CostumeStatus, "get_MstCharacterInfoId", 0);
+		static auto method_get_CostumeType = il2cpp_symbols_logged::get_method(klass_CostumeStatus, "get_CostumeType", 0);
+		static auto method_get_ResourceId = il2cpp_symbols_logged::get_method(klass_CostumeStatus, "get_ResourceId", 0);
+
 		auto previewCostumeSet = method_get_PreviewCostumeSet->Invoke(viewModel, {});
 		auto costume = method_get_Costume->Invoke(previewCostumeSet, {});
 
-		auto method_get_MstCostumeId = il2cpp_symbols_logged::get_method(
-			il2cpp_object_get_class(costume), "get_MstCostumeId", 0
-		);
-		auto mstCostumeId = method_get_MstCostumeId->Invoke(costume, {})->unbox_value<int>();
-		unitIdol.MstCostumeId = mstCostumeId;
+		unitIdol.CostumeStatusLoaded = true;
+		unitIdol.CostumeMstCostumeId = method_get_MstCostumeId->Invoke(costume, {})->unbox_value<int>();
+		unitIdol.CostumeMstCharacterInfoId = method_get_MstCharacterInfoId->Invoke(costume, {})->unbox_value<int>();
+		unitIdol.CostumeType = method_get_CostumeType->Invoke(costume, {})->unbox_value<int>();
+		unitIdol.CostumeResourceId = method_get_ResourceId->Invoke(costume, {})->unbox_value<int>();
 	}
 
 	HOOK_ORIG_TYPE Subject_OnNext_orig;
@@ -2866,7 +2874,7 @@ namespace
 				data.ReadFrom(idol);
 				// `GetPreviewUnitIdol` only returns a base UnitIdol without MstCostume
 				// an extra call to fill `MstCostumeId` is required
-				ReadPreviewMstCostume((Il2CppObject*)value, data);
+				ReadPreviewCostumeStatus((Il2CppObject*)value, data);
 
 				std::cout << "Saved UnitIdel = ";
 				data.Print(std::cout);
@@ -3002,6 +3010,9 @@ namespace
 	void (*fp_CostumeChangeViewModel_Apply)(void* _this);
 
 	HOOK_DEF(void, CostumeChangeViewModel__ctor)(void* _this, void* parameter, int characterId, void* settingCostumeSet, bool isAllDressOrdered, bool isEnableDressOrderTab, void* defaultCostumeSet) {
+		// clear all modifications before loading or exceptions will be thrown due to invalid data
+		MstCostumeSnapshot::ResetAllRecords();
+
 		if (g_show_hidden_costumes) {
 			isAllDressOrdered = true;
 		}
@@ -3031,7 +3042,7 @@ namespace
 		idolData.ReadFrom(previewUnitIdol);
 		auto it = savedCostumes.find(idolData.CharaId);
 		if (it != savedCostumes.end()) {
-			it->second.ApplyTo(previewUnitIdol);
+			it->second.ApplyTo(previewUnitIdol, false);
 			std::cout << "CharaId " << it->first << " has been modified." << std::endl;
 		}
 
