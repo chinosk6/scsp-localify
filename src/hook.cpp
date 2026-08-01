@@ -2206,12 +2206,12 @@ namespace
 	}
 
 	HOOK_ORIG_TYPE LiveStartDataExtensions_PreLoadAsync_orig;
-	void* LiveStartDataExtensions_PreLoadAsync_hook(void* retstr, Il2CppObject* data, uint16_t usePortraitCameraworkRaw, const MethodInfo* method) {
+	void* LiveStartDataExtensions_PreLoadAsync_hook(void* retstr, Il2CppObject* data, const MethodInfo* method) {
 		auto onStageIdols = GetLiveStartDataOnStageIdols(data);
 		if (onStageIdols != nullptr) {
 			ModifyOnStageIdols(onStageIdols);
 		}
-		return HOOK_CAST_CALL(void*, LiveStartDataExtensions_PreLoadAsync)(retstr, data, usePortraitCameraworkRaw, method);
+		return HOOK_CAST_CALL(void*, LiveStartDataExtensions_PreLoadAsync)(retstr, data, method);
 	}
 
 
@@ -2384,9 +2384,9 @@ namespace
 #endif
 
 	HOOK_ORIG_TYPE LiveMVUnitConfirmationModel_ctor_orig;
-	void LiveMVUnitConfirmationModel_ctor_hook(void* _this, void* musicData, void* saveData, void* unitListReply, void* costumeService) {
+	void LiveMVUnitConfirmationModel_ctor_hook(void* _this, void* musicData, void* saveData, void* unitListReply, void* costumeService, void* autoCoordinateFlag) {
 		MstCostumeSnapshot::ResetAllRecords();
-		HOOK_CAST_CALL(void, LiveMVUnitConfirmationModel_ctor)(_this, musicData, saveData, unitListReply, costumeService);
+		HOOK_CAST_CALL(void, LiveMVUnitConfirmationModel_ctor)(_this, musicData, saveData, unitListReply, costumeService, autoCoordinateFlag);
 		return;
 
 		//confirmationingModel = true;
@@ -2397,6 +2397,13 @@ namespace
 		//HOOK_CAST_CALL(void, LiveMVUnitConfirmationModel_ctor)(_this, musicData, saveData, unitListReply, costumeService);
 		//confirmationingModel = false;
 		//return;
+	}
+
+	HOOK_ORIG_TYPE RunwayUnitConfirmationModel_ctor_orig;
+	void RunwayUnitConfirmationModel_ctor_hook(void* _this, int eventId, int stageId, void* saveData, void* unitListReply, void* costumeService, void* historyReply) {
+		MstCostumeSnapshot::ResetAllRecords();
+		HOOK_CAST_CALL(void, RunwayUnitConfirmationModel_ctor)(_this, eventId, stageId, saveData, unitListReply, costumeService, historyReply);
+		return;
 	}
 
 	void updateSwayStringPoint(void* _this) {
@@ -3526,7 +3533,12 @@ namespace
 
 		auto LiveMVUnitConfirmationModel_ctor_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Service.dll", "PRISM.Service.Live",
-			"LiveMvUnitConfirmationModel", ".ctor", 4
+			"LiveMvUnitConfirmationModel", ".ctor", 5
+		);
+
+		auto RunwayUnitConfirmationModel_ctor_addr = il2cpp_symbols::get_method_pointer(
+			"PRISM.Adapters.dll", "PRISM.Adapters",
+			"RunwayUnitConfirmationModel", ".ctor", 6
 		);
 
 		auto SwayString_SetupPoint_addr = il2cpp_symbols::get_method_pointer(
@@ -3547,7 +3559,7 @@ namespace
 
 		auto LiveStartDataExtensions_PreLoadAsync_addr = il2cpp_symbols_logged::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM.Live",
-			"LiveStartDataExtensions", "PreLoadAsync", 2
+			"LiveStartDataExtensions", "PreLoadAsync", 1
 		);
 
 		auto Subject_OnNext_addr = GetSubject_OnNext_addr();
@@ -3652,6 +3664,7 @@ namespace
 		//ADD_HOOK(GetCostumeListReply_get_HairstyleList, "GetCostumeListReply_get_HairstyleList at %p");
 		//ADD_HOOK(GetCostumeListReply_get_AccessoryList, "GetCostumeListReply_get_AccessoryList at %p");
 		ADD_HOOK(LiveMVUnitConfirmationModel_ctor, "LiveMVUnitConfirmationModel_ctor at %p");
+		ADD_HOOK(RunwayUnitConfirmationModel_ctor, "RunwayUnitConfirmationModel_ctor at %p");
 		ADD_HOOK(SwayString_SetupPoint, "SwayString_SetupPoint at %p");
 		ADD_HOOK(LiveMVUnit_GetMemberChangeRequestData, "LiveMVUnit_GetMemberChangeRequestData at %p");
 		ADD_HOOK(LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext, "LiveMVUnitMemberChangePresenter_initializeAsync_b_4_MoveNext at %p");
