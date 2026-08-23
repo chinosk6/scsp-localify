@@ -566,6 +566,15 @@ namespace SCGUILoop {
 					INPUT_AND_SLIDER_FLOAT("Camera FOV", &SCCamera::baseCamera.fov, 0.0f, 360.0f);
 					ImGui::InputFloat3("Camera Pos (x, y, z)", &SCCamera::baseCamera.pos.x);
 					ImGui::InputFloat3("Camera LookAt (x, y, z)", &SCCamera::baseCamera.lookAt.x);
+					if (ImGui::Button("Reset camera values to zero")) {
+						SCCamera::baseCamera.fov = 0.0f;
+						SCCamera::baseCamera.pos.x = 0.0f;
+						SCCamera::baseCamera.pos.y = 0.0f;
+						SCCamera::baseCamera.pos.z = 0.0f;
+						SCCamera::baseCamera.lookAt.x = 0.0f;
+						SCCamera::baseCamera.lookAt.y = 0.0f;
+						SCCamera::baseCamera.lookAt.z = 0.0f;
+					}
 
 					ImGui::Separator();
 					ImGui::Text("Save Camera State:");
