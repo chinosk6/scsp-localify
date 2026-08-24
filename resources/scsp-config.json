@@ -13,6 +13,7 @@
   "blockOutOfFocus": true,
   "baseFreeCamera": {
     "enable": false,
+    "enableCameraOffset": false,
     "moveStep": 50,
     "mouseSpeed": 35
   },

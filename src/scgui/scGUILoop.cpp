@@ -543,7 +543,15 @@ namespace SCGUILoop {
 				ImGui::InputFloat4("Game Camera Rotation (w, x, y, z)", &SCGUIData::sysCamRot.w);
 
 				if (ImGui::CollapsingHeader("Free Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-					ImGui::Checkbox("Enable Free Camera", &g_enable_free_camera);
+					if (g_enable_free_camera && g_enable_camera_offset) {
+						g_enable_camera_offset = false;
+					}
+					if (ImGui::Checkbox("Enable Free Camera", &g_enable_free_camera) && g_enable_free_camera) {
+						g_enable_camera_offset = false;
+					}
+					if (ImGui::Checkbox("Enable Camera Offset", &g_enable_camera_offset) && g_enable_camera_offset) {
+						g_enable_free_camera = false;
+					}
 					ImGui::Checkbox("Enable ClipPlane overriding", &g_reenable_clipPlane);
 					if (g_reenable_clipPlane) {
 						ImGui::Dummy(ImVec2(40, 0));

@@ -2645,16 +2645,42 @@ namespace
 	}
 	HOOK_ORIG_TYPE Unity_get_fieldOfView_orig;
 	float Unity_get_fieldOfView_hook(void* _this) {
+		static void* lastCameraForOffset = nullptr;
+		static bool offsetFovValid = false;
+		static float lastRawFov = 0.0f;
+		static float lastAppliedFov = 0.0f;
+
 		const auto origFov = HOOK_CAST_CALL(float, Unity_get_fieldOfView)(_this);
-		if (_this == baseCamera) {
-			if (guiStarting) {
-				SCGUIData::sysCamFov = origFov;
-			}
-			if (g_enable_free_camera) {
-				const auto fov = SCCamera::baseCamera.fov;
-				Unity_set_fieldOfView_hook(_this, fov);
-				return fov;
-			}
+		if (_this != baseCamera) {
+			return origFov;
+		}
+
+		if (lastCameraForOffset != _this) {
+			lastCameraForOffset = _this;
+			offsetFovValid = false;
+		}
+
+		const bool offsetMode = !g_enable_free_camera && g_enable_camera_offset;
+		const bool fovAlreadyOffset = offsetFovValid &&
+			std::abs(origFov - lastAppliedFov) < 0.0001f;
+		const auto baseFov = fovAlreadyOffset ? lastRawFov : origFov;
+
+		if (guiStarting) {
+			SCGUIData::sysCamFov = offsetMode ? baseFov : origFov;
+		}
+		if (g_enable_free_camera) {
+			const auto fov = SCCamera::baseCamera.fov;
+			Unity_set_fieldOfView_hook(_this, fov);
+			return fov;
+		}
+		if (offsetMode) {
+			const auto fov = baseFov + SCCamera::baseCamera.fov;
+			Unity_set_fieldOfView_hook(_this, fov);
+
+			offsetFovValid = true;
+			lastRawFov = baseFov;
+			lastAppliedFov = fov;
+			return fov;
 		}
 		// printf("get_fov: %f\n", ret);
 		return origFov;
@@ -2757,38 +2783,78 @@ namespace
 
 	HOOK_ORIG_TYPE Unity_get_position_orig;
 	Vector3_t Unity_get_position_hook(void* _this) {
+		static void* lastTransformForOffset = nullptr;
+		static bool offsetPosValid = false;
+		static Vector3_t lastRawPos{};
+		static Quaternion_t lastRawRot{};
+		static Vector3_t lastAppliedPos{};
+
 		auto data = HOOK_CAST_CALL(Vector3_t, Unity_get_position)(_this);
-		if (_this == baseCameraTransform) {
-			auto ret = Unity_get_rotation_hook(_this);
-			if (guiStarting) {
-				SCGUIData::sysCamPos.x = data.x;
-				SCGUIData::sysCamPos.y = data.y;
-				SCGUIData::sysCamPos.z = data.z;
+		if (_this != baseCameraTransform) {
+			return data;
+		}
 
-				SCGUIData::sysCamRot.w = ret.w;
-				SCGUIData::sysCamRot.x = ret.x;
-				SCGUIData::sysCamRot.y = ret.y;
-				SCGUIData::sysCamRot.z = ret.z;
-				SCGUIData::updateSysCamLookAt();
-			}
-			if (g_enable_free_camera) {
-				SCCamera::baseCamera.updateOtherPos(&data);
-				Unity_set_position_hook(_this, data);
+		if (lastTransformForOffset != _this) {
+			lastTransformForOffset = _this;
+			offsetPosValid = false;
+		}
 
-				ret.w = 0;
-				ret.x = 0;
-				ret.y = 0;
-				ret.z = 0;
-				Unity_set_rotation_hook(_this, ret);
+		const bool offsetMode = !g_enable_free_camera && g_enable_camera_offset;
+		const bool posAlreadyOffset = offsetPosValid &&
+			std::abs(data.x - lastAppliedPos.x) < 0.0001f &&
+			std::abs(data.y - lastAppliedPos.y) < 0.0001f &&
+			std::abs(data.z - lastAppliedPos.z) < 0.0001f;
 
-				static auto Vector3_klass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Vector3");
-				Vector3_t* pos = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
-				Vector3_t* up = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
-				up->x = 0;
-				up->y = 1;
-				up->z = 0;
-				Unity_InternalLookAt_hook(_this, *pos, *up);
-			}
+		auto ret = Unity_get_rotation_hook(_this);
+		const auto basePos = offsetMode && posAlreadyOffset ? lastRawPos : data;
+		const auto baseRot = offsetMode && posAlreadyOffset ? lastRawRot : ret;
+
+		if (guiStarting) {
+			SCGUIData::sysCamPos = basePos;
+			SCGUIData::sysCamRot = baseRot;
+			SCGUIData::updateSysCamLookAt();
+		}
+		if (g_enable_free_camera) {
+			SCCamera::baseCamera.updateOtherPos(&data);
+			Unity_set_position_hook(_this, data);
+
+			ret.w = 0;
+			ret.x = 0;
+			ret.y = 0;
+			ret.z = 0;
+			Unity_set_rotation_hook(_this, ret);
+
+			static auto Vector3_klass = il2cpp_symbols::get_class("UnityEngine.CoreModule.dll", "UnityEngine", "Vector3");
+			Vector3_t* pos = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
+			Vector3_t* up = reinterpret_cast<Vector3_t*>(il2cpp_object_new(Vector3_klass));
+			up->x = 0;
+			up->y = 1;
+			up->z = 0;
+			Unity_InternalLookAt_hook(_this, *pos, *up);
+		}
+		else if (offsetMode) {
+			Vector3_t baseLookAt{};
+			BaseCamera::CameraPosRotToLookAt(basePos, baseRot, &baseLookAt);
+
+			const Vector3_t finalPos{
+				basePos.x + SCCamera::baseCamera.pos.x,
+				basePos.y + SCCamera::baseCamera.pos.y,
+				basePos.z + SCCamera::baseCamera.pos.z
+			};
+			const Vector3_t finalLookAt{
+				baseLookAt.x + SCCamera::baseCamera.lookAt.x,
+				baseLookAt.y + SCCamera::baseCamera.lookAt.y,
+				baseLookAt.z + SCCamera::baseCamera.lookAt.z
+			};
+
+			Unity_set_position_hook(_this, finalPos);
+			Unity_InternalLookAt_hook(_this, finalLookAt, Vector3_t{ 0, 1, 0 });
+
+			offsetPosValid = true;
+			lastRawPos = basePos;
+			lastRawRot = baseRot;
+			lastAppliedPos = finalPos;
+			data = finalPos;
 		}
 
 		return data;

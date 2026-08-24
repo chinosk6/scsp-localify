@@ -66,6 +66,7 @@
 | 配置项     | 类型  | 默认值  | 说明               |
 | ---------- | ----- | ------- | ------------------ |
 | enable     | Bool  | `false` | 启用自由视角       |
+| enableCameraOffset | Bool  | `false` | 启用镜头偏移模式（与 enable 互斥） |
 | moveStep   | Float | `50`    | 摄像机移动速度     |
 | mouseSpeed | Float | `35`    | 鼠标移动视角灵敏度 |
 

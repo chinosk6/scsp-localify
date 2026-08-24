@@ -35,6 +35,7 @@ char hotKey = 'u';
 float g_font_size_offset = -3.0f;
 
 bool g_enable_free_camera = false;
+bool g_enable_camera_offset = false;
 bool g_block_out_of_focus = false;
 float g_free_camera_mouse_speed = 35;
 bool g_allow_use_tryon_costume = false;
@@ -234,6 +235,12 @@ namespace
 				if (freeCamConfig.IsObject()) {
 					if (freeCamConfig.HasMember("enable")) {
 						g_enable_free_camera = freeCamConfig["enable"].GetBool();
+					}
+					if (freeCamConfig.HasMember("enableCameraOffset")) {
+						g_enable_camera_offset = freeCamConfig["enableCameraOffset"].GetBool();
+					}
+					if (g_enable_free_camera && g_enable_camera_offset) {
+						g_enable_camera_offset = false;
 					}
 					if (freeCamConfig.HasMember("moveStep")) {
 						BaseCamera::moveStep = freeCamConfig["moveStep"].GetFloat() / 1000;

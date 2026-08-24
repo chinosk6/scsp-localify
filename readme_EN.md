@@ -67,6 +67,7 @@ iM@S SCSP localify plugin.
 | Configuration Item | Type   | Default Value | Description         |
 | ------------------ | ------ | ------------- | --------------------|
 | enable             | Bool   | `false`       | Enable free camera  |
+| enableCameraOffset | Bool   | `false`       | Enable camera offset mode (mutually exclusive with `enable`) |
 | moveStep           | Float  | `50`          | Camera movement speed |
 | mouseSpeed         | Float  | `35`          | Mouse sensitivity for camera movement |
 
