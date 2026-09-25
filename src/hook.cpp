@@ -46,6 +46,7 @@ std::map<int, std::string> swayTypes{
 };
 
 std::map<int, UnitIdol> savedCostumes{};
+std::map<int, UnitIdol> autoAppliedCostumes{};
 UnitIdol lastSavedCostume;
 UnitIdol overridenMvUnitIdols[8];
 std::map<std::string, std::string> replacementTexureNames{};
@@ -2158,11 +2159,7 @@ namespace
 			if (g_save_and_replace_costume_changes) {
 				for (int i = 0; i < idolsLength; i++) {
 					auto item = (managed::UnitIdol*)il2cpp_symbols::array_get_value(onStageIdols, i);
-
-					UnitIdol idol;
-					idol.ReadFrom(item);
-
-					auto it = savedCostumes.find(idol.CharaId);
+					auto it = savedCostumes.find(UnitIdol::GetCharaId(item));
 					if (it != savedCostumes.end()) {
 						it->second.ApplyTo(item, true);
 						std::cout << "CharaId " << it->first << " has been modified." << std::endl;
@@ -2862,42 +2859,73 @@ namespace
 		unitIdol.CostumeResourceId = method_get_ResourceId->Invoke(costume, {})->unbox_value<int>();
 	}
 
+	void ReplaceAutoAppliedCostume(managed::UnitIdol* idol) {
+		auto it = autoAppliedCostumes.find(UnitIdol::GetCharaId(idol));
+		if (it != autoAppliedCostumes.end())
+			it->second.ApplyTo(idol, false);
+	}
+
+	HOOK_DEF(void, AssembleCharacter_AssembleFileCache)(void* downloadKeyContainer, managed::UnitIdol* idol) {
+		if (g_apply_costumes_automatically) ReplaceAutoAppliedCostume(idol);
+		HOOK_CAST_CALL(void, AssembleCharacter_AssembleFileCache)(downloadKeyContainer, idol);
+	}
+
+	HOOK_DEF(void*, SpawnCharacter_CreateCharacter)(void* _this, managed::UnitIdol* idol) {
+		if (g_apply_costumes_automatically) ReplaceAutoAppliedCostume(idol);
+		return HOOK_CAST_CALL(void*, SpawnCharacter_CreateCharacter)(_this, idol);
+	}
+
+	void (*fp_CostumeChangeViewModel_Apply)(void* _this);
+
 	HOOK_ORIG_TYPE Subject_OnNext_orig;
 	void Subject_OnNext_hook(void* _this, void* value, void* mi) {
+		static auto method_GetPreviewUnitIdol = il2cpp_symbols_logged::get_method(
+			"PRISM.Adapters.dll", "PRISM.Adapters.CostumeChange",
+			"CostumeChangeViewModel", "GetPreviewUnitIdol", 0
+		);
+
+		auto klass = value != nullptr ? il2cpp_object_get_class((Il2CppObject*)value) : nullptr;
+		const bool isCostumeChangeViewModel = klass != nullptr &&
+			0 == strcmp("CostumeChangeViewModel", il2cpp_class_get_name(klass));
+
+		if (isCostumeChangeViewModel && g_apply_costumes_automatically)
+		{
+			fp_CostumeChangeViewModel_Apply(value);
+
+			auto idol = method_GetPreviewUnitIdol->Invoke<managed::UnitIdol*>(((Il2CppObject*)value), {});
+			int charaId = UnitIdol::GetCharaId(idol);
+			if (charaId >= 0)
+				autoAppliedCostumes[charaId].ReadFrom(idol);
+		}
+
 		HOOK_CAST_CALL(void, Subject_OnNext)(_this, value, mi);
 
-		auto klass = il2cpp_object_get_class((Il2CppObject*)value);
-		if (0 != strcmp("CostumeChangeViewModel", il2cpp_class_get_name(klass))) return;
+		if (!isCostumeChangeViewModel) return;
 
 		static MethodInfo* mtd_CostumeChangeViewModel_GetPreviewUnitIdol;
 		static managed::UnitIdol* (*func_CostumeChangeViewModel_GetPreviewUnitIdol)(void* _this, void* mtd);
 
 		if (g_save_and_replace_costume_changes) {
-			__try {
-				if (mtd_CostumeChangeViewModel_GetPreviewUnitIdol == nullptr) {
-					mtd_CostumeChangeViewModel_GetPreviewUnitIdol = il2cpp_class_get_method_from_name(klass, "GetPreviewUnitIdol", 0);
-					func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<managed::UnitIdol * (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
-				}
-
-				auto idol = func_CostumeChangeViewModel_GetPreviewUnitIdol(value, mtd_CostumeChangeViewModel_GetPreviewUnitIdol);
-
-				UnitIdol data;
-				data.ReadFrom(idol);
-				// `GetPreviewUnitIdol` only returns a base UnitIdol without MstCostume
-				// an extra call to fill `MstCostumeId` is required
-				ReadPreviewCostumeStatus((Il2CppObject*)value, data);
-
-				std::cout << "Saved UnitIdel = ";
-				data.Print(std::cout);
-
-				if (data.CharaId >= 0)
-					savedCostumes[data.CharaId] = data;
-
-				lastSavedCostume = data;
+			if (mtd_CostumeChangeViewModel_GetPreviewUnitIdol == nullptr) {
+				mtd_CostumeChangeViewModel_GetPreviewUnitIdol = il2cpp_class_get_method_from_name(klass, "GetPreviewUnitIdol", 0);
+				func_CostumeChangeViewModel_GetPreviewUnitIdol = reinterpret_cast<managed::UnitIdol * (*)(void* _this, void* mtd)>(mtd_CostumeChangeViewModel_GetPreviewUnitIdol->methodPointer);
 			}
-			__except (seh_filter(GetExceptionInformation())) {
-				printf("SEH exception detected in 'CostumeChangeView_Reload_hook'.\n");
-			}
+
+			auto idol = func_CostumeChangeViewModel_GetPreviewUnitIdol(value, mtd_CostumeChangeViewModel_GetPreviewUnitIdol);
+
+			UnitIdol data;
+			data.ReadFrom(idol);
+			// `GetPreviewUnitIdol` only returns a base UnitIdol without MstCostume
+			// an extra call to fill `MstCostumeId` is required
+			ReadPreviewCostumeStatus((Il2CppObject*)value, data);
+
+			std::cout << "Saved UnitIdel = ";
+			data.Print(std::cout);
+
+			if (data.CharaId >= 0)
+				savedCostumes[data.CharaId] = data;
+
+			lastSavedCostume = data;
 		}
 	}
 
@@ -3018,8 +3046,6 @@ namespace
 	}
 
 
-	void (*fp_CostumeChangeViewModel_Apply)(void* _this);
-
 	HOOK_DEF(void, CostumeChangeViewModel__ctor)(void* _this, void* parameter, int characterId, void* settingCostumeSet, bool isAllDressOrdered, bool isEnableDressOrderTab, void* defaultCostumeSet) {
 		if (g_show_hidden_costumes) {
 			isAllDressOrdered = true;
@@ -3046,23 +3072,13 @@ namespace
 			"CostumeChangeViewModel", "GetPreviewUnitIdol", 0
 		);
 		auto previewUnitIdol = (managed::UnitIdol*)method_GetPreviewUnitIdol->Invoke((Il2CppObject*)_this, {});
-		UnitIdol idolData;
-		idolData.ReadFrom(previewUnitIdol);
-		auto it = savedCostumes.find(idolData.CharaId);
+		auto it = savedCostumes.find(UnitIdol::GetCharaId(previewUnitIdol));
 		if (it != savedCostumes.end()) {
 			it->second.ApplyTo(previewUnitIdol, false);
 			std::cout << "CharaId " << it->first << " has been modified." << std::endl;
 		}
 
 		HOOK_CAST_CALL(void, CostumeChangeViewModel_RefreshViewModels)(_this);
-	}
-
-	HOOK_DEF(void, CostumeChangeViewModel_ModifyPreview)(void* _this, void* action) {
-		HOOK_CAST_CALL(void, CostumeChangeViewModel_ModifyPreview)(_this, action);
-		if (g_apply_costumes_automatically && fp_CostumeChangeViewModel_Apply) {
-			fp_CostumeChangeViewModel_Apply(_this);
-			printf("CostumeChangeViewModel.Apply();\n");
-		}
 	}
 
 
@@ -3421,6 +3437,23 @@ namespace
 			"LiveCostumeChangeModel", ".ctor", 4
 		);*/
 
+		auto AssembleCharacter_AssembleFileCache_method = il2cpp_symbols::find_method(
+			"PRISM.Legacy.dll", "PRISM", "AssembleCharacter",
+			[](const MethodInfo* method) {
+				if (method == nullptr || method->name == nullptr || method->parameters_count != 2)
+					return false;
+				const auto parameterType = il2cpp_symbols::il2cpp_method_get_param_type_name(method, 1);
+				return 0 == strcmp(method->name, "AssembleFileCache") &&
+					parameterType != nullptr && 0 == strcmp(parameterType, "UnitIdol");
+			});
+		auto AssembleCharacter_AssembleFileCache_addr = AssembleCharacter_AssembleFileCache_method != nullptr
+			? AssembleCharacter_AssembleFileCache_method->methodPointer : 0;
+
+		auto SpawnCharacter_CreateCharacter_addr = il2cpp_symbols_logged::get_method_pointer(
+			"PRISM.Interactions.dll", "PRISM.Interactions",
+			"SpawnCharacter", "CreateCharacter", 1
+		);
+
 		auto AssembleCharacter_ApplyParam_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "PRISM",
 			"AssembleCharacter", "ApplyParam", 6
@@ -3657,6 +3690,8 @@ namespace
 		//ADD_HOOK(LiveCostumeChangeModel_GetHairstyle, "LiveCostumeChangeModel_GetHairstyle at %p");
 		//ADD_HOOK(LiveCostumeChangeModel_GetAccessory, "LiveCostumeChangeModel_GetAccessory at %p");
 		//ADD_HOOK(LiveCostumeChangeModel_ctor, "LiveCostumeChangeModel_ctor at %p");
+		ADD_HOOK_1(AssembleCharacter_AssembleFileCache);
+		ADD_HOOK_1(SpawnCharacter_CreateCharacter);
 		ADD_HOOK(AssembleCharacter_ApplyParam, "AssembleCharacter_ApplyParam at %p");
 		ADD_HOOK(MainThreadDispatcher_LateUpdate, "MainThreadDispatcher_LateUpdate at %p");
 		//ADD_HOOK(dic_int_ICostumeStatus_add, "dic_int_ICostumeStatus_add at %p");
@@ -3696,7 +3731,6 @@ namespace
 		ADD_HOOK_1(CostumeChangeViewModel_CanDecide0);
 		ADD_HOOK_1(CostumeChangeViewModel_CanDecide2);
 		ADD_HOOK_ADDR(PRISM.Adapters.dll, PRISM.Adapters.CostumeChange, CostumeChangeViewModel, RefreshViewModels, 0);
-		ADD_HOOK_ADDR(PRISM.Adapters.dll, PRISM.Adapters.CostumeChange, CostumeChangeViewModel, ModifyPreview, 1);
 
 		tools::AddNetworkingHooks();
 
