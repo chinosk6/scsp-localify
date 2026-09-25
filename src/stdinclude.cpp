@@ -467,19 +467,24 @@ void UnitIdol::InitUnitIdol(void* unitIdolInstance) {
 	}
 }
 
+int UnitIdol::GetCharaId(managed::UnitIdol* managed) {
+	InitUnitIdol(managed);
+	int charaId = -1;
+	il2cpp_field_get_value(managed, field_UnitIdol_charaId, &charaId);
+	return charaId;
+}
+
 void UnitIdol::ReadFrom(managed::UnitIdol* managed) {
-	if (AccessoryIds != nullptr) {
-		delete[] AccessoryIds;
-	}
+	AccessoryIds.clear();
 	InitUnitIdol(managed);
 	void* accessoryIds;
 	il2cpp_field_get_value(managed, field_UnitIdol_charaId, &CharaId);
 	il2cpp_field_get_value(managed, field_UnitIdol_clothId, &ClothId);
 	il2cpp_field_get_value(managed, field_UnitIdol_hairId, &HairId);
 	il2cpp_field_get_value(managed, field_UnitIdol_accessoryIds, &accessoryIds);
-	AccessoryIdsLength = il2cpp_array_length(accessoryIds);
-	AccessoryIds = new int[AccessoryIdsLength];
-	for (int i = 0; i < AccessoryIdsLength; ++i) {
+	int accessoryIdsLength = il2cpp_array_length(accessoryIds);
+	AccessoryIds.resize(accessoryIdsLength);
+	for (int i = 0; i < accessoryIdsLength; ++i) {
 		auto item = il2cpp_symbols::array_get_value(accessoryIds, i);
 		int32_t* rawPtr = static_cast<int32_t*>(il2cpp_object_unbox((Il2CppObject*)item));
 		int32_t value = *rawPtr;
@@ -493,9 +498,9 @@ void UnitIdol::ApplyTo(managed::UnitIdol* managed, bool applyMstDataWhenPossible
 	il2cpp_field_set_value(managed, field_UnitIdol_clothId, &ClothId);
 	il2cpp_field_set_value(managed, field_UnitIdol_hairId, &HairId);
 	static auto klass_System_Int32 = il2cpp_class_from_name(il2cpp_get_corlib(), "System", "Int32");
-	auto accessoryIds = il2cpp_array_new(klass_System_Int32, AccessoryIdsLength);
-	auto length = il2cpp_array_length(accessoryIds);
-	for (int i = 0; i < AccessoryIdsLength; ++i) {
+	int accessoryIdsLength = AccessoryIds.size();
+	auto accessoryIds = il2cpp_array_new(klass_System_Int32, accessoryIdsLength);
+	for (int i = 0; i < accessoryIdsLength; ++i) {
 		auto boxed = il2cpp_value_box((Il2CppClass*)klass_System_Int32, &AccessoryIds[i]);
 		il2cpp_symbols::array_set_value(accessoryIds, boxed, i);
 	}
@@ -527,10 +532,7 @@ void UnitIdol::Clear() {
 	CharaId = -1;
 	ClothId = 0;
 	HairId = 0;
-	if (AccessoryIds != nullptr)
-		delete[] AccessoryIds;
-	AccessoryIds = nullptr;
-	AccessoryIdsLength = 0;
+	AccessoryIds = {};
 	CostumeStatusLoaded = false;
 	CostumeMstCostumeId = -1;
 	CostumeMstCharacterInfoId = -1;
@@ -548,13 +550,11 @@ void UnitIdol::Print(std::ostream& os) const {
 		<< ", \"ClothId\": " << ClothId
 		<< ", \"AccessoryIds\": [";
 	bool first = true;
-	if (AccessoryIds != nullptr) {
-		for (int i = 0; i < AccessoryIdsLength; ++i) {
-			if (!first)
-				os << ", ";
-			os << AccessoryIds[i];
-			first = false;
-		}
+	for (int i = 0; i < AccessoryIds.size(); ++i) {
+		if (!first)
+			os << ", ";
+		os << AccessoryIds[i];
+		first = false;
 	}
 	os << "]";
 	if (CostumeStatusLoaded) {
@@ -587,9 +587,8 @@ void UnitIdol::LoadJson(const char* json) {
 	JSON_READ_INT(ClothId);
 	if (doc.HasMember("AccessoryIds") && doc["AccessoryIds"].IsArray()) {
 		const rapidjson::Value& arr = doc["AccessoryIds"];
-		delete[] AccessoryIds;
-		AccessoryIds = new int[AccessoryIdsLength = arr.Size()];
-		for (rapidjson::SizeType i = 0; i < AccessoryIdsLength; ++i) {
+		AccessoryIds.resize(arr.Size());
+		for (rapidjson::SizeType i = 0; i < arr.Size(); ++i) {
 			if (arr[i].IsInt()) {
 				AccessoryIds[i] = arr[i].GetInt();
 			}

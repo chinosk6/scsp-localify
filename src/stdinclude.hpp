@@ -264,13 +264,13 @@ struct UnitIdol {
 	static void* field_UnitIdol_accessoryIds;
 
 	static void InitUnitIdol(void* unitIdolInstance);
+	static int GetCharaId(managed::UnitIdol* managed);
 
 
 	int CharaId = -1;
 	int ClothId = 0;
 	int HairId = 0;
-	int* AccessoryIds = nullptr;
-	int AccessoryIdsLength = 0;
+	std::vector<int> AccessoryIds;
 
 	bool CostumeStatusLoaded = false;
 	int CostumeMstCostumeId = -1;
