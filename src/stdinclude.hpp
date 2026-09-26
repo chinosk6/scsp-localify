@@ -404,6 +404,7 @@ extern bool g_enable_chara_param_edit;
 extern float g_font_size_offset;
 extern float g_3d_resolution_scale;
 extern bool g_unlock_PIdol_and_SChara_events;
+extern bool g_unlock_photo_studio;
 extern int g_start_resolution_w;
 extern int g_start_resolution_h;
 extern bool g_start_resolution_fullScreen;

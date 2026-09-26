@@ -48,6 +48,7 @@ bool g_apply_costumes_automatically = false;
 bool g_override_isVocalSeparatedOn = false;
 bool g_enable_chara_param_edit = false;
 bool g_unlock_PIdol_and_SChara_events = false;
+bool g_unlock_photo_studio = false;
 int g_start_resolution_w = -1;
 int g_start_resolution_h = -1;
 bool g_start_resolution_fullScreen = false;
@@ -255,6 +256,9 @@ namespace
 			}
 			if (document.HasMember("unlockPIdolAndSCharaEvents")) {
 				g_unlock_PIdol_and_SChara_events = document["unlockPIdolAndSCharaEvents"].GetBool();
+			}
+			if (document.HasMember("unlockPhotoStudio")) {
+				g_unlock_photo_studio = document["unlockPhotoStudio"].GetBool();
 			}
 
 			if (document.HasMember("startResolution")) {

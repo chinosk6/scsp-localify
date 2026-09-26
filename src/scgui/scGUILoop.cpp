@@ -478,6 +478,10 @@ namespace SCGUILoop {
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "阅读故事内容时会上传故事ID，理论上可追查非法数据。\nStory id will be uploaded when reading, and the invalid data can be tracked technically.");
 
+			ImGui::Checkbox("Unlock PhotoStudio", &g_unlock_photo_studio);
+			ImGui::SameLine();
+			HELP_TOOLTIP("(?)", "解锁Photo Studio中的内容。\nUnlock contents in Photo Studio.\n\n> config 'unlockPhotoStudio'");
+
 			if (ImGui::CollapsingHeader("Resolution Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
 				ImGui::Text("Window Resolution Settings");
 

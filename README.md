@@ -57,6 +57,7 @@
 | blockOutOfFocus            | Bool                                     | `true`                                 | 拦截窗口失焦事件<br>切换到其它窗口后不会触发游戏暂停 |
 | baseFreeCamera             | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera)      | 自由视角配置                                         |
 | unlockPIdolAndSCharaEvents | Bool                                     | `false`                                | 解锁 `角色` - `一览` 中的P卡和S卡事件                |
+| unlockPhotoStudio          | Bool                                     | `false`                                | 解锁 Photo Studio 中的内容                          |
 | startResolution            | [Resolution](#Resolution) Object         | [Resolution](#Resolution)              | 启动游戏初始分辨率                                   |
 
 

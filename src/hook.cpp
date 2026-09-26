@@ -764,6 +764,15 @@ namespace
 		}
 	}
 
+	// photo studio unlocking
+	HOOK_ORIG_TYPE DioramaProductViewModel_IsLocked_orig;
+	bool DioramaProductViewModel_IsLocked_hook(void* self) {
+		if (g_unlock_photo_studio) {
+			return false;
+		}
+		return HOOK_CAST_CALL(bool, DioramaProductViewModel_IsLocked)(self);
+	}
+
 
 	HOOK_ORIG_TYPE LocalizationManager_GetTextOrNull_orig;
 	Il2CppString* LocalizationManager_GetTextOrNull_hook(void* _this, Il2CppString* category, int id) {
@@ -3344,6 +3353,10 @@ namespace
 			"PRISM.Legacy.dll", "PRISM.Domain",
 			"StoryExtensions", "IsLocked", 1
 		);
+		auto DioramaProductViewModel_IsLocked_addr = il2cpp_symbols_logged::get_method_pointer(
+			"PRISM.Adapters.dll", "PRISM.Adapters",
+			"DioramaProductViewModel", "IsLocked", 0
+		);
 
 		auto LocalizationManager_GetTextOrNull_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "ENTERPRISE.Localization",
@@ -3655,6 +3668,7 @@ namespace
 #pragma endregion
 		ADD_HOOK(SetResolution, "SetResolution at %p");
 		ADD_HOOK_1(StoryExtensions_IsLocked);
+		ADD_HOOK_1(DioramaProductViewModel_IsLocked);
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(GetResolutionSize, "GetResolutionSize at %p");
 		ADD_HOOK(AssetBundle_LoadAsset, "AssetBundle_LoadAsset at %p");

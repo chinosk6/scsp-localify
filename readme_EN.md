@@ -58,6 +58,7 @@ iM@S SCSP localify plugin.
 | blockOutOfFocus       | Bool      | `true`                                | Intercept window out-of-focus events<br>Game won't pause when switching to other windows |
 | baseFreeCamera        | [BaseFreeCamera](#BaseFreeCamera) Object | [BaseFreeCamera](#BaseFreeCamera) | Free camera configuration                             |
 | unlockPIdolAndSCharaEvents | Bool | `false` | Unlock Idol Event (アイドルイベント) and Support Event (サポートイベント) in `Characters` - `Overview` |
+| unlockPhotoStudio          | Bool | `false`                               | Unlock contents in Photo Studio                        |
 | startResolution | [Resolution](#Resolution) Object | [Resolution](#Resolution) | Game window resolution |
 
 
