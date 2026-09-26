@@ -17,6 +17,7 @@
     "mouseSpeed": 35
   },
   "unlockPIdolAndSCharaEvents": false,
+  "unlockPhotoStudio": false,
   "startResolution": {
     "w": 1280,
     "h": 720,
