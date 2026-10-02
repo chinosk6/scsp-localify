@@ -367,6 +367,18 @@ enum class ClothForceMode {
 };
 
 
+struct RunwayMotion {
+	int Id;
+	std::string Name;
+	bool IsWalking;
+	bool IsPose;
+};
+struct OverrideRunwayMotionData {
+	int WalkingMotionId;
+	int PoseMotionId;
+};
+
+
 // @return (const Il2CppObject* gameObject, const Il2CppObject* transform)[]
 std::vector<std::pair<const Il2CppObject*, const Il2CppObject*>> GetActiveIdolObjects();
 
@@ -376,6 +388,8 @@ extern std::map<int, UnitIdol> savedCostumes;
 extern UnitIdol lastSavedCostume;
 extern UnitIdol overridenMvUnitIdols[8];
 const int overridenMvUnitIdols_length = 8;
+extern std::map<int, RunwayMotion> knownRunwayMotions;
+extern std::vector<OverrideRunwayMotionData> overrideRunwayMotionData;
 
 extern std::function<void()> g_reload_all_data;
 extern bool g_enable_plugin;
@@ -398,6 +412,7 @@ extern bool g_unlock_all_headwear;
 extern bool g_show_hidden_costumes;
 extern bool g_save_and_replace_costume_changes;
 extern bool g_overrie_mv_unit_idols;
+extern bool g_override_runway_motion;
 extern bool g_apply_costumes_automatically;
 extern bool g_override_isVocalSeparatedOn;
 extern bool g_enable_chara_param_edit;

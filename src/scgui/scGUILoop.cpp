@@ -428,6 +428,100 @@ namespace SCGUILoop {
 		}
 	}
 
+	void overrideRunwayMotionLoop() {
+		if (ImGui::Begin("Override Runway Motions")) {
+
+			ImGui::Indent(20);
+			ImGui::Text("Known Runway Motions (updates when entering motion changing GUI)");
+			ImGui::Unindent(20);
+
+			if (ImGui::BeginTable("##KnownRunwayMotions", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit)) {
+				ImGui::TableSetupColumn("Id", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("Name");
+				ImGui::TableSetupColumn("IsWalking", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("IsPose", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableHeadersRow();
+				for (auto& [id, motion] : knownRunwayMotions) {
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("%d", id);
+					ImGui::TableSetColumnIndex(1);
+					ImGui::TextUnformatted(motion.Name.c_str());
+					ImGui::TableSetColumnIndex(2);
+					ImGui::TextUnformatted(motion.IsWalking ? "O" : "X");
+					ImGui::TableSetColumnIndex(3);
+					ImGui::TextUnformatted(motion.IsPose ? "O" : "X");
+				}
+				ImGui::EndTable();
+			}
+
+			int positionOrder[] = { 4, 2, 0, 1, 3 };
+			int fixedOrderLength = 5;
+			int columnCount = overrideRunwayMotionData.size();
+
+			static float motionInputWidth = ImGui::CalcTextSize("00").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+			
+			ImGui::Indent(20);
+			ImGui::Text("Overriding values (0 for unchanging)");
+			ImGui::Unindent(20);
+
+			if (ImGui::BeginTable("##OverrideRunwayMotions", columnCount + 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)) {
+				ImGui::TableSetupColumn("Labels", ImGuiTableColumnFlags_WidthFixed);
+				for (int i = 0; i < columnCount; ++i) {
+					ImGui::TableSetupColumn("Motion", ImGuiTableColumnFlags_WidthFixed, motionInputWidth, i + 1);
+				}
+				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed);
+
+				ImGui::TableNextRow();
+				for (int i = 0; i < columnCount; ++i) {
+					int dataIndex = i < fixedOrderLength ? positionOrder[i] : i;
+					ImGui::TableSetColumnIndex(i + 1);
+					ImGui::Text("[%d]", dataIndex);
+				}
+
+				ImGui::TableSetColumnIndex(columnCount + 1);
+				if (ImGui::Button("+##AddRunwayMotion")) {
+					overrideRunwayMotionData.push_back({ 0, 0 });
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::TextUnformatted("walking");
+				for (int i = 0; i < columnCount; ++i) {
+					int dataIndex = i < fixedOrderLength ? positionOrder[i] : i;
+					ImGui::TableSetColumnIndex(i + 1);
+					ImGui::PushID(dataIndex);
+					ImGui::SetNextItemWidth(motionInputWidth);
+					ImGui::InputScalar("##walking", ImGuiDataType_S32, &overrideRunwayMotionData[dataIndex].WalkingMotionId, nullptr, nullptr, "%d");
+					ImGui::PopID();
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::TextUnformatted("pose");
+				for (int i = 0; i < columnCount; ++i) {
+					int dataIndex = i < fixedOrderLength ? positionOrder[i] : i;
+					ImGui::TableSetColumnIndex(i + 1);
+					ImGui::PushID(dataIndex);
+					ImGui::SetNextItemWidth(motionInputWidth);
+					ImGui::InputScalar("##pose", ImGuiDataType_S32, &overrideRunwayMotionData[dataIndex].PoseMotionId, nullptr, nullptr, "%d");
+					ImGui::PopID();
+				}
+
+				ImGui::TableSetColumnIndex(columnCount + 1);
+				ImGui::BeginDisabled(overrideRunwayMotionData.size() <= fixedOrderLength);
+				if (ImGui::Button("-##RemoveRunwayMotion")) {
+					overrideRunwayMotionData.pop_back();
+				}
+				ImGui::EndDisabled();
+
+				ImGui::EndTable();
+			}
+		}
+		ImGui::End();
+	}
+
+
 	void PosesLoop();
 	int selectedPoseIndex = -1;
 	struct ScannedGameObjectData {
@@ -481,6 +575,11 @@ namespace SCGUILoop {
 			ImGui::Checkbox("Unlock PhotoStudio", &g_unlock_photo_studio);
 			ImGui::SameLine();
 			HELP_TOOLTIP("(?)", "解锁Photo Studio中的内容。\nUnlock contents in Photo Studio.\n\n> config 'unlockPhotoStudio'");
+
+			ImGui::Checkbox("Override runway motions", &g_override_runway_motion);
+			ImGui::SameLine();
+			HELP_TOOLTIP("(?)", "在新窗口中输入动作ID进行覆盖。\nInput Motion IDs in the new window to override.");
+
 
 			if (ImGui::CollapsingHeader("Resolution Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
 				ImGui::Text("Window Resolution Settings");
@@ -831,6 +930,7 @@ namespace SCGUILoop {
 		if (g_enable_chara_param_edit) charaParamEditLoop();
 		if (g_save_and_replace_costume_changes) savedCostumeDataLoop();
 		if (g_overrie_mv_unit_idols) overrideMvUnitIdolLoop();
+		if (g_override_runway_motion) overrideRunwayMotionLoop();
 	}
 
 

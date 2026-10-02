@@ -53,6 +53,9 @@ std::map<std::string, std::string> replacementTexureNames{};
 std::unordered_map<Il2CppObject*, std::unique_ptr<LocalTransform>> transformOverriding{};
 std::vector<std::pair<std::string, std::string>> savedTransformOverridingJson{};
 
+std::map<int, RunwayMotion> knownRunwayMotions{};
+std::vector<OverrideRunwayMotionData> overrideRunwayMotionData(5);
+
 /// @return if the given `transform` is matched (maybe not modified if it's unavailable)
 bool OverrideTransform(Il2CppObject* transform) {
 	auto startSize = transformOverriding.size();
@@ -773,6 +776,51 @@ namespace
 		return HOOK_CAST_CALL(bool, DioramaProductViewModel_IsLocked)(self);
 	}
 
+	HOOK_ORIG_TYPE RunwayPoseSettingContentViewModel_ctor_orig;
+	void RunwayPoseSettingContentViewModel_ctor_hook(void* self, void* motion, int position) {
+		HOOK_CAST_CALL(void, RunwayPoseSettingContentViewModel_ctor)(self, motion, position);
+
+		static auto klass_MstRunwayMotion = il2cpp_symbols_logged::get_class("PRISM.Definitions.dll", "PRISM.Definitions", "MstRunwayMotion");
+		static auto method_MstRunwayMotion_get_Id = il2cpp_symbols_logged::get_method(klass_MstRunwayMotion, "get_Id", 0);
+		static auto method_MstRunwayMotion_get_MotionName = il2cpp_symbols_logged::get_method(klass_MstRunwayMotion, "get_MotionName", 0);
+		static auto method_MstRunwayMotion_get_IsPose = il2cpp_symbols_logged::get_method(klass_MstRunwayMotion, "get_IsPose", 0);
+		static auto method_MstRunwayMotion_get_IsWalkingPattern = il2cpp_symbols_logged::get_method(klass_MstRunwayMotion, "get_IsWalkingPattern", 0);
+
+		const auto managedMotion = (Il2CppObject*)motion;
+
+		static bool motionSaved = false;
+		static bool headerPrinted = false;
+
+		if (!motionSaved) {
+			if (!headerPrinted) {
+				std::cout << "=== Runway Motions ===" << std::endl << "Id\tName\tIsWalking\tIsPose\n";
+				headerPrinted = true;
+			}
+
+			auto id = method_MstRunwayMotion_get_Id->Invoke(managedMotion, {})->unbox_value<int>();
+			auto name = method_MstRunwayMotion_get_MotionName->Invoke<Il2CppString*>(managedMotion, {})->ToUtf8String();
+			auto isWalking = method_MstRunwayMotion_get_IsWalkingPattern->Invoke(managedMotion, {})->unbox_value<bool>();
+			auto isPose = method_MstRunwayMotion_get_IsPose->Invoke(managedMotion, {})->unbox_value<bool>();
+
+			if (knownRunwayMotions.find(id) != knownRunwayMotions.end()) {
+				motionSaved = true;
+			}
+			else {
+				std::cout
+					<< id << '\t' << name << '\t'
+					<< (isWalking ? "O" : "X") << '\t' << (isPose ? "O" : "X")
+					<< std::endl;
+
+				RunwayMotion savedata{
+					.Id = id,
+					.Name = name,
+					.IsWalking = isWalking,
+					.IsPose = isPose
+				};
+				knownRunwayMotions.emplace(id, savedata);
+			}
+		}
+	}
 
 	HOOK_ORIG_TYPE LocalizationManager_GetTextOrNull_orig;
 	Il2CppString* LocalizationManager_GetTextOrNull_hook(void* _this, Il2CppString* category, int id) {
@@ -2211,11 +2259,135 @@ namespace
 		return method_get_OnStageIdols->Invoke(data, {});
 	}
 
+	Il2CppObject* CreateRunwayMotionInstanceOrDefault(int id) {
+		if (id <= 0) return nullptr;
+
+		// IAdapterLocator locator = IAdapterLocator.Instance;
+		static auto method_IAdapterLocator_get_Instance = il2cpp_symbols_logged::get_method(
+			"PRISM.Adapters.dll", "PRISM.Adapters",
+			"IAdapterLocator", "get_Instance", 0);
+		auto locator = method_IAdapterLocator_get_Instance->Invoke<Il2CppObject*>(nullptr, {});
+		auto locatorType = il2cpp_symbols::get_class_from_instance(locator);
+
+		// MasterData masterData = locator.MasterData;
+		auto method_locatorType_get_MasterData = il2cpp_class_get_method_from_name(
+			locatorType, "get_MasterData", 0);
+		auto masterData = method_locatorType_get_MasterData
+			->Invoke<Il2CppObject*>(locator, {});
+
+		// SortedMasterTable<int, MstRunwayMotion> runwayMotions = masterData.RunwayMotions;
+		static auto klass_MasterData = il2cpp_symbols_logged::get_class(
+			"PRISM.Definitions.dll", "PRISM.Definitions", "MasterData");
+		static auto field_MasterData_RunwayMotions =
+			il2cpp_symbols_logged::il2cpp_class_get_field_from_name(
+				klass_MasterData, "RunwayMotions");
+		auto runwayMotions = il2cpp_symbols::read_field<Il2CppObject*>(
+			masterData, field_MasterData_RunwayMotions);
+
+		// var motion = runwayMotions.GetValueOrDefault(id);
+		// if (motion is null) { Console.WriteLine(...); }
+		// return motion;
+		auto method_runwayMotions_GetValueOrDefault =
+			il2cpp_class_get_method_from_name(il2cpp_symbols::get_class_from_instance(
+				runwayMotions), "GetValueOrDefault", 1);
+		auto motion = method_runwayMotions_GetValueOrDefault
+			->Invoke<Il2CppObject*>(runwayMotions, { (Il2CppObject*)&id }
+			);
+		if (!motion) {
+			printf("[Error] Failed to resolve motion id '%d' from MasterData.", id);
+		}
+		return motion;
+	}
+
+	void OverrideRunwayStartData(
+		Il2CppObject* runwayEventStartData, int position, int walkingId, int poseId
+	) {
+		// RunwayEventMotionConfig config = runwayEventStartData.MotionConfig;
+		static auto method_RunwayEventStartData_get_MotionConfig = il2cpp_symbols_logged::get_method(
+			"PRISM.Legacy.dll", "PRISM.RunwayEvent",
+			"RunwayEventStartData", "get_MotionConfig", 0);
+		auto config = method_RunwayEventStartData_get_MotionConfig
+			->Invoke<Il2CppObject*>(runwayEventStartData, {});
+
+		// IReadOnlyList<RunwayEventMotion> motions = config.Motions;
+		static auto method_RunwayEventMotionConfig_get_Motions = il2cpp_symbols_logged::get_method(
+			"PRISM.Legacy.dll", "PRISM.RunwayEvent",
+			"RunwayEventMotionConfig", "get_Motions", 0);
+		auto motions = method_RunwayEventMotionConfig_get_Motions
+			->Invoke<Il2CppObject*>(config, {});
+
+		// MstRunwayMotion walking = ::CreateRunwayMotionInstanceOrDefault(walkingId);
+		auto walking = CreateRunwayMotionInstanceOrDefault(walkingId);
+		// if (!walking.IsWalkingPattern) {
+		//     Console.WriteLine(...);
+		//     walking = null;
+		// }
+		static auto method_MstRunwayMotion_get_IsWalkingPattern =
+			il2cpp_symbols_logged::get_method(
+				"PRISM.Definitions.dll", "PRISM.Definitions",
+				"MstRunwayMotion", "get_IsWalkingPattern", 0);
+		auto isWalkingPattern = method_MstRunwayMotion_get_IsWalkingPattern
+			->Invoke((Il2CppObject*)walking, {})
+			->unbox_value<bool>();
+		if (!isWalkingPattern) {
+			std::cout << "[OverrideRunwayStartData] Motion id '" << walkingId << "' isn't a walking. Keeping unchanged." << std::endl;
+			walking = nullptr;
+		}
+
+		// MstRunwayMotion pose = ::CreateRunwayMotionInstanceOrDefault(poseId);
+		auto pose = CreateRunwayMotionInstanceOrDefault(poseId);
+		// if (!pose.IsPose) {
+		//     Console.WriteLine(...);
+		//     pose = null;
+		// }
+		static auto method_MstRunwayMotion_get_IsPose =
+			il2cpp_symbols_logged::get_method(
+				"PRISM.Definitions.dll", "PRISM.Definitions",
+				"MstRunwayMotion", "get_IsPose", 0);
+		auto isPose = method_MstRunwayMotion_get_IsPose
+			->Invoke((Il2CppObject*)pose, {})
+			->unbox_value<bool>();
+		if (!isPose) {
+			std::cout << "[OverrideRunwayStartData] Motion id '" << walkingId << "' isn't a pose. Keeping unchanged." << std::endl;
+			pose = nullptr;
+		}
+
+		// if (position < motions.Length) {
+		//     var item = motions[position];
+		//     if (walking != null) { item.WalkingMotion = walking; }
+		//     if (pose != null) { item.PoseMotion = pose; }
+		//     if (walking != null || pose != null) Console.WriteLine(...);
+		// }
+		if (position < il2cpp_array_length(motions)) {
+			static auto method_RunwayEventMotion_set_WalkingMotion = il2cpp_symbols_logged::get_method(
+				"PRISM.Legacy.dll", "PRISM.RunwayEvent", "RunwayEventMotion", "set_WalkingMotion", 1);
+			static auto method_RunwayEventMotion_set_PoseMotionn = il2cpp_symbols_logged::get_method(
+				"PRISM.Legacy.dll", "PRISM.RunwayEvent", "RunwayEventMotion", "set_PoseMotion", 1);
+
+			auto item = (Il2CppObject*)il2cpp_symbols::array_get_value(motions, position);
+			if (walking)
+				method_RunwayEventMotion_set_WalkingMotion->InvokeAsVoid(item, { walking });
+			if (pose)
+				method_RunwayEventMotion_set_PoseMotionn->InvokeAsVoid(item, { pose });
+			if (walking || pose) {
+				std::cout << "[OverrideRunwayStartData] set position[" << position <<
+					"] to walk '" << walkingId
+					<< "', pose '" << poseId
+					<< "'." << std::endl;
+			}
+		}
+	}
+
 	HOOK_ORIG_TYPE LiveStartDataExtensions_PreLoadAsync_orig;
 	void* LiveStartDataExtensions_PreLoadAsync_hook(void* retstr, Il2CppObject* data, const MethodInfo* method) {
 		auto onStageIdols = GetLiveStartDataOnStageIdols(data);
 		if (onStageIdols != nullptr) {
 			ModifyOnStageIdols(onStageIdols);
+		}
+		if (g_override_runway_motion) {
+			for (int i = 0; i < overrideRunwayMotionData.size(); ++i) {
+				OverrideRunwayStartData(data, i, overrideRunwayMotionData[i].WalkingMotionId, overrideRunwayMotionData[i].PoseMotionId);
+			}
 		}
 		return HOOK_CAST_CALL(void*, LiveStartDataExtensions_PreLoadAsync)(retstr, data, method);
 	}
@@ -3358,6 +3530,10 @@ namespace
 			"DioramaProductViewModel", "IsLocked", 0
 		);
 
+		auto RunwayPoseSettingContentViewModel_ctor_addr = il2cpp_symbols_logged::get_method_pointer(
+			"PRISM.Adapters.dll", "PRISM.Adapters",
+			"RunwayPoseSettingContentViewModel", ".ctor", 2
+		);
 		auto LocalizationManager_GetTextOrNull_addr = il2cpp_symbols::get_method_pointer(
 			"PRISM.Legacy.dll", "ENTERPRISE.Localization",
 			"LocalizationManager", "GetTextOrNull", 2
@@ -3669,6 +3845,7 @@ namespace
 		ADD_HOOK(SetResolution, "SetResolution at %p");
 		ADD_HOOK_1(StoryExtensions_IsLocked);
 		ADD_HOOK_1(DioramaProductViewModel_IsLocked);
+		ADD_HOOK_1(RunwayPoseSettingContentViewModel_ctor);
 		ADD_HOOK(LocalizationManager_GetTextOrNull, "LocalizationManager_GetTextOrNull at %p");
 		ADD_HOOK(GetResolutionSize, "GetResolutionSize at %p");
 		ADD_HOOK(AssetBundle_LoadAsset, "AssetBundle_LoadAsset at %p");

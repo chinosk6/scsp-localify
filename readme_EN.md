@@ -33,6 +33,8 @@ iM@S SCSP localify plugin.
 - Real-time Modification of Character Body Parameters, Adjust Height, Head, Chest, Arm, and Palm Size **(Modify in GUI)**
 - Runtime texture extracting and replacing
 - Copying body pose data
+- Unlock contents in Photo Studio
+- Override motions in runway (including locked contents)
 
 
 
