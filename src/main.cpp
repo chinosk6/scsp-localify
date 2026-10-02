@@ -44,6 +44,7 @@ bool g_unlock_all_headwear = false;
 bool g_show_hidden_costumes = false;
 bool g_save_and_replace_costume_changes = false;
 bool g_overrie_mv_unit_idols = false;
+bool g_override_runway_motion = false;
 bool g_apply_costumes_automatically = false;
 bool g_override_isVocalSeparatedOn = false;
 bool g_enable_chara_param_edit = false;
