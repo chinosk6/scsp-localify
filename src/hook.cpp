@@ -2243,6 +2243,45 @@ namespace
 		}
 	}
 
+	HOOK_DEF(void*, LiveScene__getAudienceColor)(void* characters, int songTypeID, const MethodInfo* method) {
+		static auto klass_Character = il2cpp_symbols_logged::get_class(
+			"PRISM.Legacy.dll", "PRISM", "Character");
+		static auto field_Character_masterCharaData = il2cpp_symbols_logged::il2cpp_class_get_field_from_name(
+			klass_Character, "masterCharaData");
+		static auto method_MstCharacterInfo_get_Id = il2cpp_symbols_logged::get_method(
+			"PRISM.Definitions.dll", "PRISM.Definitions", "MstCharacterInfo", "get_Id", 0);
+		static auto klass_Color = il2cpp_symbols_logged::get_class(
+			"UnityEngine.CoreModule.dll", "UnityEngine", "Color");
+
+		std::unordered_map<int, int> characterIndices;
+		std::vector<Il2CppObject*> uniqueCharacters;
+		std::vector<int> colorIndices;
+		il2cpp_symbols::iterate_IEnumerable<Il2CppObject*>(characters, [&](Il2CppObject* character) {
+			auto masterCharaData = il2cpp_symbols::read_field<Il2CppObject*>(character, field_Character_masterCharaData);
+			const auto characterId = method_MstCharacterInfo_get_Id->Invoke(masterCharaData, {})->unbox_value<int>();
+			auto [it, inserted] = characterIndices.emplace(characterId, (int)(uniqueCharacters.size()));
+			if (inserted) {
+				uniqueCharacters.push_back(character);
+			}
+			colorIndices.push_back(it->second);
+		});
+
+		auto uniqueCharactersArray = il2cpp_array_new(klass_Character, uniqueCharacters.size());
+		for (int i = 0; i < uniqueCharacters.size(); ++i) {
+			il2cpp_symbols::array_set_value(uniqueCharactersArray, uniqueCharacters[i], i);
+		}
+
+		auto colors = HOOK_CAST_CALL(void*, LiveScene__getAudienceColor)(uniqueCharactersArray, songTypeID, method);
+		if (colorIndices.size() == uniqueCharacters.size()) return colors;
+
+		auto expandedColors = il2cpp_array_new(klass_Color, colorIndices.size());
+		for (int i = 0; i < colorIndices.size(); ++i) {
+			auto color = il2cpp_symbols::array_get_value(colors, colorIndices[i]);
+			il2cpp_symbols::array_set_value(expandedColors, color, i);
+		}
+		return expandedColors;
+	}
+
 	HOOK_ORIG_TYPE LiveMVStartData_ctor_orig;
 	void LiveMVStartData_ctor_hook(void* _this, void* mvStage, void* sceneName, void* onStageIdols, void* cameraworkConfig, int vocalSeparatedMode, int vocalSeparatedSoloIndex, int renderingDynamicRange, int soundEffectMode, bool isSortIdols) {
 		if (g_override_isVocalSeparatedOn) {
@@ -3908,6 +3947,7 @@ namespace
 
 		ADD_HOOK(LiveMVStartData_ctor, "LiveMVStartData_ctor at %p");
 		ADD_HOOK_1(LiveStartDataExtensions_PreLoadAsync);
+		ADD_HOOK_ADDR(PRISM.Legacy.dll, PRISM, LiveScene, _getAudienceColor, 2);
 
 		ADD_HOOK_1(Subject_OnNext);
 		ADD_HOOK_1(MagicaCloth_BuildAndRun);
